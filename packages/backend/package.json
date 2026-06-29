@@ -1,0 +1,17 @@
+{
+	"name": "@serviceflow/backend",
+	"version": "1.0.0",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "bun run --watch src/index.ts"
+	},
+	"dependencies": {
+		"elysia": "latest"
+	},
+	"devDependencies": {
+		"typescript": "catalog:",
+		"@biomejs/biome": "catalog:",
+		"bun-types": "catalog:"
+	},
+	"module": "src/index.js"
+}

@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+		"composite": true,
+		"noEmit": false,
+		"emitDeclarationOnly": true,
+		"lib": ["ESNext", "DOM"],
+		"types": ["vite/client"],
+		"erasableSyntaxOnly": true
+	},
+	"include": ["src"]
+}
