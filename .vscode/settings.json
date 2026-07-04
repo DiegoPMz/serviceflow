@@ -1,8 +1,5 @@
 {
-	"cSpell.words": [
-		"elysia",
-		"serviceflow"
-	],
+	"cSpell.words": ["elysia", "postgres", "serviceflow", "supabase"],
 
 	"editor.defaultFormatter": "biomejs.biome",
 	"biome.requireConfiguration": true,

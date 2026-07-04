@@ -3,15 +3,22 @@
 	"version": "1.0.0",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"dev": "bun run --watch src/index.ts"
+		"dev": "bun run --watch src/index.ts",
+		"db:push": "drizzle-kit push",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
-		"elysia": "latest"
+		"drizzle-orm": "0.45.2",
+		"elysia": "latest",
+		"postgres": "3.4.9"
 	},
 	"devDependencies": {
-		"typescript": "catalog:",
 		"@biomejs/biome": "catalog:",
-		"bun-types": "catalog:"
+		"bun-types": "catalog:",
+		"drizzle-kit": "0.31.10",
+		"typescript": "catalog:"
 	},
 	"module": "src/index.js"
 }
