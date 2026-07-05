@@ -1,36 +1,38 @@
+import { spawnSync } from "bun";
 import postgres from "postgres";
 
-export default async function globalSetup() {
-	const testDbUrl = process.env.DATABASE_URL;
-	if (!testDbUrl)
-		throw new Error("❌ DATABASE_URL not found in the test environment.");
+console.log("\n=== 🔌 INITIALIZING TEST DATABASE SETUP ===");
 
-	const baseDbUrl = testDbUrl.replace(/\/tecnofix_test$/, "/postgres");
+const sql = postgres(process.env.DATABASE_BASE_URL!, { max: 1 });
 
-	const sql = postgres(baseDbUrl, { max: 1, debug: true });
-
+try {
 	const res =
 		await sql`SELECT 1 FROM pg_database WHERE datname='tecnofix_test'`;
 
 	if (res.length === 0) {
-		console.log("🛠️ Creating test database (tecnofix_test)...");
+		console.log("🛠️ Creating 'tecnofix_test' database...");
 		await sql`CREATE DATABASE tecnofix_test`;
+		console.log("✅ 'tecnofix_test' database created successfully.");
+	} else {
+		console.log("✅ 'tecnofix_test' database already exists.");
 	}
-
+} catch (error) {
+	console.error("❌ Critical error verifying/creating test database:", error);
+	process.exit(1);
+} finally {
 	await sql.end();
-
-	const { success, stderr } = Bun.spawnSync(["bun", "drizzle-kit", "migrate"], {
-		env: {
-			...process.env,
-			DATABASE_URL: testDbUrl,
-		},
-	});
-
-	if (!success) {
-		console.error(
-			"❌ Error while running drizzle-kit migrations. Please check the error below:",
-		);
-		console.error(stderr?.toString());
-		process.exit(1);
-	}
 }
+
+console.log("🚀 Applying Drizzle schema to the test database...");
+
+const { success } = spawnSync(["bun", "drizzle-kit", "migrate"], {
+	stdout: "inherit",
+	stderr: "inherit",
+});
+
+if (!success) {
+	console.error("❌ Critical error: Failed to apply Drizzle migrations.");
+	process.exit(1);
+}
+
+console.log("=== 🎉 SETUP COMPLETED, STARTING TESTS ===\n");
