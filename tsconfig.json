@@ -25,6 +25,10 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false,
-		"outDir": "dist"
+		"outDir": "dist",
+
+		"composite": true,
+		"declaration": true,
+		"declarationMap": true
 	}
 }

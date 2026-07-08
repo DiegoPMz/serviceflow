@@ -8,10 +8,11 @@
         "@biomejs/biome": "catalog:",
       },
     },
-    "packages/backend": {
+    "apps/backend": {
       "name": "@serviceflow/backend",
       "version": "1.0.0",
       "dependencies": {
+        "@serviceflow/schemas": "workspace:*",
         "drizzle-orm": "0.45.2",
         "elysia": "latest",
         "postgres": "3.4.9",
@@ -23,7 +24,7 @@
         "typescript": "catalog:",
       },
     },
-    "packages/frontend": {
+    "apps/frontend": {
       "name": "@serviceflow/frontend",
       "version": "1.0.0",
       "dependencies": {
@@ -42,6 +43,13 @@
         "babel-plugin-react-compiler": "1.0.0",
         "typescript": "catalog:",
         "vite": "8.1.0",
+      },
+    },
+    "packages/schemas": {
+      "name": "@serviceflow/schemas",
+      "version": "1.0.0",
+      "dependencies": {
+        "@sinclair/typebox": "0.34.49",
       },
     },
   },
@@ -215,9 +223,11 @@
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.1", "", {}, "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="],
 
-    "@serviceflow/backend": ["@serviceflow/backend@workspace:packages/backend"],
+    "@serviceflow/backend": ["@serviceflow/backend@workspace:apps/backend"],
 
-    "@serviceflow/frontend": ["@serviceflow/frontend@workspace:packages/frontend"],
+    "@serviceflow/frontend": ["@serviceflow/frontend@workspace:apps/frontend"],
+
+    "@serviceflow/schemas": ["@serviceflow/schemas@workspace:packages/schemas"],
 
     "@sinclair/typebox": ["@sinclair/typebox@0.34.49", "", {}, "sha512-brySQQs7Jtn0joV8Xh9ZV/hZb9Ozb0pmazDIASBkYKCjXrXU3mpcFahmK/z4YDhGkQvP9mWJbVyahdtU5wQA+A=="],
 
