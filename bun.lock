@@ -51,6 +51,10 @@
       "dependencies": {
         "@sinclair/typebox": "0.34.49",
       },
+      "devDependencies": {
+        "@biomejs/biome": "catalog:",
+        "typescript": "catalog:",
+      },
     },
   },
   "catalog": {
