@@ -3,7 +3,8 @@
 	"private": true,
 	"workspaces": {
 		"packages": [
-			"packages/*"
+			"packages/*",
+			"apps/*"
 		],
 		"catalog": {
 			"typescript": "5.9.3",
