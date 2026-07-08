@@ -13,7 +13,6 @@ import { users } from "./user";
 export const workspaces = pgTable("workspaces", {
 	id: uuid("id").primaryKey(),
 	name: varchar("name", { length: 250 }).notNull(),
-	invitationCode: varchar("invitation_code", { length: 50 }).unique(),
 	...timestamps,
 });
 

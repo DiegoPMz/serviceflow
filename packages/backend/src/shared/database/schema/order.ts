@@ -11,14 +11,16 @@ export const orders = pgTable(
 		clientId: uuid("client_id")
 			.references(() => clients.id)
 			.notNull(),
-		clientSignatureUrl: text("client_signature_url").notNull(),
+		documentUrl: text("document_url").notNull(),
 		deviceModel: varchar("device_model", { length: 100 }).notNull(),
 		deviceBrand: varchar("device_brand", { length: 50 }).notNull(),
 		deviceSerialNumber: varchar("device_serial_number", {
 			length: 200,
 		}).notNull(),
 		issueDescription: text("issue_description").notNull(),
-		workspaceId: uuid("workspace_id").references(() => workspaces.id),
+		workspaceId: uuid("workspace_id")
+			.references(() => workspaces.id)
+			.notNull(),
 		userId: uuid("user_id")
 			.references(() => users.id)
 			.notNull(),
