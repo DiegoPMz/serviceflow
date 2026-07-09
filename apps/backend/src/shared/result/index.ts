@@ -1,8 +1,10 @@
-export type ErrorDetails = {
-	code: string;
-	message: string;
-	metadata?: Record<string, unknown>;
-};
+export class ErrorDetails {
+	constructor(
+		public readonly code: string,
+		public readonly message: string,
+		public readonly metadata?: Map<string, unknown>,
+	) {}
+}
 
 export class Result<T = void> {
 	public readonly isSuccess: boolean;
@@ -19,16 +21,18 @@ export class Result<T = void> {
 
 	public get value(): T {
 		if (this.isFailure) {
-			throw new Error("No se puede obtener el valor de un resultado fallido.");
+			console.error("No se puede obtener el valor de un resultado fallido.");
+			return undefined as T;
 		}
 		return this._value as T;
 	}
 
 	public get error(): ErrorDetails {
 		if (this.isSuccess) {
-			throw new Error(
+			console.error(
 				"No se pueden obtener los detalles de error de un resultado exitoso.",
 			);
+			return undefined as unknown as ErrorDetails;
 		}
 		return this._error as ErrorDetails;
 	}
@@ -43,12 +47,12 @@ export class Result<T = void> {
 	public static failure<U = void>(
 		code: string,
 		message: string,
-		metadata?: Record<string, unknown>,
+		metadata?: Map<string, unknown>,
 	): Result<U>;
 	public static failure<U = void>(
 		errorOrCode: ErrorDetails | string,
 		message?: string,
-		metadata?: Record<string, unknown>,
+		metadata?: Map<string, unknown>,
 	): Result<U> {
 		if (typeof errorOrCode === "string") {
 			return new Result<U>(false, undefined, {

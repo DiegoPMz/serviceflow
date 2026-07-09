@@ -52,6 +52,7 @@ yarn-error.log*
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+.zed
 
 # =========================================================================
 # 🗜️ ARCHIVOS COMPRIMIDOS
