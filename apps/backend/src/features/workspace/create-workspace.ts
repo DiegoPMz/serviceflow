@@ -1,12 +1,10 @@
 import {
-	type DatabaseType,
+	type DatabaseClient,
 	workspaceMembers,
 	workspaces,
 } from "@serviceflow/backend/shared/database";
 import { Created, Result } from "@serviceflow/backend/shared/result";
 import { Workspace } from "./common/workspace.model";
-
-type DatabaseClient = Parameters<Parameters<DatabaseType["transaction"]>[0]>[0];
 
 interface CreateWorkspaceCommand {
 	userId: string;

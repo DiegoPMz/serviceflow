@@ -25,9 +25,12 @@ try {
 
 console.log("🚀 Applying Drizzle schema to the test database...");
 
-const { success } = spawnSync(["bun", "drizzle-kit", "migrate"], {
+const { success } = spawnSync(["bun", "drizzle-kit", "push", "--force"], {
 	stdout: "inherit",
 	stderr: "inherit",
+	env: {
+		...process.env,
+	},
 });
 
 if (!success) {

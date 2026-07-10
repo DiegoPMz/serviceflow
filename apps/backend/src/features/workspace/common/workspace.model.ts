@@ -1,4 +1,5 @@
 import { Result } from "@serviceflow/backend/shared/result";
+import { randomUUIDv7 } from "bun";
 import { workspaceErrors } from "./workspace.errors";
 
 export class Workspace {
@@ -22,7 +23,7 @@ export class Workspace {
 
 		const now = new Date();
 		return Result.success(
-			new Workspace(crypto.randomUUID(), data.name.trim(), now, now),
+			new Workspace(randomUUIDv7(), data.name.trim(), now, now),
 		);
 	}
 }
