@@ -1,5 +1,6 @@
 import {
 	index,
+integer,
 	pgEnum,
 	pgTable,
 	primaryKey,
@@ -10,11 +11,17 @@ import {
 import { timestamps } from "../helpers";
 import { users } from "./user";
 
-export const workspaces = pgTable("workspaces", {
+export const workspaces = pgTable(
+	"workspaces",
+	{
 	id: uuid("id").primaryKey(),
 	name: varchar("name", { length: 250 }).notNull(),
+		prefix: varchar("prefix", { length: 7 }).unique().notNull(),
+		orderCount: integer("order_count").default(0).notNull(),
 	...timestamps,
-});
+	},
+	(table) => [index("workspaces_name_idx").on(table.name)],
+);
 
 export const roleEnum = pgEnum("workspace_role", [
 	"owner",

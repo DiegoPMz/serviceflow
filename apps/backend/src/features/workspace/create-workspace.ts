@@ -13,7 +13,6 @@ interface CreateWorkspaceCommand {
 
 interface createWorkspaceProps {
 	command: CreateWorkspaceCommand;
-
 	dbClient: DatabaseClient;
 }
 
@@ -23,6 +22,7 @@ export async function createWorkspace({
 }: createWorkspaceProps): Promise<Result<Created>> {
 	const { isFailure, error, value } = Workspace.create({
 		name: command.workspaceName,
+		orderCount: 0,
 	});
 
 	if (isFailure) return Result.failure(error);
@@ -31,6 +31,8 @@ export async function createWorkspace({
 		await tx.insert(workspaces).values({
 			id: value.id,
 			name: value.name,
+			prefix: value.prefix,
+			orderCount: value.orderCount,
 			createdAt: value.createdAt,
 			updatedAt: value.updatedAt,
 		});

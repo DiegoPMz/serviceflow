@@ -14,7 +14,16 @@ try {
 		await sql`CREATE DATABASE tecnofix_test`;
 		console.log("✅ 'tecnofix_test' database created successfully.");
 	} else {
-		console.log("✅ 'tecnofix_test' database already exists.");
+		console.log(
+			"♻️ 'tecnofix_test' database already exists. Recreating to wipe all schemas...",
+		);
+
+		await sql`DROP DATABASE tecnofix_test WITH (FORCE)`;
+		await sql`CREATE DATABASE tecnofix_test`;
+
+		console.log(
+			"✅ 'tecnofix_test' database recreated and cleaned successfully.",
+		);
 	}
 } catch (error) {
 	console.error("❌ Critical error verifying/creating test database:", error);
