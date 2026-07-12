@@ -2,7 +2,7 @@
 	"name": "@serviceflow/backend",
 	"version": "1.0.0",
 	"scripts": {
-		"test": "bun test",
+		"test": "bun test --timeout 6000",
 		"dev": "bun run --watch src/index.ts",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
@@ -10,15 +10,19 @@
 		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
+		"@libsql/client": "0.17.4",
 		"drizzle-orm": "0.45.2",
 		"elysia": "latest",
-		"postgres": "3.4.9"
+		"nanoid": "5.1.16",
+		"pdf-lib": "1.17.1",
+		"ulidx": "2.4.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "catalog:",
 		"bun-types": "catalog:",
 		"drizzle-kit": "0.31.10",
+		"testcontainers": "12.0.4",
 		"typescript": "catalog:"
 	},
-	"module": "src/index.js"
+	"module": "src/index.ts"
 }

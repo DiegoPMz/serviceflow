@@ -1,10 +1,30 @@
-import { pgTable, text, uuid, varchar } from "drizzle-orm/pg-core";
-import { timestamps } from "../helpers";
+import {
+	index,
+	integer,
+	sqliteTable,
+	text,
+	uniqueIndex,
+} from "drizzle-orm/sqlite-core";
+import { sqliteNowEffort } from "../helpers";
 
-export const users = pgTable("users", {
-	id: uuid("id").primaryKey(),
-	name: varchar("name", { length: 200 }).notNull(),
-	email: varchar("email", { length: 200 }).notNull().unique(),
-	profileImageUrl: text("profile_image_url"),
-	...timestamps,
-});
+export const users = sqliteTable(
+	"users",
+	{
+		id: text("id", { length: 26 }).primaryKey(), // Consistencia con tus ULIDs
+		name: text("name", { length: 200 }).notNull(),
+		email: text("email", { length: 200 }).notNull(),
+		profileImageUrl: text("profile_image_url"),
+
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.default(sqliteNowEffort)
+			.notNull(),
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.default(sqliteNowEffort)
+			.$onUpdateFn(() => new Date())
+			.notNull(),
+	},
+	(table) => [
+		uniqueIndex("users_email_unique_idx").on(table.email),
+		index("users_name_idx").on(table.name),
+	],
+);

@@ -21,7 +21,6 @@ export class Result<T = void> {
 
 	public get value(): T {
 		if (this.isFailure) {
-			console.error("No se puede obtener el valor de un resultado fallido.");
 			return undefined as T;
 		}
 		return this._value as T;
@@ -29,9 +28,6 @@ export class Result<T = void> {
 
 	public get error(): ErrorDetails {
 		if (this.isSuccess) {
-			console.error(
-				"No se pueden obtener los detalles de error de un resultado exitoso.",
-			);
 			return undefined as unknown as ErrorDetails;
 		}
 		return this._error as ErrorDetails;
@@ -68,5 +64,11 @@ export class Result<T = void> {
 export class Created {
 	static toResult(): Result<Created> {
 		return Result.success(new Created());
+	}
+}
+
+export class Updated {
+	static toResult(): Result<Updated> {
+		return Result.success(new Updated());
 	}
 }

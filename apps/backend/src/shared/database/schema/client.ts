@@ -1,27 +1,36 @@
 import {
 	index,
-	pgTable,
+	integer,
+	sqliteTable,
+	text,
 	uniqueIndex,
-	uuid,
-	varchar,
-} from "drizzle-orm/pg-core";
-import { timestamps } from "../helpers";
+} from "drizzle-orm/sqlite-core";
+import { sqliteNowEffort } from "../helpers";
 import { workspaces } from "./workspace";
 
-export const clients = pgTable(
+export const clients = sqliteTable(
 	"clients",
 	{
-		id: uuid("id").primaryKey(),
-		workspaceId: uuid("workspace_id")
+		id: text("id", { length: 26 }).primaryKey(),
+		workspaceId: text("workspace_id")
 			.references(() => workspaces.id, { onDelete: "cascade" })
 			.notNull(),
-		name: varchar("name", { length: 150 }).notNull(),
-		phoneNumber: varchar("phone_number", { length: 20 }).notNull(),
-		email: varchar("email", { length: 200 }).notNull(),
-		...timestamps,
+		name: text("name", { length: 150 }).notNull(),
+		phoneNumber: text("phone_number", { length: 20 }).notNull(),
+		email: text("email", { length: 200 }).notNull(),
+
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.default(sqliteNowEffort)
+			.notNull(),
+
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.default(sqliteNowEffort)
+			.$onUpdateFn(() => new Date())
+			.notNull(),
 	},
 	(table) => [
-		index("clients_name_idx").on(table.name),
+		index("clients_workspace_name_idx").on(table.workspaceId, table.name),
+
 		uniqueIndex("client_email_workspace_idx").on(
 			table.email,
 			table.workspaceId,

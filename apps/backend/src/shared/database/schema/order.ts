@@ -1,34 +1,45 @@
-import { index, pgTable, text, uuid, varchar } from "drizzle-orm/pg-core";
-import { timestamps } from "../helpers";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sqliteNowEffort } from "../helpers";
 import { clients } from "./client";
 import { users } from "./user";
 import { workspaces } from "./workspace";
 
-export const orders = pgTable(
+export const orders = sqliteTable(
 	"orders",
 	{
-		id: uuid("id").primaryKey(),
-		clientId: uuid("client_id")
-			.references(() => clients.id)
+		id: text("id", { length: 26 }).primaryKey(),
+
+		workspaceId: text("workspace_id", { length: 26 })
+			.references(() => workspaces.id, { onDelete: "cascade" })
 			.notNull(),
-		documentUrl: text("document_url").notNull(),
-		deviceModel: varchar("device_model", { length: 100 }).notNull(),
-		deviceBrand: varchar("device_brand", { length: 50 }).notNull(),
-		deviceSerialNumber: varchar("device_serial_number", {
-			length: 200,
-		}).notNull(),
-		issueDescription: text("issue_description").notNull(),
-		workspaceId: uuid("workspace_id")
-			.references(() => workspaces.id)
+
+		clientId: text("client_id", { length: 26 })
+			.references(() => clients.id, { onDelete: "cascade" })
 			.notNull(),
-		userId: uuid("user_id")
+
+		userId: text("user_id", { length: 26 })
 			.references(() => users.id)
 			.notNull(),
-		...timestamps,
+
+		deviceModel: text("device_model", { length: 100 }).notNull(),
+		deviceBrand: text("device_brand", { length: 50 }).notNull(),
+		deviceSerialNumber: text("device_serial_number", { length: 200 }).notNull(),
+
+		documentUrl: text("document_url"),
+		observations: text("observations").notNull(),
+
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.default(sqliteNowEffort)
+			.notNull(),
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.default(sqliteNowEffort)
+			.$onUpdateFn(() => new Date())
+			.notNull(),
 	},
 	(table) => [
-		index("orders_client_id_idx").on(table.clientId),
 		index("orders_workspace_id_idx").on(table.workspaceId),
+		index("orders_client_id_idx").on(table.clientId),
 		index("orders_user_id_idx").on(table.userId),
+		index("orders_workspace_date_idx").on(table.workspaceId, table.createdAt),
 	],
 );

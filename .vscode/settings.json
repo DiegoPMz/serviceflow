@@ -1,5 +1,12 @@
 {
-	"cSpell.words": ["elysia", "postgres", "serviceflow", "supabase"],
+	"cSpell.words": [
+		"elysia",
+		"libsql",
+		"postgres",
+		"serviceflow",
+		"supabase",
+		"Testcontainer"
+	],
 
 	"editor.defaultFormatter": "biomejs.biome",
 	"biome.requireConfiguration": true,

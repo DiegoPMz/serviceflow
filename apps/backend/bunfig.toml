@@ -1,2 +1,2 @@
 [test]
-globalSetup = ["./src/shared/tests/setup.ts"]
+preload = ["./src/shared/tests/setup.ts"]
