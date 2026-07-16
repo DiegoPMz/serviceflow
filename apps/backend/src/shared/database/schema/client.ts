@@ -18,6 +18,7 @@ export const clients = sqliteTable(
 		name: text("name", { length: 150 }).notNull(),
 		phoneNumber: text("phone_number", { length: 20 }).notNull(),
 		email: text("email", { length: 200 }).notNull(),
+		location: text("location").notNull(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)

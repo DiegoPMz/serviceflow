@@ -1,6 +1,7 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sqliteNowEffort } from "../helpers";
 import { clients } from "./client";
+import { deviceComponents } from "./device";
 import { users } from "./user";
 import { workspaces } from "./workspace";
 
@@ -21,9 +22,24 @@ export const orders = sqliteTable(
 			.references(() => users.id)
 			.notNull(),
 
-		deviceModel: text("device_model", { length: 100 }).notNull(),
-		deviceBrand: text("device_brand", { length: 50 }).notNull(),
-		deviceSerialNumber: text("device_serial_number", { length: 200 }).notNull(),
+		clientNameSnapshot: text("client_name_snapshot", { length: 200 }).notNull(),
+		clientEmailSnapshot: text("client_email_snapshot", {
+			length: 250,
+		}).notNull(),
+		clientPhoneSnapshot: text("client_phone_snapshot", {
+			length: 15,
+		}).notNull(),
+		clientLocationSnapshot: text("client_location_snapshot").notNull(),
+
+		deviceBrandSnapshot: text("device_brand_snapshot", {
+			length: 50,
+		}).notNull(),
+		deviceModelSnapshot: text("device_model_snapshot", {
+			length: 100,
+		}).notNull(),
+		deviceSerialNumberSnapshot: text("device_serial_number_snapshot", {
+			length: 200,
+		}).notNull(),
 
 		documentUrl: text("document_url"),
 		observations: text("observations").notNull(),
@@ -43,3 +59,24 @@ export const orders = sqliteTable(
 		index("orders_workspace_date_idx").on(table.workspaceId, table.createdAt),
 	],
 );
+
+export const orderComponents = sqliteTable("order_components", {
+	id: text("id", { length: 26 }).primaryKey(),
+
+	orderId: text("order_id")
+		.notNull()
+		.references(() => orders.id, { onDelete: "cascade" }),
+
+	deviceComponentId: text("device_component_id")
+		.notNull()
+		.references(() => deviceComponents.id, { onDelete: "restrict" }),
+
+	quantity: integer("quantity").notNull().default(1),
+
+	componentNameSnapshot: text("component_name_snapshot").notNull(),
+	partNumberSnapshot: text("part_number_snapshot"),
+
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.default(sqliteNowEffort)
+		.notNull(),
+});
