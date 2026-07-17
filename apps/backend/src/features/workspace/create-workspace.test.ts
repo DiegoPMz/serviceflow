@@ -6,13 +6,15 @@ import {
 } from "@serviceflow/backend/shared/database";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { and, eq } from "drizzle-orm";
+import { isValid, ulid } from "ulidx";
 import { PREFIX_REGEX } from "./common/workspace.model";
+import { workspaceDrizzleRepository } from "./common/workspace-drizzle-repository";
 import { createWorkspace } from "./create-workspace";
 
 describe("Workspace-Create Integration Tests", () => {
 	test("Should create a workspace if all the data is valid", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -22,7 +24,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			const result = await createWorkspace({
 				command: { userId, workspaceName: "Test Workspace" },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			expect(result.isSuccess).toBeTrue();
@@ -54,7 +56,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should return WORKSPACE_NAME_REQUIRED when name is empty", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -64,7 +66,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			const result = await createWorkspace({
 				command: { userId, workspaceName: "" },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -77,7 +79,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should return WORKSPACE_NAME_REQUIRED when name is whitespace only", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -87,7 +89,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			const result = await createWorkspace({
 				command: { userId, workspaceName: "   " },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -100,7 +102,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should return WORKSPACE_NAME_TOO_LONG when name exceeds 250 chars", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -110,7 +112,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			const result = await createWorkspace({
 				command: { userId, workspaceName: "a".repeat(251) },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -123,7 +125,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should trim workspace name", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -133,7 +135,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			const result = await createWorkspace({
 				command: { userId, workspaceName: "  Trimmed  " },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -150,7 +152,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should assign role as owner to the member", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -160,7 +162,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			await createWorkspace({
 				command: { userId, workspaceName: "Owner Test" },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			const [workspace] = await tx
@@ -182,9 +184,9 @@ describe("Workspace-Create Integration Tests", () => {
 		});
 	});
 
-	test("Should assign a valid UUID to the workspace", async () => {
+	test("Should assign a valid Id to the workspace", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -194,7 +196,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			await createWorkspace({
 				command: { userId, workspaceName: "UUID Test" },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			const [workspace] = await tx
@@ -202,15 +204,13 @@ describe("Workspace-Create Integration Tests", () => {
 				.from(workspaces)
 				.where(eq(workspaces.name, "UUID Test"));
 
-			const uuidRegex =
-				/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-			expect(uuidRegex.test(workspace?.id ?? "")).toBe(true);
+			expect(isValid(workspace?.id as string)).toBe(true);
 		});
 	});
 
 	test("Should set createdAt and updatedAt timestamps", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -220,7 +220,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			await createWorkspace({
 				command: { userId, workspaceName: "Timestamp Test" },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			const [workspace] = await tx
@@ -235,7 +235,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should generate a prefix with 4-6 uppercase letters when not provided", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -245,7 +245,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			await createWorkspace({
 				command: { userId, workspaceName: "Prefix Test" },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			const [workspace] = await tx
@@ -261,7 +261,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should generate different prefixes for multiple workspaces", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -274,7 +274,7 @@ describe("Workspace-Create Integration Tests", () => {
 			for (let i = 0; i < 10; i++) {
 				await createWorkspace({
 					command: { userId, workspaceName: `Prefix Test ${i}` },
-					dbClient: tx,
+					repository: workspaceDrizzleRepository(tx),
 				});
 
 				const [workspace] = await tx
@@ -293,7 +293,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should set orderCount to 0 by default", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = crypto.randomUUID();
+			const userId = ulid();
 
 			await tx.insert(users).values({
 				id: userId,
@@ -303,7 +303,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			await createWorkspace({
 				command: { userId, workspaceName: "Order Count Test" },
-				dbClient: tx,
+				repository: workspaceDrizzleRepository(tx),
 			});
 
 			const [workspace] = await tx

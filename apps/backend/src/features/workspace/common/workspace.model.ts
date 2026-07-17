@@ -1,25 +1,54 @@
 import { Result } from "@serviceflow/backend/shared/result";
-import { randomUUIDv7 } from "bun";
+import { ulid } from "ulidx";
 import { workspaceErrors } from "./workspace.errors";
 
 export interface CreateWorkspaceData {
 	name: string;
-	prefix?: string;
-	orderCount?: number;
+	ownerId: string;
 }
 
 export const PREFIX_REGEX: RegExp = /^[A-Z]{4,6}$/;
 
 export class Workspace {
 	private constructor(
-		public id: string,
-		public name: string,
-		public createdAt: Date,
-		public updatedAt: Date,
+		public readonly id: string,
+		public readonly name: string,
+		public readonly createdAt: Date,
+		public readonly updatedAt: Date,
 
-		public orderCount: number,
+		private _orderCount: number,
 		public readonly prefix: string,
+
+		public readonly ownerId: string,
 	) {}
+
+	get orderCount(): number {
+		return this._orderCount;
+	}
+
+	increaseCount() {
+		this._orderCount += 1;
+	}
+
+	static reconstitute(data: {
+		id: string;
+		name: string;
+		createdAt: Date;
+		updatedAt: Date;
+		orderCount: number;
+		prefix: string;
+		ownerId: string;
+	}): Workspace {
+		return new Workspace(
+			data.id,
+			data.name,
+			data.createdAt,
+			data.updatedAt,
+			data.orderCount,
+			data.prefix,
+			data.ownerId,
+		);
+	}
 
 	static create(data: CreateWorkspaceData): Result<Workspace> {
 		if (!data.name || data.name.trim().length < 1) {
@@ -30,48 +59,22 @@ export class Workspace {
 			return Result.failure(workspaceErrors.WORKSPACE_NAME_TOO_LONG);
 		}
 
-		const prefixResult = Workspace.validateOrGeneratePrefix(data.prefix);
-		if (prefixResult.isFailure) {
-			return Result.failure(prefixResult.error);
+		if (!data.ownerId) {
+			return Result.failure(workspaceErrors.WORKSPACE_OWNER_REQUIRED);
 		}
 
 		const now = new Date();
 		return Result.success(
 			new Workspace(
-				randomUUIDv7(),
+				ulid(),
 				data.name.trim(),
 				now,
 				now,
-				data.orderCount ?? 0,
-				prefixResult.value,
+				0,
+				Workspace.generatePrefix(),
+				data.ownerId,
 			),
 		);
-	}
-
-	private static validateOrGeneratePrefix(prefix?: string): Result<string> {
-		if (prefix !== undefined) {
-			if (!prefix || prefix.trim().length === 0) {
-				return Result.failure(workspaceErrors.WORKSPACE_PREFIX_REQUIRED);
-			}
-
-			const trimmedPrefix = prefix.trim();
-
-			if (trimmedPrefix.length < 4) {
-				return Result.failure(workspaceErrors.WORKSPACE_PREFIX_TOO_SHORT);
-			}
-
-			if (trimmedPrefix.length > 6) {
-				return Result.failure(workspaceErrors.WORKSPACE_PREFIX_TOO_LONG);
-			}
-
-			if (!PREFIX_REGEX.test(trimmedPrefix)) {
-				return Result.failure(workspaceErrors.WORKSPACE_PREFIX_INVALID_FORMAT);
-			}
-
-			return Result.success(trimmedPrefix);
-		}
-
-		return Result.success(Workspace.generatePrefix());
 	}
 
 	private static generatePrefix(): string {

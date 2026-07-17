@@ -33,4 +33,12 @@ export const workspaceErrors = {
 		"WORKSPACE_PREFIX_INVALID_FORMAT",
 		"El prefijo debe contener solo letras mayúsculas (A-Z).",
 	),
+	WORKSPACE_OWNER_REQUIRED: new ErrorDetails(
+		"WORKSPACE_OWNER_REQUIRED",
+		"El propietario del workspace es requerido.",
+	),
+	WORKSPACE_NOT_FOUND: new ErrorDetails(
+		"WORKSPACE_NOT_FOUND",
+		"El workspace especificado no fue encontrado.",
+	),
 } as const;

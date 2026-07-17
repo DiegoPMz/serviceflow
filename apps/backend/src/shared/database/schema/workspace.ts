@@ -53,9 +53,6 @@ export const workspaceMembers = sqliteTable(
 		joinedAt: integer("joined_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)
 			.notNull(),
-		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
-			.notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)
 			.$onUpdateFn(() => new Date())

@@ -10,7 +10,7 @@ import { sqliteNowEffort } from "../helpers";
 export const users = sqliteTable(
 	"users",
 	{
-		id: text("id", { length: 26 }).primaryKey(), // Consistencia con tus ULIDs
+		id: text("id", { length: 26 }).primaryKey(),
 		name: text("name", { length: 200 }).notNull(),
 		email: text("email", { length: 200 }).notNull(),
 		profileImageUrl: text("profile_image_url"),
