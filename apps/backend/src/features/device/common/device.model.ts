@@ -85,6 +85,30 @@ export class Device {
 		this._components.push(component.value);
 		return Updated.toResult();
 	}
+
+	static reconstitute(values: {
+		id: string;
+		workspaceId: string;
+		clientId: string;
+		serialNumber: string;
+		brand: string;
+		model: string;
+		components: DeviceComponent[];
+		createdAt: Date;
+		updatedAt: Date;
+	}): Device {
+		return new Device(
+			values.id,
+			values.workspaceId,
+			values.clientId,
+			values.serialNumber,
+			values.brand,
+			values.model,
+			values.components,
+			values.createdAt,
+			values.updatedAt,
+		);
+	}
 }
 
 type AddComponent = Omit<DeviceComponent, "id" | "createdAt" | "updatedAt">;
@@ -132,6 +156,24 @@ export class DeviceComponent {
 				now,
 				now,
 			),
+		);
+	}
+
+	static reconstitute(values: {
+		id: string;
+		name: string;
+		partNumber: string;
+		type: ComponentType;
+		createdAt: Date;
+		updatedAt: Date;
+	}): DeviceComponent {
+		return new DeviceComponent(
+			values.id,
+			values.name,
+			values.partNumber,
+			values.type,
+			values.createdAt,
+			values.updatedAt,
 		);
 	}
 }

@@ -45,4 +45,8 @@ export const ClientErrors = {
 		"CLIENT_ALREADY_EXISTS",
 		"Ya existe un cliente con el mismo email o teléfono en este workspace.",
 	),
+	CLIENT_NOT_FOUND: new ErrorDetails(
+		"CLIENT_NOT_FOUND",
+		"El cliente especificado no fue encontrado en este workspace.",
+	),
 } as const;

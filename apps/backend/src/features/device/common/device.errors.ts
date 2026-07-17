@@ -57,4 +57,14 @@ export const DeviceErrors = {
 		"DEVICE_ALREADY_EXISTS",
 		"Ya existe un dispositivo con el mismo número de serie en este workspace.",
 	),
+	DEVICE_COMPONENT_NOT_FOUND: (componentId: string) =>
+		new ErrorDetails(
+			"DEVICE_COMPONENT_NOT_FOUND",
+			"El componente especificado no pertenece al dispositivo registrado.",
+			new Map().set("componentId", componentId),
+		),
+	DEVICE_NOT_FOUND: new ErrorDetails(
+		"DEVICE_NOT_FOUND",
+		"El dispositivo especificado no fue encontrado en este workspace.",
+	),
 } as const;

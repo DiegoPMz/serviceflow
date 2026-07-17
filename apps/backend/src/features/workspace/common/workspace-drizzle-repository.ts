@@ -3,7 +3,7 @@ import {
 	workspaceMembers,
 	workspaces,
 } from "@serviceflow/backend/shared/database";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Workspace } from "./workspace.model";
 import type { WorkspaceRepository } from "./workspace-repository";
 
@@ -50,9 +50,7 @@ export const workspaceDrizzleRepository = (
 				workspaceMembers,
 				eq(workspaceMembers.workspaceId, workspaces.id),
 			)
-			.where(
-				and(eq(workspaces.id, workspaceId), eq(workspaceMembers.role, "owner")),
-			);
+			.where(eq(workspaces.id, workspaceId));
 
 		if (!workspace) return null;
 

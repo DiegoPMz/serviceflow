@@ -3,7 +3,8 @@ import {
 	deviceComponents,
 	devices,
 } from "@serviceflow/backend/shared/database";
-import type { Device } from "./device.model";
+import { and, eq } from "drizzle-orm";
+import { Device, DeviceComponent } from "./device.model";
 import type { DeviceRepository } from "./device-repository";
 
 export const deviceDrizzleRepository = (
@@ -34,11 +35,44 @@ export const deviceDrizzleRepository = (
 		}
 	},
 
-	getByIds: (
-		_deviceId: string,
-		_workspaceId: string,
+	getByIds: async (
+		deviceId: string,
+		workspaceId: string,
 	): Promise<Device | null> => {
-		throw new Error("Function not implemented.");
+		const [device] = await db
+			.select()
+			.from(devices)
+			.where(
+				and(eq(devices.id, deviceId), eq(devices.workspaceId, workspaceId)),
+			);
+
+		if (!device) return null;
+
+		const components = await db
+			.select()
+			.from(deviceComponents)
+			.where(eq(deviceComponents.deviceId, deviceId));
+
+		return Device.reconstitute({
+			id: device.id,
+			workspaceId: device.workspaceId,
+			clientId: device.clientId,
+			serialNumber: device.serialNumber,
+			brand: device.brand,
+			model: device.model,
+			components: components.map((component) =>
+				DeviceComponent.reconstitute({
+					id: component.id,
+					name: component.name,
+					partNumber: component.partNumber,
+					type: component.type,
+					createdAt: component.createdAt,
+					updatedAt: component.updatedAt,
+				}),
+			),
+			createdAt: device.createdAt,
+			updatedAt: device.updatedAt,
+		});
 	},
 
 	exists: async (values: {
