@@ -1,14 +1,23 @@
 import {
 	type DatabaseClient,
+	type DatabaseType,
 	deviceComponents,
 	devices,
 } from "@serviceflow/backend/shared/database";
-import { and, eq } from "drizzle-orm";
+import {
+	Cursor,
+	type Pagination,
+	type SortDirection,
+} from "@serviceflow/backend/shared/pagination";
+import { and, asc, desc, eq, gt, like, lt, or, type SQL } from "drizzle-orm";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
+import type { DeviceCursor, DeviceOrderBy } from "../paginated-devices";
 import { Device, DeviceComponent } from "./device.model";
+import type { DeviceReadModel } from "./device.read-model";
 import type { DeviceRepository } from "./device-repository";
 
 export const deviceDrizzleRepository = (
-	db: DatabaseClient,
+	db: DatabaseClient | DatabaseType,
 ): DeviceRepository => ({
 	save: async (model: Device): Promise<void> => {
 		await db.insert(devices).values({
@@ -89,5 +98,123 @@ export const deviceDrizzleRepository = (
 		});
 
 		return !!device;
+	},
+
+	getAllPaginated: async ({
+		limit,
+		cursor,
+		orderBy,
+		direction,
+		search,
+		workspaceId,
+		clientId,
+	}: {
+		limit: number;
+		cursor?: DeviceCursor;
+		orderBy: DeviceOrderBy;
+		direction: SortDirection;
+		search?: string;
+		workspaceId: string;
+		clientId?: string;
+	}): Promise<Pagination<DeviceReadModel>> => {
+		const orderByMapper: Record<DeviceOrderBy, SQLiteColumn> = {
+			id: devices.id,
+			clientId: devices.clientId,
+			brand: devices.brand,
+			model: devices.model,
+			serialNumber: devices.serialNumber,
+		};
+
+		const valueMapper: Record<
+			DeviceOrderBy,
+			(device: DeviceReadModel) => string
+		> = {
+			id: (device) => device.id,
+			clientId: (device) => device.clientId,
+			brand: (device) => device.brand,
+			model: (device) => device.model,
+			serialNumber: (device) => device.serialNumber,
+		};
+
+		const dbField = orderByMapper[orderBy];
+
+		const searchCondition = search
+			? or(
+					like(devices.brand, `%${search}%`),
+					like(devices.model, `%${search}%`),
+					like(devices.serialNumber, `%${search}%`),
+				)
+			: undefined;
+
+		const clientCondition = clientId
+			? eq(devices.clientId, clientId)
+			: undefined;
+
+		const sortCondition = buildSortConditions();
+
+		const devicesDb = await db
+			.select({
+				id: devices.id,
+				clientId: devices.clientId,
+				serialNumber: devices.serialNumber,
+				brand: devices.brand,
+				model: devices.model,
+			})
+			.from(devices)
+			.where(
+				and(
+					eq(devices.workspaceId, workspaceId),
+					clientCondition,
+					searchCondition,
+					sortCondition,
+				),
+			)
+			.orderBy(...buildOrderBy())
+			.limit(limit + 1);
+
+		const hasNextPage = devicesDb.length > limit;
+		const items = devicesDb.slice(0, limit);
+		const lastItem = items.at(-1);
+
+		let nextCursor: string | null = null;
+
+		if (hasNextPage && lastItem) {
+			nextCursor = Cursor.encode<DeviceCursor>({
+				id: lastItem.id,
+				orderBy,
+				direction,
+				value: valueMapper[orderBy](lastItem),
+			});
+		}
+
+		return {
+			items,
+			cursor: nextCursor,
+			hasNextPage,
+		};
+
+		function buildOrderBy(): SQL[] {
+			return direction === "desc"
+				? [desc(dbField), desc(devices.id)]
+				: [asc(dbField), asc(devices.id)];
+		}
+
+		function buildSortConditions(): SQL | undefined {
+			if (!cursor) return undefined;
+
+			const value = cursor.value;
+
+			if (direction === "desc") {
+				return or(
+					lt(dbField, value),
+					and(eq(dbField, value), lt(devices.id, cursor.id)),
+				);
+			}
+
+			return or(
+				gt(dbField, value),
+				and(eq(dbField, value), gt(devices.id, cursor.id)),
+			);
+		}
 	},
 });
