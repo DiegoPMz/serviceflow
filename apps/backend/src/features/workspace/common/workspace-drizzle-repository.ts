@@ -1,14 +1,26 @@
 import {
 	type DatabaseClient,
+	type DatabaseType,
 	workspaceMembers,
 	workspaces,
 } from "@serviceflow/backend/shared/database";
-import { eq } from "drizzle-orm";
+import {
+	Cursor,
+	type Pagination,
+	type SortDirection,
+} from "@serviceflow/backend/shared/pagination";
+import { and, asc, desc, eq, gt, like, lt, or, type SQL } from "drizzle-orm";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
+import type {
+	WorkspaceCursor,
+	WorkspaceOrderBy,
+} from "../paginated-workspaces";
 import { Workspace } from "./workspace.model";
+import type { WorkspaceReadModel } from "./workspace.read-model";
 import type { WorkspaceRepository } from "./workspace-repository";
 
 export const workspaceDrizzleRepository = (
-	db: DatabaseClient,
+	db: DatabaseClient | DatabaseType,
 ): WorkspaceRepository => ({
 	save: async (model: Workspace): Promise<void> => {
 		await db.insert(workspaces).values({
@@ -63,5 +75,107 @@ export const workspaceDrizzleRepository = (
 			prefix: workspace.prefix,
 			ownerId: workspace.ownerId,
 		});
+	},
+	getAllPaginated: async ({
+		orderBy,
+		direction,
+		limit,
+		cursor,
+		search,
+		userId,
+	}: {
+		limit: number;
+		cursor?: WorkspaceCursor;
+		orderBy: WorkspaceOrderBy;
+		direction: SortDirection;
+		search?: string;
+		userId: string;
+	}): Promise<Pagination<WorkspaceReadModel>> => {
+		const orderByMapper: Record<WorkspaceOrderBy, SQLiteColumn> = {
+			name: workspaces.name,
+			id: workspaces.id,
+			updatedAt: workspaces.updatedAt,
+		};
+
+		const valueMapper: Record<
+			WorkspaceOrderBy,
+			(workspace: WorkspaceReadModel) => string | Date
+		> = {
+			name: (workspace) => workspace.name,
+			id: (workspace) => workspace.id,
+			updatedAt: (workspace) => workspace.updatedAt,
+		};
+
+		const dbField = orderByMapper[orderBy];
+
+		const searchCondition = search
+			? or(like(workspaces.name, `%${search}%`))
+			: undefined;
+
+		const sortCondition = buildSortConditions();
+
+		const workspacesDb = await db
+			.select({
+				id: workspaces.id,
+				name: workspaces.name,
+				createdAt: workspaces.createdAt,
+				updatedAt: workspaces.updatedAt,
+			})
+			.from(workspaces)
+			.innerJoin(
+				workspaceMembers,
+				and(
+					eq(workspaceMembers.workspaceId, workspaces.id),
+					eq(workspaceMembers.userId, userId),
+				),
+			)
+			.where(and(searchCondition, sortCondition))
+			.orderBy(...buildOrderBy())
+			.limit(limit + 1);
+
+		const hasNextPage = workspacesDb.length > limit;
+		const items = workspacesDb.slice(0, limit);
+		const lastItem = items.at(-1);
+
+		let nextCursor: string | null = null;
+
+		if (hasNextPage && lastItem) {
+			nextCursor = Cursor.encode<WorkspaceCursor>({
+				id: lastItem.id,
+				orderBy,
+				direction,
+				value: valueMapper[orderBy](lastItem),
+			});
+		}
+
+		return {
+			items,
+			cursor: nextCursor,
+			hasNextPage,
+		};
+
+		function buildOrderBy(): SQL[] {
+			return direction === "desc"
+				? [desc(dbField), desc(workspaces.id)]
+				: [asc(dbField), asc(workspaces.id)];
+		}
+
+		function buildSortConditions(): SQL | undefined {
+			if (!cursor) return undefined;
+
+			const value = cursor.value;
+
+			if (direction === "desc") {
+				return or(
+					lt(dbField, value),
+					and(eq(dbField, value), lt(workspaces.id, cursor.id)),
+				);
+			}
+
+			return or(
+				gt(dbField, value),
+				and(eq(dbField, value), gt(workspaces.id, cursor.id)),
+			);
+		}
 	},
 });

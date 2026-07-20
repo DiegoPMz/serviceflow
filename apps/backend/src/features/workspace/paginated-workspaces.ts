@@ -1,146 +1,57 @@
 import {
-	type DatabaseClient,
-	workspaceMembers,
-	workspaces,
-} from "@serviceflow/backend/shared/database";
-import {
 	Cursor,
 	type Pagination,
+	type PaginationCursor,
+	type SortDirection,
 } from "@serviceflow/backend/shared/pagination";
 import { Result } from "@serviceflow/backend/shared/result";
-import { and, asc, desc, eq, gt, lt, or } from "drizzle-orm";
-import { workspaceErrors } from "./common/workspace.errors";
+import type { WorkspaceReadModel } from "./common/workspace.read-model";
+import type { WorkspaceRepository } from "./common/workspace-repository";
 
-interface WorkspacePaginationSort {
-	field: "createdAt" | "updatedAt";
-	order: "asc" | "desc";
-}
+export type WorkspaceOrderBy = "updatedAt" | "name" | "id";
 
-interface PaginatedWorkspacesQuery {
-	userId: string;
-	cursor?: string | null;
+interface PaginationWorkspaceRequest {
 	limit: number;
-	sort?: WorkspacePaginationSort;
+	cursor?: string;
+	orderBy: WorkspaceOrderBy;
+	direction: SortDirection;
+	search?: string;
 }
 
-interface WorkspaceSummaryReadModel {
-	id: string;
-	name: string;
-	createdAt: Date;
-	updatedAt: Date;
-}
+export type WorkspaceCursor = PaginationCursor<WorkspaceOrderBy, string | Date>;
 
-const MAX_LIMIT = 50;
-const DEFAULT_SORT: WorkspacePaginationSort = {
-	field: "createdAt",
-	order: "desc",
+type PaginatedDevicesQuery = {
+	paginationRequest: PaginationWorkspaceRequest;
+	userId: string;
 };
 
-interface CursorInnerValue {
-	field: WorkspacePaginationSort["field"];
-	sortOrder: WorkspacePaginationSort["order"];
-	id: string;
-	value: string;
+interface PaginatedWorkspaceProps {
+	query: PaginatedDevicesQuery;
+	repository: WorkspaceRepository;
 }
 
-interface props {
-	query: PaginatedWorkspacesQuery;
-	dbClient: DatabaseClient;
-}
+export const getPaginatedWorkspaces = async ({
+	query,
+	repository,
+}: PaginatedWorkspaceProps): Promise<
+	Result<Pagination<WorkspaceReadModel>>
+> => {
+	const { paginationRequest: pagination, userId } = query;
 
-export async function getPaginatedWorkspaces({
-	query: { limit, userId, cursor, sort = DEFAULT_SORT },
-	dbClient,
-}: props): Promise<Result<Pagination<WorkspaceSummaryReadModel[]>>> {
-	if (limit < 1 || limit > MAX_LIMIT)
-		return Result.failure(workspaceErrors.WORKSPACE_LIMIT_EXCEEDED);
+	const cursor = Cursor.validate<WorkspaceCursor>(pagination);
 
-	let decodedCursor: CursorInnerValue | null = null;
-
-	if (cursor) {
-		decodedCursor = Cursor.decode<CursorInnerValue>(cursor);
-
-		if (!decodedCursor)
-			return Result.failure(workspaceErrors.WORKSPACE_INVALID_CURSOR);
-
-		if (
-			decodedCursor.field !== sort.field ||
-			decodedCursor.sortOrder !== sort.order
-		)
-			return Result.failure(workspaceErrors.WORKSPACE_INVALID_CURSOR);
+	if (cursor.isFailure) {
+		return Result.failure(cursor.error);
 	}
 
-	const sortColumn =
-		sort.field === "createdAt" ? workspaces.createdAt : workspaces.updatedAt;
-
-	const isSortDesc = sort.order === "desc";
-	const queryConditions = [eq(workspaceMembers.userId, userId)];
-
-	if (decodedCursor) {
-		const cursorCondition = buildCursorCondition(decodedCursor);
-		if (cursorCondition) queryConditions.push(cursorCondition);
-	}
-
-	const values: WorkspaceSummaryReadModel[] = await dbClient
-		.select({
-			id: workspaces.id,
-			name: workspaces.name,
-			createdAt: workspaces.createdAt,
-			updatedAt: workspaces.updatedAt,
-		})
-		.from(workspaces)
-		.innerJoin(
-			workspaceMembers,
-			eq(workspaceMembers.workspaceId, workspaces.id),
-		)
-		.where(and(...queryConditions))
-		.orderBy(
-			isSortDesc ? desc(sortColumn) : asc(sortColumn),
-			isSortDesc ? desc(workspaces.id) : asc(workspaces.id),
-		)
-		.limit(limit + 1);
-
-	const hasNextPage = values.length > limit;
-	const items = hasNextPage ? values.slice(0, limit) : values;
-	const lastItem = items[items.length - 1];
-
-	const nextCursor =
-		hasNextPage && lastItem
-			? Cursor.encode<CursorInnerValue>({
-					sortOrder: sort.order,
-					field: sort.field,
-					value:
-						sort.field === "createdAt"
-							? lastItem.createdAt.toISOString()
-							: lastItem.updatedAt.toISOString(),
-					id: lastItem.id,
-				})
-			: null;
-
-	return Result.success({
-		items,
-		cursor: nextCursor,
-		hasNextPage,
+	const workspaces = await repository.getAllPaginated({
+		limit: pagination.limit,
+		search: pagination.search,
+		orderBy: pagination.orderBy,
+		direction: pagination.direction,
+		cursor: cursor.value ?? undefined,
+		userId,
 	});
-}
 
-function buildCursorCondition(cursorValue: CursorInnerValue) {
-	const dateColumn =
-		cursorValue.field === "createdAt"
-			? workspaces.createdAt
-			: workspaces.updatedAt;
-
-	const isDesc = cursorValue.sortOrder === "desc";
-	const dateValue = new Date(cursorValue.value);
-
-	if (isDesc)
-		return or(
-			lt(dateColumn, dateValue),
-			and(eq(dateColumn, dateValue), lt(workspaces.id, cursorValue.id)),
-		);
-
-	return or(
-		gt(dateColumn, dateValue),
-		and(eq(dateColumn, dateValue), gt(workspaces.id, cursorValue.id)),
-	);
-}
+	return Result.success(workspaces);
+};
