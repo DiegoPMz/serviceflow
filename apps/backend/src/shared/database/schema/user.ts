@@ -13,7 +13,10 @@ export const users = sqliteTable(
 		id: text("id", { length: 26 }).primaryKey(),
 		name: text("name", { length: 200 }).notNull(),
 		email: text("email", { length: 200 }).notNull(),
-		profileImageUrl: text("profile_image_url"),
+		pictureUrl: text("picture_url"),
+		lastName: text("last_name"),
+		phone: text("phone").unique(),
+		externalId: text("external_id").notNull().unique(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)
