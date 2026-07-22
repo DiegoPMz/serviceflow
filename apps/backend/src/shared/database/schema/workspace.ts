@@ -12,10 +12,17 @@ import { users } from "./user";
 export const workspaces = sqliteTable(
 	"workspaces",
 	{
-		id: text("id", { length: 26 }).primaryKey(), // Consistencia con ULID
+		id: text("id", { length: 26 }).primaryKey(),
 		name: text("name", { length: 250 }).notNull(),
 		prefix: text("prefix", { length: 7 }).notNull(),
 		orderCount: integer("order_count").default(0).notNull(),
+
+		companyName: text("company_name", { length: 150 }).notNull(),
+		companyPhone: text("company_phone", { length: 50 }).notNull(),
+		companyEmail: text("company_email", { length: 150 }).notNull(),
+		companyAddress: text("company_address", { length: 255 }).notNull(),
+		companyLogoUrl: text("company_logo_url"),
+
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)
 			.notNull(),

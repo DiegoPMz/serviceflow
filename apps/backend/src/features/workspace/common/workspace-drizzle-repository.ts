@@ -28,6 +28,11 @@ export const workspaceDrizzleRepository = (
 			name: model.name,
 			prefix: model.prefix,
 			orderCount: model.orderCount,
+			companyName: model.company.name,
+			companyEmail: model.company.email,
+			companyPhone: model.company.phone,
+			companyAddress: model.company.address,
+			companyLogoUrl: model.company.logoUrl,
 			createdAt: model.createdAt,
 			updatedAt: model.updatedAt,
 		});
@@ -56,6 +61,11 @@ export const workspaceDrizzleRepository = (
 				orderCount: workspaces.orderCount,
 				prefix: workspaces.prefix,
 				ownerId: workspaceMembers.userId,
+				companyName: workspaces.companyName,
+				companyEmail: workspaces.companyEmail,
+				companyPhone: workspaces.companyPhone,
+				companyAddress: workspaces.companyAddress,
+				companyLogoUrl: workspaces.companyLogoUrl,
 			})
 			.from(workspaces)
 			.innerJoin(
@@ -74,6 +84,13 @@ export const workspaceDrizzleRepository = (
 			orderCount: workspace.orderCount,
 			prefix: workspace.prefix,
 			ownerId: workspace.ownerId,
+			workspaceCompany: {
+				name: workspace.companyName,
+				phone: workspace.companyPhone,
+				email: workspace.companyEmail,
+				address: workspace.companyAddress,
+				logoUrl: workspace.companyLogoUrl,
+			},
 		});
 	},
 	getAllPaginated: async ({

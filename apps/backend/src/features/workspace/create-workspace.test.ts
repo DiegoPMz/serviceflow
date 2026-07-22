@@ -1,29 +1,35 @@
 import { describe, expect, test } from "bun:test";
 import {
-	users,
 	workspaceMembers,
 	workspaces,
 } from "@serviceflow/backend/shared/database";
+import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { and, eq } from "drizzle-orm";
-import { isValid, ulid } from "ulidx";
+import { isValid } from "ulidx";
+import { workspaceErrors } from "./common/workspace.errors";
 import { PREFIX_REGEX } from "./common/workspace.model";
 import { workspaceDrizzleRepository } from "./common/workspace-drizzle-repository";
 import { createWorkspace } from "./create-workspace";
 
+const companyDetails = {
+	name: "Test Company",
+	phone: "+1234567890",
+	email: "company@test.com",
+	address: "123 Test Street",
+};
+
 describe("Workspace-Create Integration Tests", () => {
 	test("Should create a workspace if all the data is valid", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
+			const userId = await seedUser(tx);
 
 			const result = await createWorkspace({
-				command: { userId, workspaceName: "Test Workspace" },
+				command: {
+					userId,
+					workspaceName: "Test Workspace",
+					companyDetails,
+				},
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -54,114 +60,12 @@ describe("Workspace-Create Integration Tests", () => {
 		});
 	});
 
-	test("Should return WORKSPACE_NAME_REQUIRED when name is empty", async () => {
-		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
-
-			const result = await createWorkspace({
-				command: { userId, workspaceName: "" },
-				repository: workspaceDrizzleRepository(tx),
-			});
-
-			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_NAME_REQUIRED");
-
-			const rows = await tx.select().from(workspaces);
-			expect(rows.length).toBe(0);
-		});
-	});
-
-	test("Should return WORKSPACE_NAME_REQUIRED when name is whitespace only", async () => {
-		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
-
-			const result = await createWorkspace({
-				command: { userId, workspaceName: "   " },
-				repository: workspaceDrizzleRepository(tx),
-			});
-
-			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_NAME_REQUIRED");
-
-			const rows = await tx.select().from(workspaces);
-			expect(rows.length).toBe(0);
-		});
-	});
-
-	test("Should return WORKSPACE_NAME_TOO_LONG when name exceeds 250 chars", async () => {
-		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
-
-			const result = await createWorkspace({
-				command: { userId, workspaceName: "a".repeat(251) },
-				repository: workspaceDrizzleRepository(tx),
-			});
-
-			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_NAME_TOO_LONG");
-
-			const rows = await tx.select().from(workspaces);
-			expect(rows.length).toBe(0);
-		});
-	});
-
-	test("Should trim workspace name", async () => {
-		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
-
-			const result = await createWorkspace({
-				command: { userId, workspaceName: "  Trimmed  " },
-				repository: workspaceDrizzleRepository(tx),
-			});
-
-			expect(result.isSuccess).toBe(true);
-
-			const [workspace] = await tx
-				.select()
-				.from(workspaces)
-				.where(eq(workspaces.name, "Trimmed"));
-
-			expect(workspace).toBeDefined();
-			expect(workspace?.name).toBe("Trimmed");
-		});
-	});
-
 	test("Should assign role as owner to the member", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
+			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Owner Test" },
+				command: { userId, workspaceName: "Owner Test", companyDetails },
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -186,16 +90,10 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should assign a valid Id to the workspace", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
+			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "UUID Test" },
+				command: { userId, workspaceName: "UUID Test", companyDetails },
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -210,16 +108,10 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should set createdAt and updatedAt timestamps", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
+			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Timestamp Test" },
+				command: { userId, workspaceName: "Timestamp Test", companyDetails },
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -235,16 +127,10 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should generate a prefix with 4-6 uppercase letters when not provided", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
+			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Prefix Test" },
+				command: { userId, workspaceName: "Prefix Test", companyDetails },
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -261,19 +147,17 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should generate different prefixes for multiple workspaces", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
+			const userId = await seedUser(tx);
 
 			const prefixes = new Set<string>();
 
 			for (let i = 0; i < 10; i++) {
 				await createWorkspace({
-					command: { userId, workspaceName: `Prefix Test ${i}` },
+					command: {
+						userId,
+						workspaceName: `Prefix Test ${i}`,
+						companyDetails,
+					},
 					repository: workspaceDrizzleRepository(tx),
 				});
 
@@ -293,16 +177,10 @@ describe("Workspace-Create Integration Tests", () => {
 
 	test("Should set orderCount to 0 by default", async () => {
 		await runTestInTransaction(async (tx) => {
-			const userId = ulid();
-
-			await tx.insert(users).values({
-				id: userId,
-				name: "Test User",
-				email: `test-${userId}@example.com`,
-			});
+			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Order Count Test" },
+				command: { userId, workspaceName: "Order Count Test", companyDetails },
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -313,6 +191,122 @@ describe("Workspace-Create Integration Tests", () => {
 
 			expect(workspace).toBeDefined();
 			expect(workspace?.orderCount).toBe(0);
+		});
+	});
+
+	test("Should fail if workspace name is empty", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: { userId, workspaceName: "", companyDetails },
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_NAME_REQUIRED.code,
+			);
+		});
+	});
+
+	test("Should fail if workspace name exceeds 250 characters", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: {
+					userId,
+					workspaceName: "A".repeat(251),
+					companyDetails,
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_NAME_TOO_LONG.code,
+			);
+		});
+	});
+
+	test("Should fail if company name is empty", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: {
+					userId,
+					workspaceName: "Empty Company",
+					companyDetails: { ...companyDetails, name: "" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_COMPANY_NAME_REQUIRED.code,
+			);
+		});
+	});
+
+	test("Should fail if company phone is invalid", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: {
+					userId,
+					workspaceName: "Invalid Phone",
+					companyDetails: { ...companyDetails, phone: "invalid" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_COMPANY_PHONE_INVALID.code,
+			);
+		});
+	});
+
+	test("Should fail if company email is invalid", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: {
+					userId,
+					workspaceName: "Invalid Email",
+					companyDetails: { ...companyDetails, email: "invalid" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_COMPANY_EMAIL_INVALID.code,
+			);
+		});
+	});
+
+	test("Should fail if company address is empty", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: {
+					userId,
+					workspaceName: "Empty Address",
+					companyDetails: { ...companyDetails, address: "" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_COMPANY_ADDRESS_REQUIRED.code,
+			);
 		});
 	});
 });

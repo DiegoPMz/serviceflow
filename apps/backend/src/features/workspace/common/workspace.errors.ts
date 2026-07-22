@@ -41,4 +41,36 @@ export const workspaceErrors = {
 		"WORKSPACE_NOT_FOUND",
 		"El workspace especificado no fue encontrado.",
 	),
+	WORKSPACE_COMPANY_NAME_REQUIRED: new ErrorDetails(
+		"WORKSPACE_COMPANY_NAME_REQUIRED",
+		"El nombre de la empresa es requerido.",
+	),
+	WORKSPACE_COMPANY_NAME_TOO_LONG: new ErrorDetails(
+		"WORKSPACE_COMPANY_NAME_TOO_LONG",
+		"El nombre de la empresa no puede exceder 250 caracteres.",
+	),
+	WORKSPACE_COMPANY_PHONE_REQUIRED: new ErrorDetails(
+		"WORKSPACE_COMPANY_PHONE_REQUIRED",
+		"El teléfono de la empresa es requerido.",
+	),
+	WORKSPACE_COMPANY_PHONE_INVALID: new ErrorDetails(
+		"WORKSPACE_COMPANY_PHONE_INVALID",
+		"El formato del teléfono es inválido. Use formato internacional (ej: +1234567890).",
+	),
+	WORKSPACE_COMPANY_EMAIL_REQUIRED: new ErrorDetails(
+		"WORKSPACE_COMPANY_EMAIL_REQUIRED",
+		"El email de la empresa es requerido.",
+	),
+	WORKSPACE_COMPANY_EMAIL_INVALID: new ErrorDetails(
+		"WORKSPACE_COMPANY_EMAIL_INVALID",
+		"El formato del email es inválido.",
+	),
+	WORKSPACE_COMPANY_ADDRESS_REQUIRED: new ErrorDetails(
+		"WORKSPACE_COMPANY_ADDRESS_REQUIRED",
+		"La dirección de la empresa es requerida.",
+	),
+	WORKSPACE_COMPANY_ADDRESS_TOO_LONG: new ErrorDetails(
+		"WORKSPACE_COMPANY_ADDRESS_TOO_LONG",
+		"La dirección no puede exceder 255 caracteres.",
+	),
 } as const;
