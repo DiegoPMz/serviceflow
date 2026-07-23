@@ -6,36 +6,14 @@ import {
 	devices,
 	workspaces,
 } from "@serviceflow/backend/shared/database";
+import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.seeds";
+import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import type { ComponentType } from "./common/device.model";
 import { deviceDrizzleRepository } from "./common/device-drizzle-repository";
 import { registerDeviceCommandHandler } from "./register-device";
-
-const seedWorkspace = async (tx: DatabaseClient, prefix?: string) => {
-	const workspaceId = ulid();
-	await tx.insert(workspaces).values({
-		id: workspaceId,
-		name: "Test Workspace",
-		prefix: prefix ?? "TEST",
-		orderCount: 0,
-	});
-	return workspaceId;
-};
-
-const seedClient = async (tx: DatabaseClient, workspaceId: string) => {
-	const clientId = ulid();
-	await tx.insert(clients).values({
-		id: clientId,
-		workspaceId,
-		name: "Test Client",
-		phoneNumber: "+5215551234567",
-		email: `client-${clientId}@example.com`,
-		location: "CDMX",
-	});
-	return clientId;
-};
 
 const validCommand = (
 	workspaceId: string,
@@ -57,7 +35,7 @@ describe("Register-Device Integration Tests", () => {
 	test("Should register a device with a component and persist both", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
-			const clientId = await seedClient(tx, workspaceId);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
 			const command = validCommand(workspaceId, clientId);
 
 			const result = await registerDeviceCommandHandler({
@@ -95,7 +73,7 @@ describe("Register-Device Integration Tests", () => {
 	test("Should return DEVICE_ALREADY_EXISTS when serial is already registered in the workspace", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
-			const clientId = await seedClient(tx, workspaceId);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
 			const command = validCommand(workspaceId, clientId);
 
 			await registerDeviceCommandHandler({
@@ -125,7 +103,7 @@ describe("Register-Device Integration Tests", () => {
 	test("Should return DEVICE_BRAND_REQUIRED when brand is empty", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
-			const clientId = await seedClient(tx, workspaceId);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
 
 			const result = await registerDeviceCommandHandler({
 				command: validCommand(workspaceId, clientId, { brand: "" }),
@@ -143,7 +121,7 @@ describe("Register-Device Integration Tests", () => {
 	test("Should return DEVICE_COMPONENT_NAME_REQUIRED when component name is empty", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
-			const clientId = await seedClient(tx, workspaceId);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
 
 			const result = await registerDeviceCommandHandler({
 				command: validCommand(workspaceId, clientId, {
@@ -169,7 +147,7 @@ describe("Register-Device Integration Tests", () => {
 	test("Should register a device without components", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
-			const clientId = await seedClient(tx, workspaceId);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
 
 			const command = validCommand(workspaceId, clientId, { components: [] });
 			const result = await registerDeviceCommandHandler({
@@ -198,7 +176,7 @@ describe("Register-Device Integration Tests", () => {
 	test("Should register a device with multiple components of different types", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
-			const clientId = await seedClient(tx, workspaceId);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
 
 			const command = validCommand(workspaceId, clientId, {
 				components: [
@@ -244,11 +222,13 @@ describe("Register-Device Integration Tests", () => {
 
 	test("Should allow the same serial number in a different workspace", async () => {
 		await runTestInTransaction(async (tx) => {
-			const workspaceId1 = await seedWorkspace(tx, "TEST1");
-			const clientId1 = await seedClient(tx, workspaceId1);
+			const workspaceId1 = await seedWorkspace(tx, { name: "TEST1" });
+			const clientId1 = (await seedClient(tx, { workspaceId: workspaceId1 }))
+				.id;
 
-			const workspaceId2 = await seedWorkspace(tx, "TEST2");
-			const clientId2 = await seedClient(tx, workspaceId2);
+			const workspaceId2 = await seedWorkspace(tx, { name: "TEST2" });
+			const clientId2 = (await seedClient(tx, { workspaceId: workspaceId2 }))
+				.id;
 
 			const serial = `SN-SHARED`;
 

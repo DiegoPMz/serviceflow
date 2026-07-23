@@ -4,7 +4,7 @@ import { users } from "../schema";
 
 export const seedUser = async (
 	tx: DatabaseClient | DatabaseType,
-	overrides?: Record<string, unknown>,
+	overrides?: Partial<typeof users.$inferInsert>,
 ) => {
 	const userId = ulid();
 	const now = new Date();

@@ -1,25 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import {
-	clients,
-	type DatabaseClient,
-	workspaces,
-} from "@serviceflow/backend/shared/database";
+import { clients } from "@serviceflow/backend/shared/database";
+import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import { clientDrizzleRepository } from "./common/client-drizzle-repository";
 import { registerClientCommandHandler } from "./register-client";
-
-const seedWorkspace = async (tx: DatabaseClient) => {
-	const workspaceId = ulid();
-	await tx.insert(workspaces).values({
-		id: workspaceId,
-		name: "Test Workspace",
-		prefix: "TEST",
-		orderCount: 0,
-	});
-	return workspaceId;
-};
 
 const validCommand = (workspaceId: string) => ({
 	name: "Juan Pérez",
