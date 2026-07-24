@@ -66,4 +66,15 @@ export const OrderErrors = {
 		"ORDER_COMPONENT_QUANTITY_INVALID",
 		"La cantidad del componente debe ser un entero mayor a cero.",
 	),
+
+	//--- Entity: User ---
+	ORDER_USER_NAME_SNAPSHOT_REQUIRED: new ErrorDetails(
+		"ORDER_USER_NAME_SNAPSHOT_REQUIRED",
+		"El nombre del usuario al momento de crear la orden es requerido.",
+	),
+
+	ORDER_NOT_FOUND: new ErrorDetails(
+		"ORDER_NOT_FOUND",
+		"La orden especificada no fue encontrada.",
+	),
 } as const;

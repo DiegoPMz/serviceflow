@@ -23,6 +23,7 @@ const validOrderData = (overrides: Record<string, unknown> = {}) => ({
 	deviceBrandSnapshot: "Samsung",
 	deviceModelSnapshot: "Galaxy S21",
 	deviceSerialNumberSnapshot: "SN-1",
+	userNameSnapshot: "David",
 	...overrides,
 });
 

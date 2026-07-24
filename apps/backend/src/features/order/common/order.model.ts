@@ -48,6 +48,7 @@ export class Order {
 		public readonly createdAt: Date,
 		public readonly updatedAt: Date,
 		public documentUrl: string | null,
+		public readonly userNameSnapshot: string,
 	) {}
 
 	public attachPdfUrl(url: string): Result<Updated> {
@@ -102,6 +103,10 @@ export class Order {
 			return Result.failure(OrderErrors.ORDER_FOLIO_INVALID);
 		}
 
+		if (!data.userNameSnapshot || data.userNameSnapshot.trim().length < 1) {
+			return Result.failure(OrderErrors.ORDER_USER_NAME_SNAPSHOT_REQUIRED);
+		}
+
 		const now = new Date();
 		return Result.success(
 			new Order(
@@ -123,9 +128,56 @@ export class Order {
 				now,
 				now,
 				null,
+				data.userNameSnapshot,
 			),
 		);
 	}
+
+	static reconstitute(entity: OrderReconstitute): Order {
+		return new Order(
+			entity.id,
+			entity.clientId,
+			entity.deviceId,
+			entity.userId,
+			entity.workspaceId,
+			entity.observations,
+			entity.folio,
+			entity.clientNameSnapshot,
+			entity.clientEmailSnapshot,
+			entity.clientPhoneSnapshot,
+			entity.clientLocationSnapshot,
+			entity.deviceBrandSnapshot,
+			entity.deviceModelSnapshot,
+			entity.deviceSerialNumberSnapshot,
+			entity.orderComponents,
+			entity.createdAt,
+			entity.updatedAt,
+			entity.documentUrl,
+			entity.userNameSnapshot,
+		);
+	}
+}
+
+interface OrderReconstitute {
+	id: string;
+	clientId: string;
+	deviceId: string;
+	userId: string;
+	workspaceId: string;
+	observations: string;
+	folio: string;
+	clientNameSnapshot: string;
+	clientEmailSnapshot: string;
+	clientPhoneSnapshot: string;
+	clientLocationSnapshot: string;
+	deviceBrandSnapshot: string;
+	deviceModelSnapshot: string;
+	deviceSerialNumberSnapshot: string;
+	orderComponents: OrderComponent[];
+	createdAt: Date;
+	updatedAt: Date;
+	documentUrl: string | null;
+	userNameSnapshot: string;
 }
 
 export class Folio {
@@ -203,3 +255,5 @@ class OrderComponent {
 		);
 	}
 }
+
+export type OrderComponentType = OrderComponent;
