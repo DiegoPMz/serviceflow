@@ -73,4 +73,8 @@ export const workspaceErrors = {
 		"WORKSPACE_COMPANY_ADDRESS_TOO_LONG",
 		"La dirección no puede exceder 255 caracteres.",
 	),
+	LOGO_FILE_NOT_FOUND: new ErrorDetails(
+		"LOGO_FILE_NOT_FOUND",
+		"El archivo del logo no se ha subido correctamente o no existe en el almacenamiento.",
+	),
 } as const;

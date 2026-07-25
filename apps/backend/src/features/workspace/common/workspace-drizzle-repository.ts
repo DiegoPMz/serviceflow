@@ -47,7 +47,12 @@ export const workspaceDrizzleRepository = (
 	update: async (model: Workspace): Promise<void> => {
 		await db
 			.update(workspaces)
-			.set({ orderCount: model.orderCount, name: model.name })
+			.set({
+				orderCount: model.orderCount,
+				name: model.name,
+				companyLogoUrl: model.company.logoUrl,
+				updatedAt: model.updatedAt,
+			})
 			.where(eq(workspaces.id, model.id));
 	},
 

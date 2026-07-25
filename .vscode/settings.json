@@ -1,7 +1,9 @@
 {
 	"cSpell.words": [
+		"cloudflare",
 		"elysia",
 		"libsql",
+		"pdfmake",
 		"postgres",
 		"serviceflow",
 		"supabase",
