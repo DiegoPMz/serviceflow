@@ -6,16 +6,24 @@ export interface StorageServiceConfig {
 }
 
 export type StorageService = {
-	generatePresignedUrl: (values: {
+	upload: (values: {
+		key: string;
+		body: Buffer | Uint8Array | ReadableStream;
+		contentType: "application/pdf";
+	}) => Promise<Result<string>>;
+
+	getFileBase64: (key: string) => Promise<string>;
+	fileExists: (key: string) => Promise<boolean>;
+
+	createUploadPresignedUrl: (values: {
 		key: string;
 		contentType: "image/jpeg" | "image/png";
-	}) => Promise<
-		Result<{
-			uploadUrl: string;
-		}>
-	>;
+		expiresIn?: number;
+	}) => Promise<string>;
 
-	exists(key: string): Promise<boolean>;
-	getPublicUrl(key: string): string;
-	buildWorkspaceLogoKey(workspaceId: string, fileExtension: string): string;
+	createSignedDownloadUrl: (values: {
+		key: string;
+		fileName: string;
+		expiresIn?: number;
+	}) => Promise<string>;
 };

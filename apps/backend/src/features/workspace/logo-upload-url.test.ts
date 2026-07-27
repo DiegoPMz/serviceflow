@@ -27,7 +27,7 @@ import { workspaceErrors } from "./common/workspace.errors";
 import { workspaceDrizzleRepository } from "./common/workspace-drizzle-repository";
 import { LogoUploadUrlHandler } from "./logo-upload-url";
 
-const STORAGE_KEY_REGEX = /^workspaces\/.+\/logos\/logo-\d+\.(jpg|png)$/;
+const STORAGE_KEY_REGEX = /^workspaces\/[^/]+\/logo-\d+\.(jpg|png)$/;
 
 describe("Workspace-LogoUploadUrl Integration Tests", () => {
 	let storageService: StorageService;
@@ -82,7 +82,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 				{
 					workspaceId,
 					mimeType: "image/jpeg",
-					fileExtension: ".jpg",
+					fileExtension: "jpg",
 				},
 				storageService,
 				workspaceDrizzleRepository(tx),
@@ -92,8 +92,8 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 			expect(result.value.uploadUrl).toBeString();
 			expect(result.value.uploadUrl).not.toBeEmpty();
 			expect(result.value.uploadUrl).toStartWith("http");
-			expect(result.value.storageKey).toEndWith(".jpg");
-			expect(STORAGE_KEY_REGEX.test(result.value.storageKey)).toBeTrue();
+			expect(result.value.workspaceKey).toEndWith(".jpg");
+			expect(STORAGE_KEY_REGEX.test(result.value.workspaceKey)).toBeTrue();
 		});
 	});
 
@@ -107,7 +107,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 				{
 					workspaceId,
 					mimeType: "image/png",
-					fileExtension: ".png",
+					fileExtension: "png",
 				},
 				storageService,
 				workspaceDrizzleRepository(tx),
@@ -116,8 +116,8 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 			expect(result.isSuccess).toBeTrue();
 			expect(result.value.uploadUrl).toBeString();
 			expect(result.value.uploadUrl).not.toBeEmpty();
-			expect(result.value.storageKey).toEndWith(".png");
-			expect(STORAGE_KEY_REGEX.test(result.value.storageKey)).toBeTrue();
+			expect(result.value.workspaceKey).toEndWith(".png");
+			expect(STORAGE_KEY_REGEX.test(result.value.workspaceKey)).toBeTrue();
 		});
 	});
 
@@ -129,7 +129,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 				{
 					workspaceId: nonExistentId,
 					mimeType: "image/jpeg",
-					fileExtension: ".jpg",
+					fileExtension: "jpg",
 				},
 				storageService,
 				workspaceDrizzleRepository(tx),
@@ -155,7 +155,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 					{
 						workspaceId: workspaceId1,
 						mimeType: "image/jpeg",
-						fileExtension: ".jpg",
+						fileExtension: "jpg",
 					},
 					storageService,
 					repository,
@@ -164,7 +164,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 					{
 						workspaceId: workspaceId2,
 						mimeType: "image/jpeg",
-						fileExtension: ".jpg",
+						fileExtension: "jpg",
 					},
 					storageService,
 					repository,
@@ -173,9 +173,9 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 
 			expect(result1.isSuccess).toBeTrue();
 			expect(result2.isSuccess).toBeTrue();
-			expect(result1.value.storageKey).not.toBe(result2.value.storageKey);
-			expect(result1.value.storageKey).toContain(workspaceId1);
-			expect(result2.value.storageKey).toContain(workspaceId2);
+			expect(result1.value.workspaceKey).not.toBe(result2.value.workspaceKey);
+			expect(result1.value.workspaceKey).toContain(workspaceId1);
+			expect(result2.value.workspaceKey).toContain(workspaceId2);
 		});
 	});
 
@@ -189,7 +189,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 
 			const [resultWithDot, resultWithoutDot] = await Promise.all([
 				LogoUploadUrlHandler(
-					{ workspaceId, mimeType: "image/jpeg", fileExtension: ".jpg" },
+					{ workspaceId, mimeType: "image/jpeg", fileExtension: "jpg" },
 					storageService,
 					repository,
 				),
@@ -202,8 +202,8 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 
 			expect(resultWithDot.isSuccess).toBeTrue();
 			expect(resultWithoutDot.isSuccess).toBeTrue();
-			expect(resultWithDot.value.storageKey).toEndWith(".jpg");
-			expect(resultWithoutDot.value.storageKey).toEndWith(".jpg");
+			expect(resultWithDot.value.workspaceKey).toEndWith(".jpg");
+			expect(resultWithoutDot.value.workspaceKey).toEndWith(".jpg");
 		});
 	});
 
@@ -214,7 +214,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 			await addMember(tx, { userId, workspaceId });
 
 			const result = await LogoUploadUrlHandler(
-				{ workspaceId, mimeType: "image/jpeg", fileExtension: ".jpg" },
+				{ workspaceId, mimeType: "image/jpeg", fileExtension: "jpg" },
 				storageService,
 				workspaceDrizzleRepository(tx),
 			);
@@ -231,7 +231,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 
 			expect(uploadResponse.ok).toBeTrue();
 
-			const exists = await storageService.exists(result.value.storageKey);
+			const exists = await storageService.fileExists(result.value.workspaceKey);
 			expect(exists).toBeTrue();
 		});
 	});

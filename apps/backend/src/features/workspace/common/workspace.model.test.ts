@@ -9,7 +9,7 @@ const validCompany = (): WorkspaceCompany => {
 		phone: "",
 		email: "",
 		address: "",
-		logoUrl: null,
+		logoKey: null,
 	};
 };
 
@@ -184,7 +184,7 @@ describe("WorkspaceCompany.create", () => {
 		expect(result.value.phone).toBe("+521234567890");
 		expect(result.value.email).toBe("contacto@empresa.com");
 		expect(result.value.address).toBe("Calle Principal 123");
-		expect(result.value.logoUrl).toBeNull();
+		expect(result.value.logoKey).toBeNull();
 	});
 
 	test("Should trim whitespace from all fields", () => {
@@ -202,11 +202,11 @@ describe("WorkspaceCompany.create", () => {
 		expect(result.value.address).toBe("Calle Principal 123");
 	});
 
-	test("Should set logoUrl to null initially", () => {
+	test("Should set logoKey to null initially", () => {
 		const result = WorkspaceCompany.create(validCompanyData);
 
 		expect(result.isSuccess).toBe(true);
-		expect(result.value.logoUrl).toBeNull();
+		expect(result.value.logoKey).toBeNull();
 	});
 
 	describe("Name validation", () => {

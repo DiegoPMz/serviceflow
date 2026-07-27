@@ -13,8 +13,8 @@ export const PREFIX_REGEX: RegExp = /^[A-Z]{4,6}$/;
 export const EMAIL_REGEX: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export class Workspace {
-	updateLogoUrl(filePublicUrl: string): Result<Updated> {
-		this.company.logoUrl = filePublicUrl;
+	updateLogoKey(key: string): Result<Updated> {
+		this.company.logoKey = key;
 		this.updatedAt = new Date();
 
 		return Updated.toResult();
@@ -110,7 +110,7 @@ export class WorkspaceCompany {
 		public readonly phone: string,
 		public readonly email: string,
 		public readonly address: string,
-		public logoUrl: string | null,
+		public logoKey: string | null,
 	) {}
 
 	static create(data: {

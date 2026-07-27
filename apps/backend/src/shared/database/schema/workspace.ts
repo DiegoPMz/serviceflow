@@ -21,7 +21,7 @@ export const workspaces = sqliteTable(
 		companyPhone: text("company_phone", { length: 50 }).notNull(),
 		companyEmail: text("company_email", { length: 150 }).notNull(),
 		companyAddress: text("company_address", { length: 255 }).notNull(),
-		companyLogoUrl: text("company_logo_url"),
+		companyLogoKey: text("company_logo_key"),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)

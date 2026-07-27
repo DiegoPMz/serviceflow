@@ -41,4 +41,8 @@ export const UserErrors = {
 		"USER_PHONE_TOO_LONG",
 		"El teléfono del usuario no puede exceder 20 caracteres.",
 	),
+	USER_NOT_FOUND: new ErrorDetails(
+		"USER_NOT_FOUND",
+		"El usuario especificado no fue encontrado.",
+	),
 } as const;

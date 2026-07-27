@@ -1,3 +1,4 @@
+import { storageKeys } from "@serviceflow/backend/shared/object-storage/storage-keys";
 import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
 import { Result } from "@serviceflow/backend/shared/result";
 import { workspaceErrors } from "./common/workspace.errors";
@@ -7,11 +8,11 @@ export const LogoUploadUrlHandler = async (
 	query: {
 		workspaceId: string;
 		mimeType: "image/jpeg" | "image/png";
-		fileExtension: string;
+		fileExtension: "png" | "jpeg" | "jpg";
 	},
 	storageService: StorageService,
 	workspaceRepository: WorkspaceRepository,
-): Promise<Result<{ uploadUrl: string; storageKey: string }>> => {
+): Promise<Result<{ uploadUrl: string; workspaceKey: string }>> => {
 	const { workspaceId, mimeType, fileExtension } = query;
 
 	const workspace = await workspaceRepository.getById(workspaceId);
@@ -19,20 +20,18 @@ export const LogoUploadUrlHandler = async (
 		return Result.failure(workspaceErrors.WORKSPACE_NOT_FOUND);
 	}
 
-	const storageKey = storageService.buildWorkspaceLogoKey(
+	const workspaceLogoKey = storageKeys.workspaceLogo(
 		workspaceId,
 		fileExtension,
 	);
 
-	const presignedUrlResult = await storageService.generatePresignedUrl({
-		key: storageKey,
+	const presignedUrl = await storageService.createUploadPresignedUrl({
+		key: workspaceLogoKey,
 		contentType: mimeType,
 	});
 
-	if (presignedUrlResult.isFailure) {
-		return Result.failure(presignedUrlResult.error);
-	}
-
-	const { uploadUrl } = presignedUrlResult.value;
-	return Result.success({ uploadUrl, storageKey });
+	return Result.success({
+		uploadUrl: presignedUrl,
+		workspaceKey: workspaceLogoKey,
+	});
 };

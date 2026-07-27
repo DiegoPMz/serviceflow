@@ -19,7 +19,7 @@ export const confirmLogoUploadHandler = async ({
 	workspaceRepository,
 	storageService,
 }: ConfirmLogoUploadHandlerProps): Promise<Result<Updated>> => {
-	const logoExists = await storageService.exists(command.fileKey);
+	const logoExists = await storageService.fileExists(command.fileKey);
 
 	if (!logoExists) {
 		return Result.failure(workspaceErrors.LOGO_FILE_NOT_FOUND);
@@ -31,9 +31,7 @@ export const confirmLogoUploadHandler = async ({
 		return Result.failure(workspaceErrors.WORKSPACE_NOT_FOUND);
 	}
 
-	const publicUrl = storageService.getPublicUrl(command.fileKey);
-
-	const updateResult = workspace.updateLogoUrl(publicUrl);
+	const updateResult = workspace.updateLogoKey(command.fileKey);
 
 	if (updateResult.isFailure) {
 		return Result.failure(updateResult.error);

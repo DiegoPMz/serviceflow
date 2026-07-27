@@ -18,6 +18,7 @@ import {
 	addMember,
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
+import { storageKeys } from "@serviceflow/backend/shared/object-storage/storage-keys";
 import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
 import {
 	BUCKET_TEST_NAME,
@@ -95,7 +96,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			await addMember(tx, { userId, workspaceId });
 
-			const fileKey = storageService.buildWorkspaceLogoKey(workspaceId, ".jpg");
+			const fileKey = storageKeys.workspaceLogo(workspaceId, "jpg");
 			await uploadTestFile(s3ClientTest, fileKey);
 
 			const result = await confirmLogoUploadHandler({
@@ -114,7 +115,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			await addMember(tx, { userId, workspaceId });
 
-			const fileKey = storageService.buildWorkspaceLogoKey(workspaceId, ".jpg");
+			const fileKey = storageKeys.workspaceLogo(workspaceId, "jpg");
 
 			const result = await confirmLogoUploadHandler({
 				command: { workspaceId, fileKey },
@@ -149,7 +150,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			await addMember(tx, { userId, workspaceId });
 
-			const fileKey = storageService.buildWorkspaceLogoKey(workspaceId, ".jpg");
+			const fileKey = storageKeys.workspaceLogo(workspaceId, "jpg");
 			await uploadTestFile(s3ClientTest, fileKey);
 
 			await confirmLogoUploadHandler({
@@ -159,13 +160,11 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			});
 
 			const [workspace] = await tx
-				.select({ companyLogoUrl: workspaces.companyLogoUrl })
+				.select({ companyLogoKey: workspaces.companyLogoKey })
 				.from(workspaces)
 				.where(eq(workspaces.id, workspaceId));
 
-			expect(workspace?.companyLogoUrl).toBe(
-				storageService.getPublicUrl(fileKey),
-			);
+			expect(workspace?.companyLogoKey).toBe(fileKey);
 		});
 	});
 
@@ -175,7 +174,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			await addMember(tx, { userId, workspaceId });
 
-			const fileKey = storageService.buildWorkspaceLogoKey(workspaceId, ".jpg");
+			const fileKey = storageKeys.workspaceLogo(workspaceId, "jpg");
 			await uploadTestFile(s3ClientTest, fileKey);
 
 			const [before] = await tx
@@ -211,14 +210,14 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const { LogoUploadUrlHandler } = await import("./logo-upload-url");
 
 			const uploadUrlResult = await LogoUploadUrlHandler(
-				{ workspaceId, mimeType: "image/jpeg", fileExtension: ".jpg" },
+				{ workspaceId, mimeType: "image/jpeg", fileExtension: "jpg" },
 				storageService,
 				repository,
 			);
 
 			expect(uploadUrlResult.isSuccess).toBeTrue();
 
-			const { uploadUrl, storageKey } = uploadUrlResult.value;
+			const { uploadUrl, workspaceKey } = uploadUrlResult.value;
 
 			const uploadResponse = await fetch(uploadUrl, {
 				method: "PUT",
@@ -229,7 +228,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			expect(uploadResponse.ok).toBeTrue();
 
 			const confirmResult = await confirmLogoUploadHandler({
-				command: { workspaceId, fileKey: storageKey },
+				command: { workspaceId, fileKey: workspaceKey },
 				workspaceRepository: repository,
 				storageService,
 			});
@@ -237,13 +236,11 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			expect(confirmResult.isSuccess).toBeTrue();
 
 			const [workspace] = await tx
-				.select({ companyLogoUrl: workspaces.companyLogoUrl })
+				.select({ companyLogoKey: workspaces.companyLogoKey })
 				.from(workspaces)
 				.where(eq(workspaces.id, workspaceId));
 
-			expect(workspace?.companyLogoUrl).toBe(
-				storageService.getPublicUrl(storageKey),
-			);
+			expect(workspace?.companyLogoKey).toBe(workspaceKey);
 		});
 	});
 });

@@ -32,7 +32,7 @@ export const workspaceDrizzleRepository = (
 			companyEmail: model.company.email,
 			companyPhone: model.company.phone,
 			companyAddress: model.company.address,
-			companyLogoUrl: model.company.logoUrl,
+			companyLogoKey: model.company.logoKey,
 			createdAt: model.createdAt,
 			updatedAt: model.updatedAt,
 		});
@@ -50,7 +50,7 @@ export const workspaceDrizzleRepository = (
 			.set({
 				orderCount: model.orderCount,
 				name: model.name,
-				companyLogoUrl: model.company.logoUrl,
+				companyLogoKey: model.company.logoKey,
 				updatedAt: model.updatedAt,
 			})
 			.where(eq(workspaces.id, model.id));
@@ -70,7 +70,7 @@ export const workspaceDrizzleRepository = (
 				companyEmail: workspaces.companyEmail,
 				companyPhone: workspaces.companyPhone,
 				companyAddress: workspaces.companyAddress,
-				companyLogoUrl: workspaces.companyLogoUrl,
+				companyLogoKey: workspaces.companyLogoKey,
 			})
 			.from(workspaces)
 			.innerJoin(
@@ -94,7 +94,7 @@ export const workspaceDrizzleRepository = (
 				phone: workspace.companyPhone,
 				email: workspace.companyEmail,
 				address: workspace.companyAddress,
-				logoUrl: workspace.companyLogoUrl,
+				logoKey: workspace.companyLogoKey,
 			},
 		});
 	},

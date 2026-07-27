@@ -19,7 +19,7 @@ export const seedWorkspace = async (
 		companyPhone: "+1234567890",
 		companyEmail: "company@test.com",
 		companyAddress: "123 Test Street",
-		companyLogoUrl: null,
+		companyLogoKey: null,
 		createdAt: now,
 		updatedAt: now,
 		...overrides,
