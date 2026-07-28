@@ -77,4 +77,12 @@ export const OrderErrors = {
 		"ORDER_NOT_FOUND",
 		"La orden especificada no fue encontrada.",
 	),
+	ORDER_DOCUMENT_ALREADY_EXISTS: new ErrorDetails(
+		"ORDER_DOCUMENT_ALREADY_EXISTS",
+		"El documento de la orden ya existe.",
+	),
+	ORDER_DOCUMENT_NOT_GENERATED: new ErrorDetails(
+		"ORDER_DOCUMENT_NOT_GENERATED",
+		"El documento de la orden aún no ha sido generado.",
+	),
 } as const;

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
 	type DatabaseClient,
-	type DatabaseType,
 	deviceComponents,
 	devices,
 	orderComponents,

@@ -20,7 +20,7 @@ export const OrderDrizzleRepository = (
 			deviceId: model.deviceId,
 			folio: model.folio,
 
-			documentUrl: null,
+			documentKey: null,
 			observations: model.observations,
 			createdAt: model.createdAt,
 			updatedAt: model.updatedAt,
@@ -90,8 +90,18 @@ export const OrderDrizzleRepository = (
 
 			createdAt: new Date(entity.createdAt),
 			updatedAt: new Date(entity.updatedAt),
-			documentUrl: entity.documentUrl,
+			documentKey: entity.documentKey,
 			userNameSnapshot: entity.userNameSnapshot,
 		});
+	},
+
+	update: async (model: Order): Promise<void> => {
+		await db
+			.update(orders)
+			.set({
+				updatedAt: model.updatedAt,
+				documentKey: model.documentKey,
+			})
+			.where(eq(orders.id, model.id));
 	},
 });

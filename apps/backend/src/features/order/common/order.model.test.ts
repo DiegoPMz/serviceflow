@@ -94,7 +94,7 @@ describe("Order.create", () => {
 		expect(order.deviceBrandSnapshot).toBe("Samsung");
 		expect(order.deviceModelSnapshot).toBe("Galaxy S21");
 		expect(order.deviceSerialNumberSnapshot).toBe("SN-1");
-		expect(order.documentUrl).toBeNull();
+		expect(order.documentKey).toBeNull();
 		expect(order.orderComponents.length).toBe(0);
 		expect(order.createdAt).toBeInstanceOf(Date);
 		expect(order.updatedAt).toBeInstanceOf(Date);
@@ -284,12 +284,12 @@ describe("Order.addComponent", () => {
 	});
 });
 
-describe("Order.attachPdfUrl", () => {
-	test("Should set the document URL and return success", () => {
+describe("Order.attachDocumentKey", () => {
+	test("Should set the document key and return success", () => {
 		const order = Order.create(validOrderData()).value;
-		const result = order.attachPdfUrl("https://example.com/order.pdf");
+		const result = order.attachDocumentKey("https://example.com/order.pdf");
 
 		expect(result.isSuccess).toBe(true);
-		expect(order.documentUrl).toBe("https://example.com/order.pdf");
+		expect(order.documentKey).toBe("https://example.com/order.pdf");
 	});
 });

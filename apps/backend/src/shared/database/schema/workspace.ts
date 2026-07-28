@@ -1,3 +1,4 @@
+import { WORKSPACE_ROLES } from "@serviceflow/backend/features/workspace/common/workspace.model";
 import {
 	index,
 	integer,
@@ -36,14 +37,6 @@ export const workspaces = sqliteTable(
 		uniqueIndex("workspaces_prefix_unique_idx").on(table.prefix),
 	],
 );
-
-export const WORKSPACE_ROLES = [
-	"owner",
-	"admin",
-	"technician",
-	"viewer",
-] as const;
-export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
 
 export const workspaceMembers = sqliteTable(
 	"workspace_members",

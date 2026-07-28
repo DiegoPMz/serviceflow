@@ -51,7 +51,7 @@ export const orders = sqliteTable(
 			length: 200,
 		}).notNull(),
 
-		documentUrl: text("document_url"),
+		documentKey: text("document_key"),
 		observations: text("observations").notNull(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })

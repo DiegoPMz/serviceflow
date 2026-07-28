@@ -8,8 +8,8 @@ type CreateOrderData = Omit<
 	| "id"
 	| "createdAt"
 	| "updatedAt"
-	| "documentUrl"
-	| "attachPdfUrl"
+	| "documentKey"
+	| "attachDocumentKey"
 	| "folio"
 	| "_orderComponents"
 	| "orderComponents"
@@ -47,12 +47,12 @@ export class Order {
 
 		public readonly createdAt: Date,
 		public readonly updatedAt: Date,
-		public documentUrl: string | null,
+		public documentKey: string | null,
 		public readonly userNameSnapshot: string,
 	) {}
 
-	public attachPdfUrl(url: string): Result<Updated> {
-		this.documentUrl = url;
+	public attachDocumentKey(key: string): Result<Updated> {
+		this.documentKey = key;
 		return Updated.toResult();
 	}
 
@@ -152,7 +152,7 @@ export class Order {
 			entity.orderComponents,
 			entity.createdAt,
 			entity.updatedAt,
-			entity.documentUrl,
+			entity.documentKey,
 			entity.userNameSnapshot,
 		);
 	}
@@ -176,7 +176,7 @@ interface OrderReconstitute {
 	orderComponents: OrderComponent[];
 	createdAt: Date;
 	updatedAt: Date;
-	documentUrl: string | null;
+	documentKey: string | null;
 	userNameSnapshot: string;
 }
 
