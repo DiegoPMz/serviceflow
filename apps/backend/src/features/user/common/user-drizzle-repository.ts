@@ -10,35 +10,49 @@ export const userDrizzleRepository = (
 	db: DatabaseClient | DatabaseType,
 ): UserRepository => ({
 	save: async (user: User): Promise<void> => {
-		await db.insert(users).values({
-			id: user.id,
-			externalId: user.externalId,
-			phone: user.phone,
-			lastName: user.lastName,
-			email: user.email,
-			name: user.name,
-			pictureUrl: user.pictureUrl,
-			createdAt: user.createdAt,
-			updatedAt: user.updatedAt,
-		});
+		await db.insert(users).values({ ...userMapper.toEntity(user) });
 	},
+
 	getById: async (id: string): Promise<User | null> => {
 		const entity = await db.query.users.findFirst({
 			where: (users, { eq }) => eq(users.id, id),
 		});
 
 		if (!entity) return null;
+		return userMapper.toModel(entity);
+	},
 
-		return {
-			id: entity.id,
-			externalId: entity.externalId,
-			email: entity.email,
-			name: entity.name,
-			pictureUrl: entity.pictureUrl,
-			createdAt: entity.createdAt,
-			updatedAt: entity.updatedAt,
-			lastName: entity.lastName,
-			phone: entity.phone,
-		};
+	getByExternalId: async (externalId: string): Promise<User | null> => {
+		const entity = await db.query.users.findFirst({
+			where: (users, { eq }) => eq(users.externalId, externalId),
+		});
+
+		if (!entity) return null;
+		return userMapper.toModel(entity);
 	},
 });
+
+const userMapper = {
+	toModel: (entity: typeof users.$inferSelect): User => ({
+		id: entity.id,
+		externalId: entity.externalId,
+		email: entity.email,
+		name: entity.name,
+		pictureUrl: entity.pictureUrl,
+		createdAt: entity.createdAt,
+		updatedAt: entity.updatedAt,
+		lastName: entity.lastName,
+		phone: entity.phone,
+	}),
+	toEntity: (model: User): typeof users.$inferInsert => ({
+		id: model.id,
+		externalId: model.externalId,
+		phone: model.phone,
+		lastName: model.lastName,
+		email: model.email,
+		name: model.name,
+		pictureUrl: model.pictureUrl,
+		createdAt: model.createdAt,
+		updatedAt: model.updatedAt,
+	}),
+};
