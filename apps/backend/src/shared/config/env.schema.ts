@@ -8,6 +8,9 @@ export const envSchema = Type.Object({
 	R2_SECRET_ACCESS_KEY: Type.String({ minLength: 1 }),
 	R2_BUCKET_NAME: Type.String({ minLength: 1 }),
 	R2_PUBLIC_DOMAIN: Type.String({ minLength: 1 }),
+	CLERK_SECRET_KEY: Type.String({ minLength: 1 }),
+	CLERK_JWKS_URL: Type.String({ minLength: 1 }),
+	CLERK_ISSUER: Type.String({ minLength: 1 }),
 });
 
 export type Env = Static<typeof envSchema>;

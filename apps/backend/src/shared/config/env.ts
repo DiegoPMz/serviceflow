@@ -18,3 +18,9 @@ export const r2StorageConfig = {
 	bucketName: raw.R2_BUCKET_NAME,
 	publicDomain: raw.R2_PUBLIC_DOMAIN,
 } as const;
+
+export const clerkConfig = {
+	secretKey: raw.CLERK_SECRET_KEY,
+	jwksUrl: raw.CLERK_JWKS_URL,
+	issuer: raw.CLERK_ISSUER,
+};
