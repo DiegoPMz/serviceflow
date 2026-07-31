@@ -1,5 +1,5 @@
 import { clerkConfig } from "../config";
-import { ErrorDetails } from "../result";
+import { ErrorDetails, ErrorDetailsException } from "../result";
 import { AuthErrors } from "./auth.errors";
 import type {
 	AuthUserDetails,
@@ -34,15 +34,20 @@ export const clerkIdentityProvider: UserIdentityProvider = {
 				},
 			});
 		} catch (fetchError: unknown) {
-			throw AuthErrors.SERVICE_UNAVAILABLE.toException(fetchError);
+			throw ErrorDetailsException.of(
+				AuthErrors.SERVICE_UNAVAILABLE,
+				fetchError,
+			);
 		}
 
 		if (!response.ok) {
-			throw new ErrorDetails(
-				"CLERK_API_ERROR",
-				"El proveedor de identidad devolvió un error.",
-				502,
-			).toException();
+			throw ErrorDetailsException.of(
+				new ErrorDetails(
+					"CLERK_API_ERROR",
+					"El proveedor de identidad devolvió un error.",
+					502,
+				),
+			);
 		}
 
 		const { first_name, last_name, email_addresses, image_url }: ClerkUser =
@@ -51,7 +56,7 @@ export const clerkIdentityProvider: UserIdentityProvider = {
 		const email_address = email_addresses[0]?.email_address;
 
 		if (!email_address || !first_name) {
-			throw AuthErrors.INCOMPLETE_USER_PROFILE.toException();
+			throw ErrorDetailsException.of(AuthErrors.INCOMPLETE_USER_PROFILE);
 		}
 
 		return {

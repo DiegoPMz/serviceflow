@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <> */
 import {
 	afterEach,
 	beforeAll,

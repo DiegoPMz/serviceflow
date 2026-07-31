@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { db, users } from "@serviceflow/backend/shared/database";
 import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import { eq } from "drizzle-orm";
+import { ulid } from "ulidx";
 import { EnsureUserExistsCommand } from "../ensure-user-exists";
 import { GetUserByExternalIdQuery } from "../get-by-external-id";
 import { userBus } from "./user.bus";
+import { UserErrors } from "./user.errors";
 
 describe("User-Bus Integration Tests", () => {
 	test("Should create a user when EnsureUserExistsCommand is sent for a new user", async () => {
@@ -55,39 +57,44 @@ describe("User-Bus Integration Tests", () => {
 		await db.delete(users).where(eq(users.externalId, externalId));
 	});
 
-	test("Should return user when GetUserByExternalIdQuery is sent for an existing user", async () => {
+	test("Should return userDto when GetUserByExternalIdQuery is sent for an existing user", async () => {
 		const externalId = `auth0-bus-query-${Date.now()}`;
+		const userId = ulid();
 		await seedUser(db, {
 			externalId,
 			name: "Bus Query",
 			email: "bus-query@example.com",
 			lastName: "User",
+			id: userId,
 		});
 
-		const user = await userBus(
+		const userResult = await userBus(
 			new GetUserByExternalIdQuery({ externalId }),
 		);
 
-		expect(user).not.toBeNull();
-		expect(user?.externalId).toBe(externalId);
+		const user = userResult.value;
+
+		expect(userResult.isSuccess).toBeTrue();
+		expect(user?.id).toBe(userId);
 		expect(user?.name).toBe("Bus Query");
 
 		await db.delete(users).where(eq(users.externalId, externalId));
 	});
 
-	test("Should return null when GetUserByExternalIdQuery is sent for a non-existent user", async () => {
+	test("Should return UserErrors.USER_NOT_FOUND when GetUserByExternalIdQuery is sent for a non-existent user", async () => {
 		const user = await userBus(
 			new GetUserByExternalIdQuery({
 				externalId: "auth0-bus-nonexistent",
 			}),
 		);
 
-		expect(user).toBeNull();
+		expect(user.isFailure).toBeTrue();
+		expect(user.error).toBe(UserErrors.USER_NOT_FOUND);
 	});
 
 	test("Should throw for unrecognized command", async () => {
-		expect(() =>
-			userBus({} as EnsureUserExistsCommand),
-		).toThrow("Comando no reconocido");
+		expect(() => userBus({} as EnsureUserExistsCommand)).toThrow(
+			"Comando no reconocido",
+		);
 	});
 });

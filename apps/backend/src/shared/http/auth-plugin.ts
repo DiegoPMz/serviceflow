@@ -1,6 +1,7 @@
 import Elysia from "elysia";
 import type { TokenVerifier, UserIdentityProvider } from "../auth";
 import { AuthErrors } from "../auth/auth.errors";
+import { respond } from "./respond";
 
 export interface AuthPluginConfig {
 	tokenVerifier: TokenVerifier;
@@ -12,14 +13,14 @@ export const createAuthPlugin = ({
 	userIdentityProvider,
 }: AuthPluginConfig) =>
 	new Elysia({ name: "auth-plugin" }).macro("auth", (enabled: boolean) => ({
-		async resolve({ headers, status }) {
+		async resolve({ headers, status, set }) {
 			if (!enabled) return;
 
 			const authorization = headers.authorization;
 			if (!authorization?.startsWith("Bearer ")) {
 				return status(
 					AuthErrors.MISSING_HEADER.statusCode,
-					AuthErrors.MISSING_HEADER,
+					respond.failure(AuthErrors.MISSING_HEADER, set),
 				);
 			}
 
@@ -27,7 +28,10 @@ export const createAuthPlugin = ({
 			const verifyResult = await tokenVerifier.verify(token);
 
 			if (verifyResult.isFailure) {
-				return status(verifyResult.error.statusCode, verifyResult.error);
+				return status(
+					verifyResult.error.statusCode,
+					respond.failure(verifyResult.error, set),
+				);
 			}
 
 			return {

@@ -1,7 +1,7 @@
 import type { ErrorDetails } from "./error-details";
 
 export class ErrorDetailsException extends Error {
-	constructor(
+	private constructor(
 		public readonly errorDetails: ErrorDetails,
 		public override readonly cause?: unknown,
 	) {
@@ -9,5 +9,9 @@ export class ErrorDetailsException extends Error {
 		this.name = "ErrorDetailsException";
 
 		Object.setPrototypeOf(this, new.target.prototype);
+	}
+
+	static of(errorDetails: ErrorDetails, cause?: unknown) {
+		return new ErrorDetailsException(errorDetails, cause);
 	}
 }

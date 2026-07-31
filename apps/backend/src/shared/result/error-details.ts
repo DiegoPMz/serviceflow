@@ -1,5 +1,3 @@
-import { ErrorDetailsException } from "./error-details-exception";
-
 export class ErrorDetails {
 	public readonly timestamp: string;
 
@@ -7,12 +5,8 @@ export class ErrorDetails {
 		public readonly code: string,
 		public readonly message: string,
 		public readonly statusCode: number = 400,
-		public readonly details?: Record<string, unknown> | unknown[],
+		public readonly details?: Record<string, unknown>,
 	) {
 		this.timestamp = new Date().toISOString();
-	}
-
-	public toException(cause?: unknown): ErrorDetailsException {
-		return new ErrorDetailsException(this, cause);
 	}
 }

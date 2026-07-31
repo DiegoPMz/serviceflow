@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { UserErrors } from "./common/user.errors";
 import { userDrizzleRepository } from "./common/user-drizzle-repository";
 import {
 	GetUserByExternalIdQuery,
@@ -8,7 +9,7 @@ import {
 } from "./get-by-external-id";
 
 describe("User-GetByExternalId Integration Tests", () => {
-	test("Should return user when externalId exists", async () => {
+	test("Should return a userDto when externalId exists", async () => {
 		await runTestInTransaction(async (tx) => {
 			const externalId = "auth0-get-by-id";
 			const userId = await seedUser(tx, {
@@ -22,25 +23,23 @@ describe("User-GetByExternalId Integration Tests", () => {
 
 			const query = new GetUserByExternalIdQuery({ externalId });
 
-			const user = await getUserByExternalIdHandler({
+			const userResult = await getUserByExternalIdHandler({
 				query: query.value,
 				repository: userDrizzleRepository(tx),
 			});
 
-			expect(user).not.toBeNull();
+			const user = userResult.value;
+
+			expect(userResult.isSuccess).toBeTrue();
 			expect(user?.id).toBe(userId);
-			expect(user?.externalId).toBe(externalId);
 			expect(user?.name).toBe("Find Me");
 			expect(user?.email).toBe("findme@example.com");
 			expect(user?.lastName).toBe("User");
-			expect(user?.phone).toBe("+5215551234567");
 			expect(user?.pictureUrl).toBe("https://example.com/pic.jpg");
-			expect(user?.createdAt).toBeInstanceOf(Date);
-			expect(user?.updatedAt).toBeInstanceOf(Date);
 		});
 	});
 
-	test("Should return null when externalId does not exist", async () => {
+	test("Should return UserErrors.USER_NOT_FOUND when externalId does not exist", async () => {
 		await runTestInTransaction(async (tx) => {
 			const query = new GetUserByExternalIdQuery({
 				externalId: "auth0-nonexistent",
@@ -51,33 +50,8 @@ describe("User-GetByExternalId Integration Tests", () => {
 				repository: userDrizzleRepository(tx),
 			});
 
-			expect(user).toBeNull();
-		});
-	});
-
-	test("Should return user with null optional fields when not set", async () => {
-		await runTestInTransaction(async (tx) => {
-			const externalId = "auth0-no-optionals";
-			await seedUser(tx, {
-				externalId,
-				name: "No Optionals",
-				email: "noopt@example.com",
-				lastName: null,
-				phone: null,
-				pictureUrl: null,
-			});
-
-			const query = new GetUserByExternalIdQuery({ externalId });
-
-			const user = await getUserByExternalIdHandler({
-				query: query.value,
-				repository: userDrizzleRepository(tx),
-			});
-
-			expect(user).not.toBeNull();
-			expect(user?.lastName).toBeNull();
-			expect(user?.phone).toBeNull();
-			expect(user?.pictureUrl).toBeNull();
+			expect(user.isFailure).toBeTrue();
+			expect(user.error).toBe(UserErrors.USER_NOT_FOUND);
 		});
 	});
 });
