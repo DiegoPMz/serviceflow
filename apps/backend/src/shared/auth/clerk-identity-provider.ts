@@ -46,6 +46,9 @@ export const clerkIdentityProvider: UserIdentityProvider = {
 					"CLERK_API_ERROR",
 					"El proveedor de identidad devolvió un error.",
 					502,
+					{
+						request: response.text(),
+					},
 				),
 			);
 		}

@@ -5,4 +5,3 @@ export * from "./schema/device";
 export * from "./schema/order";
 export * from "./schema/user";
 export * from "./schema/workspace";
-export * from "./utils/run-in-transaction";

@@ -53,9 +53,10 @@ export async function generateClerkToken(
 	payload: {
 		sub: string;
 		sid: string;
+		userId?: string | null;
 	},
 ) {
-	return new SignJWT(payload)
+	return new SignJWT({ ...payload, userId: payload.userId ?? null })
 		.setProtectedHeader({
 			alg: "RS256",
 			kid: "mw_test_key",

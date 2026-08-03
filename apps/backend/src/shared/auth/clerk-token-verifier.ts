@@ -16,13 +16,18 @@ export const clerkTokenVerifier: TokenVerifier = {
 				requiredClaims: ["sub", "sid"],
 			});
 
-			if (typeof payload.sub !== "string" || typeof payload.sid !== "string") {
+			if (
+				typeof payload.sub !== "string" ||
+				typeof payload.sid !== "string" ||
+				(payload.userId && typeof payload.userId !== "string")
+			) {
 				return Result.failure(AuthErrors.INVALID_TOKEN);
 			}
 
 			return Result.success({
 				externalId: payload.sub,
 				sessionId: payload.sid,
+				userId: (payload.userId as string) ?? null,
 			});
 		} catch (error: unknown) {
 			if (error instanceof JOSEError) {

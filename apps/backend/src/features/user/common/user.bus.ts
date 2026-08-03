@@ -38,4 +38,6 @@ export async function userBus(message: UserMessages) {
 	throw new Error("Comando no reconocido");
 }
 
+export type UserBus = typeof userBus;
+
 type UserMessages = EnsureUserExistsCommand | GetUserByExternalIdQuery;

@@ -1,22 +1,14 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: <> */
-import {
-	afterEach,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	spyOn,
-	test,
-} from "bun:test";
+import { beforeAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { Elysia } from "elysia";
+import { ulid } from "ulidx";
 import { clerkTokenVerifier } from "../auth";
 import {
 	type ClerkUser,
 	clerkIdentityProvider,
 } from "../auth/clerk-identity-provider";
 import { clerkConfig } from "../config";
-import { ErrorDetailsException } from "../result";
 import {
+	createInMemoryUserBus,
 	createMockClerkUser,
 	generateClerkToken,
 	getJwksRequestCount,
@@ -25,10 +17,15 @@ import {
 } from "../tests";
 import { createAuthPlugin } from "./auth-plugin";
 
+const userBus = createInMemoryUserBus();
+
 const authPlugin = createAuthPlugin({
 	tokenVerifier: clerkTokenVerifier,
 	userIdentityProvider: clerkIdentityProvider,
+	userBus: userBus,
 });
+
+let fetchSpy: any = null;
 
 describe("Auth-Plugin integration/E2E Tests", () => {
 	const app = new Elysia().use(authPlugin).get(
@@ -37,7 +34,7 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 			return status(200, {
 				success: true,
 				externalId: auth.externalId,
-				sessionId: auth.sessionId,
+				userId: auth.userId,
 			});
 		},
 		{
@@ -52,13 +49,18 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 	});
 
 	beforeEach(() => {
+		if (fetchSpy) fetchSpy.mockRestore();
+
 		resetJwksCounter();
 	});
 
-	test("should allow access to the endpoint, inject user details, and leverage JWKS caching", async () => {
+	test("should allow access using existing userId in JWT (Fast Path) and provision new user when missing (JIT Path)", async () => {
+		const existingUserId = ulid();
+
 		const token1 = await generateClerkToken(clerkConfig, {
 			sub: "clerk_user_99",
 			sid: "session_abc",
+			userId: existingUserId,
 		});
 
 		const response1 = await app.handle(
@@ -72,12 +74,19 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		expect(body1).toEqual({
 			success: true,
 			externalId: "clerk_user_99",
-			sessionId: "session_abc",
+			userId: existingUserId,
+		});
+
+		const externalId = "clerk_user_100";
+
+		mockClerkResponse(externalId, {
+			email_addresses: [{ id: "email_1", email_address: "john@example.com" }],
 		});
 
 		const token2 = await generateClerkToken(clerkConfig, {
-			sub: "clerk_user_100",
+			sub: externalId,
 			sid: "session_xyz",
+			userId: undefined,
 		});
 
 		const response2 = await app.handle(
@@ -87,6 +96,13 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		);
 
 		expect(response2.status).toBe(200);
+		const body2 = await response2.json();
+		expect(body2).toEqual({
+			success: true,
+			externalId: "clerk_user_100",
+			userId: expect.any(String),
+		});
+
 		expect(getJwksRequestCount()).toBe(1);
 	});
 
@@ -102,6 +118,7 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		const validToken = await generateClerkToken(clerkConfig, {
 			sub: "user_test",
 			sid: "session_test",
+			userId: ulid(),
 		});
 
 		const tamperedToken = `${validToken} manipulated`;
@@ -121,6 +138,7 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 			{
 				sub: "user_test",
 				sid: "session_test",
+				userId: ulid(),
 			},
 		);
 
@@ -137,6 +155,7 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		const tokenWithoutSession = await generateClerkToken(clerkConfig, {
 			sub: "user_test",
 			sid: undefined as unknown as string,
+			userId: ulid(),
 		});
 
 		const response = await app.handle(
@@ -149,105 +168,33 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 	});
 });
 
-describe("Auth-Plugin -> UserDetails() integration/E2E Tests", () => {
-	const app = new Elysia()
-		// Just for testing purposes
-		.onError(({ error }) => {
-			throw error;
-		})
-		.use(authPlugin)
-		.get(
-			"/user-details",
-			async ({ auth, status }) => {
-				const userDetails = await auth.userDetails();
+const originalFetch = globalThis.fetch;
 
-				return status(200, {
-					success: true,
-					user: userDetails,
-				});
-			},
-			{ auth: true },
-		);
+function mockClerkResponse(
+	externalId: string,
+	responseOverrides?: Partial<ClerkUser>,
+) {
+	if (fetchSpy) fetchSpy.mockRestore();
 
-	let fetchSpy: any = null;
-	const originalFetch = globalThis.fetch;
+	fetchSpy = spyOn(globalThis, "fetch").mockImplementation((async (
+		input: any,
+		init: any,
+	) => {
+		const url = input instanceof Request ? input.url : input.toString();
 
-	afterEach(() => {
-		if (fetchSpy) fetchSpy.mockRestore();
-		globalThis.fetch = originalFetch;
-	});
+		if (url.includes(`https://api.clerk.com/v1/users/`)) {
+			console.log("se ejecuto el fetch de USER_DETAILS");
+			const mockUser = createMockClerkUser({
+				id: externalId,
+				...responseOverrides,
+			});
 
-	function mockClerkResponse(
-		externalId: string,
-		responseOverrides?: Partial<ClerkUser>,
-	) {
-		if (fetchSpy) fetchSpy.mockRestore();
+			return new Response(JSON.stringify(mockUser), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			});
+		}
 
-		fetchSpy = spyOn(globalThis, "fetch").mockImplementation((async (
-			input: any,
-			init: any,
-		) => {
-			const url = input instanceof Request ? input.url : input.toString();
-
-			if (url.includes(`https://api.clerk.com/v1/users/${externalId}`)) {
-				const mockUser = createMockClerkUser({
-					id: externalId,
-					...responseOverrides,
-				});
-
-				return new Response(JSON.stringify(mockUser), {
-					status: 200,
-					headers: { "Content-Type": "application/json" },
-				});
-			}
-
-			return originalFetch(input, init);
-		}) as any);
-	}
-
-	test("should return user details when identity provider succeeds", async () => {
-		const externalId = "user_123";
-		const sessionId = "session_123";
-
-		const token = await generateClerkToken(clerkConfig, {
-			sub: externalId,
-			sid: sessionId,
-		});
-
-		mockClerkResponse(externalId, {
-			email_addresses: [{ id: "email_1", email_address: "john@example.com" }],
-		});
-
-		const response = await app.handle(
-			new Request("http://localhost/user-details", {
-				headers: { Authorization: `Bearer ${token}` },
-			}),
-		);
-
-		expect(response.status).toBe(200);
-		const body = await response.json();
-		expect(body.user.emailAddress).toBe("john@example.com");
-	});
-
-	test("should throw ErrorDetailsException when identity provider returns incomplete data", async () => {
-		const externalId = "user_incomplete";
-
-		const token = await generateClerkToken(clerkConfig, {
-			sub: externalId,
-			sid: "session_123",
-		});
-
-		mockClerkResponse(externalId, {
-			first_name: null,
-			email_addresses: [],
-		});
-
-		expect(
-			app.handle(
-				new Request("http://localhost/user-details", {
-					headers: { Authorization: `Bearer ${token}` },
-				}),
-			),
-		).rejects.toThrowError(ErrorDetailsException);
-	});
-});
+		return originalFetch(input, init);
+	}) as any);
+}
