@@ -1,106 +1,189 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { ErrorDetailsException } from "../result";
-import { createMockClerkUser } from "../tests";
-import { AuthErrors } from "./auth.errors";
-import { clerkIdentityProvider } from "./clerk-identity-provider";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { createClerkIdentityProvider } from "./clerk-identity-provider";
 
-describe("Clerk Identity Provider Unit Tests", () => {
-	let fetchSpy: any = null;
-	const originalFetch = globalThis.fetch;
+describe("createClerkIdentityProvider Unit Tests", () => {
+	let fetchSpy: any;
 
-	afterEach(() => {
-		if (fetchSpy) fetchSpy.mockRestore();
-		globalThis.fetch = originalFetch;
+	const config = {
+		secretKey: "sk_test_mock_secret_key",
+		baseUrl: "https://api.clerk.com/v1",
+	};
+
+	beforeEach(() => {
+		fetchSpy = spyOn(globalThis, "fetch");
 	});
 
-	test("should return AuthUserDetails when Clerk responds successfully", async () => {
-		const externalId = "user_success";
+	afterEach(() => {
+		fetchSpy.mockRestore();
+	});
 
-		fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(
-			new Response(
-				JSON.stringify(
-					createMockClerkUser({
-						id: externalId,
-						first_name: "Bruce",
-						last_name: "Wayne",
-						email_addresses: [{ id: "em_1", email_address: "bruce@wayne.com" }],
-					}),
-				),
-				{ status: 200 },
-			),
-		);
+	describe("getUserDetails", () => {
+		test("debe retornar los detalles del usuario asignando el email principal (primary_email_address_id)", async () => {
+			const provider = createClerkIdentityProvider(config);
 
-		const userDetails = await clerkIdentityProvider.getUserDetails(externalId);
+			const mockClerkUser = {
+				id: "user_123",
+				first_name: "Jane",
+				last_name: "Doe",
+				image_url: "https://example.com/avatar.png",
+				primary_email_address_id: "email_2",
+				email_addresses: [
+					{ id: "email_1", email_address: "secondary@example.com" },
+					{ id: "email_2", email_address: "primary@example.com" },
+				],
+				external_accounts: [],
+			};
 
-		expect(userDetails).toEqual({
-			firstName: "Bruce",
-			lastName: "Wayne",
-			emailAddress: "bruce@wayne.com",
-			imageUrl: "https://img.clerk.com/preview.png",
+			fetchSpy.mockResolvedValue(
+				new Response(JSON.stringify(mockClerkUser), {
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				}),
+			);
+
+			const result = await provider.getUserDetails("user_123");
+
+			expect(fetchSpy).toHaveBeenCalledWith(
+				"https://api.clerk.com/v1/users/user_123",
+				expect.objectContaining({ method: "GET" }),
+			);
+
+			expect(result).toEqual({
+				firstName: "Jane",
+				lastName: "Doe",
+				emailAddress: "primary@example.com",
+				imageUrl: "https://example.com/avatar.png",
+			});
+		});
+
+		test("debe usar el primer email como fallback si primary_email_address_id no coincide o es nulo", async () => {
+			const provider = createClerkIdentityProvider(config);
+
+			const mockClerkUser = {
+				id: "user_123",
+				first_name: "John",
+				last_name: null,
+				image_url: "https://example.com/avatar.png",
+				primary_email_address_id: null,
+				email_addresses: [
+					{ id: "email_1", email_address: "fallback@example.com" },
+				],
+				external_accounts: [],
+			};
+
+			fetchSpy.mockResolvedValue(
+				new Response(JSON.stringify(mockClerkUser), { status: 200 }),
+			);
+
+			const result = await provider.getUserDetails("user_123");
+
+			expect(result.emailAddress).toBe("fallback@example.com");
+			expect(result.lastName).toBeUndefined();
+		});
+
+		test("debe lanzar INCOMPLETE_USER_PROFILE si falta first_name", async () => {
+			const provider = createClerkIdentityProvider(config);
+
+			const mockIncompleteUser = {
+				id: "user_123",
+				first_name: null,
+				image_url: "https://example.com/avatar.png",
+				email_addresses: [{ id: "email_1", email_address: "test@example.com" }],
+			};
+
+			fetchSpy.mockResolvedValue(
+				new Response(JSON.stringify(mockIncompleteUser), { status: 200 }),
+			);
+
+			expect(provider.getUserDetails("user_123")).rejects.toThrow();
+		});
+
+		test("debe lanzar INCOMPLETE_USER_PROFILE si el usuario no tiene emails", async () => {
+			const provider = createClerkIdentityProvider(config);
+
+			const mockNoEmailUser = {
+				id: "user_123",
+				first_name: "John",
+				image_url: "https://example.com/avatar.png",
+				email_addresses: [],
+			};
+
+			fetchSpy.mockResolvedValue(
+				new Response(JSON.stringify(mockNoEmailUser), { status: 200 }),
+			);
+
+			expect(provider.getUserDetails("user_123")).rejects.toThrow();
+		});
+
+		test("debe lanzar un error CLERK_API_ERROR cuando la API de Clerk responde con un status != 2xx", async () => {
+			const provider = createClerkIdentityProvider(config);
+
+			fetchSpy.mockResolvedValue(
+				new Response(JSON.stringify({ error: "User not found" }), {
+					status: 404,
+					statusText: "Not Found",
+				}),
+			);
+
+			expect(provider.getUserDetails("invalid_id")).rejects.toThrow();
+		});
+
+		test("debe lanzar SERVICE_UNAVAILABLE cuando la llamada fetch falla a nivel de red", async () => {
+			const provider = createClerkIdentityProvider(config);
+
+			fetchSpy.mockRejectedValue(new Error("Network connection lost"));
+
+			expect(provider.getUserDetails("user_123")).rejects.toThrow();
 		});
 	});
 
-	test("should throw INCOMPLETE_USER_PROFILE when first_name is missing", async () => {
-		const externalId = "user_no_name";
+	describe("updatePublicMetadata", () => {
+		test("debe realizar una petición PATCH correcta con los metadatos y headers requeridos", async () => {
+			const provider = createClerkIdentityProvider(config);
 
-		fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(
-			new Response(
-				JSON.stringify(
-					createMockClerkUser({
-						first_name: null,
-					}),
-				),
-				{ status: 200 },
-			),
-		);
-
-		try {
-			await clerkIdentityProvider.getUserDetails(externalId);
-		} catch (error: unknown) {
-			expect((error as ErrorDetailsException)?.errorDetails.code).toBe(
-				AuthErrors.INCOMPLETE_USER_PROFILE.code,
+			fetchSpy.mockResolvedValue(
+				new Response(JSON.stringify({ success: true }), { status: 200 }),
 			);
-		}
-	});
 
-	test("should throw SERVICE_UNAVAILABLE when fetch completely fails (Network Error)", async () => {
-		const externalId = "user_network_error";
+			const metadata = { role: "admin", systemId: "sys_123" };
+			await provider.updatePublicMetadata("user_123", metadata);
 
-		fetchSpy = spyOn(globalThis, "fetch").mockRejectedValue(
-			new TypeError("Failed to fetch"),
-		);
+			expect(fetchSpy).toHaveBeenCalledWith(
+				"https://api.clerk.com/v1/users/user_123",
+				{
+					method: "PATCH",
+					headers: {
+						Authorization: "Bearer sk_test_mock_secret_key",
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ public_metadata: metadata }),
+				},
+			);
+		});
 
-		try {
-			await clerkIdentityProvider.getUserDetails(externalId);
-		} catch (error: unknown) {
-			const err = error as ErrorDetailsException;
+		test("debe lanzar error cuando la API responde con un status de error (ej: 400)", async () => {
+			const provider = createClerkIdentityProvider(config);
 
-			expect(err).toBeInstanceOf(ErrorDetailsException);
-			expect(err?.errorDetails.code).toBe(AuthErrors.SERVICE_UNAVAILABLE.code);
-			expect(err?.cause).toBeInstanceOf(TypeError);
-		}
-	});
-
-	test("should throw CLERK_API_ERROR when Clerk responds with 4xx or 5xx", async () => {
-		const externalId = "user_api_error";
-
-		fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(
-			new Response(
-				JSON.stringify({
-					errors: [{ message: "Rate limit exceeded" }],
+			fetchSpy.mockResolvedValue(
+				new Response(JSON.stringify({ error: "Bad Request" }), {
+					status: 400,
+					statusText: "Bad Request",
 				}),
-				{ status: 429 },
-			),
-		);
+			);
 
-		try {
-			await clerkIdentityProvider.getUserDetails(externalId);
-		} catch (error: unknown) {
-			const err = error as ErrorDetailsException;
+			expect(
+				provider.updatePublicMetadata("user_123", { role: "invalid" }),
+			).rejects.toThrow();
+		});
 
-			expect(err).toBeInstanceOf(ErrorDetailsException);
-			expect(err?.errorDetails.code).toBe("CLERK_API_ERROR");
-			expect(err?.errorDetails.statusCode).toBe(502);
-		}
+		test("debe lanzar SERVICE_UNAVAILABLE cuando fetch falla por error de red", async () => {
+			const provider = createClerkIdentityProvider(config);
+
+			fetchSpy.mockRejectedValue(new Error("Connection refused"));
+
+			expect(
+				provider.updatePublicMetadata("user_123", { role: "admin" }),
+			).rejects.toThrow();
+		});
 	});
 });

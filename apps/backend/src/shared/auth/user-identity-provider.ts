@@ -7,4 +7,8 @@ export interface AuthUserDetails {
 
 export interface UserIdentityProvider {
 	getUserDetails(externalId: string): Promise<AuthUserDetails>;
+	updatePublicMetadata(
+		externalId: string,
+		metadata: Record<string, unknown>,
+	): Promise<void>;
 }

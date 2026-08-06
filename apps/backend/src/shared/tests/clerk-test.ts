@@ -82,12 +82,14 @@ export const createMockClerkUser = (
 	first_name: "Jane",
 	last_name: "Doe",
 	image_url: "https://img.clerk.com/preview.png",
+	primary_email_address_id: "idn_12345",
 	email_addresses: [
 		{
 			id: "idn_12345",
 			email_address: "jane.doe@example.com",
 		},
 	],
+	public_metadata: {},
 	external_accounts: [],
 	...overrides,
 });

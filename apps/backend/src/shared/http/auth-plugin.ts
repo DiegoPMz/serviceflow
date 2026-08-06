@@ -1,21 +1,16 @@
-import type { UserBus } from "@serviceflow/backend/features/user/common/user.bus";
-import { EnsureUserExistsCommand } from "@serviceflow/backend/features/user/ensure-user-exists";
-import { GetUserByExternalIdQuery } from "@serviceflow/backend/features/user/get-by-external-id";
 import Elysia from "elysia";
-import type { TokenVerifier, UserIdentityProvider } from "../auth";
+import type { TokenVerifier, UserSyncService } from "../auth";
 import { AuthErrors } from "../auth/auth.errors";
 import { respond } from "./respond";
 
 export interface AuthPluginConfig {
 	tokenVerifier: TokenVerifier;
-	userIdentityProvider: UserIdentityProvider;
-	userBus: UserBus;
+	userSyncService: UserSyncService;
 }
 
 export const createAuthPlugin = ({
 	tokenVerifier,
-	userIdentityProvider,
-	userBus,
+	userSyncService,
 }: AuthPluginConfig) =>
 	new Elysia({ name: "auth-plugin" }).macro("auth", (enabled: boolean) => ({
 		async resolve({ headers, status, set }) {
@@ -43,42 +38,21 @@ export const createAuthPlugin = ({
 			let userId = verifyResult.value.userId;
 
 			if (!userId) {
-				const fetchedDetails =
-					await userIdentityProvider.getUserDetails(externalId);
+				const syncResult = await userSyncService.ensureUserSynced(externalId);
 
-				const registerUser = await userBus(
-					new EnsureUserExistsCommand({
-						externalId,
-						email: fetchedDetails.emailAddress,
-						name: fetchedDetails.firstName,
-						lastName: fetchedDetails.lastName ?? undefined,
-						pictureUrl: fetchedDetails.imageUrl,
-					}),
-				);
-
-				if (registerUser.isFailure) {
+				if (syncResult.isFailure) {
 					return status(
-						registerUser.error.statusCode,
-						respond.failure(registerUser.error, set),
+						syncResult.error.statusCode,
+						respond.failure(syncResult.error, set),
 					);
 				}
 
-				const newUser = await userBus(
-					new GetUserByExternalIdQuery({ externalId }),
-				);
-				if (newUser.isFailure) {
-					return status(
-						newUser.error.statusCode,
-						respond.failure(newUser.error, set),
-					);
-				}
-
-				userId = newUser.value.id;
+				userId = syncResult.value.id;
 			}
 
 			return {
 				auth: {
-					userId,
+					userId: userId as string,
 					externalId,
 				},
 			};

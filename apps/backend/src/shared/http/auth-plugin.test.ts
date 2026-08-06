@@ -1,14 +1,15 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <Just for testing porpuses> */
+
 import { beforeAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { userDrizzleRepository } from "@serviceflow/backend/features/user/common/user-drizzle-repository";
+import { userSyncServiceImp } from "@serviceflow/backend/features/user/user-sync.service.impl";
 import { Elysia } from "elysia";
 import { ulid } from "ulidx";
 import { clerkTokenVerifier } from "../auth";
-import {
-	type ClerkUser,
-	clerkIdentityProvider,
-} from "../auth/clerk-identity-provider";
+import { createClerkIdentityProvider } from "../auth/clerk-identity-provider";
 import { clerkConfig } from "../config";
+import { users } from "../database";
 import {
-	createInMemoryUserBus,
 	createMockClerkUser,
 	generateClerkToken,
 	getJwksRequestCount,
@@ -17,40 +18,52 @@ import {
 } from "../tests";
 import { createAuthPlugin } from "./auth-plugin";
 
-const userBus = createInMemoryUserBus();
-
-const authPlugin = createAuthPlugin({
-	tokenVerifier: clerkTokenVerifier,
-	userIdentityProvider: clerkIdentityProvider,
-	userBus: userBus,
-});
-
-let fetchSpy: any = null;
+let fetchSpy: any;
 
 describe("Auth-Plugin integration/E2E Tests", () => {
-	const app = new Elysia().use(authPlugin).get(
-		"/protected-route",
-		({ auth, status }) => {
-			return status(200, {
-				success: true,
-				externalId: auth.externalId,
-				userId: auth.userId,
-			});
-		},
-		{
-			auth: true,
-		},
-	);
+	let app: Elysia;
 
 	beforeAll(async () => {
 		await setupClerkTest({
 			jwksUrl: clerkConfig.jwksUrl,
 		});
+
+		// BD container
+		const testDb = globalThis.__TEST_DB__;
+
+		// 3. Crear repositorio y servicio con la BD correcta
+		const userRepository = userDrizzleRepository(testDb);
+		const userSyncService = userSyncServiceImp({
+			userRepository,
+			userIdentityProvider: createClerkIdentityProvider({
+				secretKey: "sk_test_mock_secret_key",
+			}),
+		});
+
+		const authPlugin = createAuthPlugin({
+			tokenVerifier: clerkTokenVerifier,
+			userSyncService: userSyncService,
+		});
+
+		app = new Elysia().use(authPlugin).get(
+			"/protected-route",
+			({ auth, status }) => {
+				return status(200, {
+					success: true,
+					externalId: auth.externalId,
+					userId: auth.userId,
+				});
+			},
+			{
+				auth: true,
+			},
+		) as unknown as Elysia;
 	});
 
-	beforeEach(() => {
-		if (fetchSpy) fetchSpy.mockRestore();
+	beforeEach(async () => {
+		await globalThis.__TEST_DB__.delete(users);
 
+		if (fetchSpy) fetchSpy.mockRestore();
 		resetJwksCounter();
 	});
 
@@ -80,6 +93,7 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		const externalId = "clerk_user_100";
 
 		mockClerkResponse(externalId, {
+			primary_email_address_id: "email_1",
 			email_addresses: [{ id: "email_1", email_address: "john@example.com" }],
 		});
 
@@ -94,6 +108,10 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 				headers: { Authorization: `Bearer ${token2}` },
 			}),
 		);
+
+		if (response2.status === 500) {
+			console.error("Detalle del error 500:", await response2.text());
+		}
 
 		expect(response2.status).toBe(200);
 		const body2 = await response2.json();
@@ -172,7 +190,7 @@ const originalFetch = globalThis.fetch;
 
 function mockClerkResponse(
 	externalId: string,
-	responseOverrides?: Partial<ClerkUser>,
+	responseOverrides?: Record<string, any>,
 ) {
 	if (fetchSpy) fetchSpy.mockRestore();
 
@@ -180,21 +198,56 @@ function mockClerkResponse(
 		input: any,
 		init: any,
 	) => {
-		const url = input instanceof Request ? input.url : input.toString();
+		const url =
+			typeof input === "string"
+				? input
+				: (input?.url ?? input?.toString() ?? "");
+		const method = (
+			input instanceof Request ? input.method : (init?.method ?? "GET")
+		).toUpperCase();
 
-		if (url.includes(`https://api.clerk.com/v1/users/`)) {
-			console.log("se ejecuto el fetch de USER_DETAILS");
-			const mockUser = createMockClerkUser({
-				id: externalId,
-				...responseOverrides,
-			});
+		if (url.includes(`/users/${externalId}`)) {
+			if (method === "GET") {
+				const mockUser = createMockClerkUser({
+					id: externalId,
+					...responseOverrides,
+				});
 
-			return new Response(JSON.stringify(mockUser), {
-				status: 200,
-				headers: { "Content-Type": "application/json" },
-			});
+				return new Response(JSON.stringify(mockUser), {
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				});
+			}
+
+			if (method === "PATCH") {
+				let patchBody: any = {};
+				if (init?.body) {
+					try {
+						patchBody =
+							typeof init.body === "string"
+								? JSON.parse(init.body)
+								: JSON.parse(init.body.toString());
+					} catch {
+						// ignore JSON parse error
+					}
+				}
+
+				const mockUpdatedUser = createMockClerkUser({
+					id: externalId,
+					...responseOverrides,
+					public_metadata: {
+						...(responseOverrides?.public_metadata as object),
+						...patchBody?.public_metadata,
+					},
+				});
+
+				return new Response(JSON.stringify(mockUpdatedUser), {
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				});
+			}
 		}
 
-		return originalFetch(input, init);
+		return originalFetch.call(globalThis, input, init);
 	}) as any);
 }

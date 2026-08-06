@@ -30,6 +30,15 @@ export const userDrizzleRepository = (
 		if (!entity) return null;
 		return userMapper.toModel(entity);
 	},
+
+	transaction: async <R>(
+		fn: (txRepo: UserRepository) => Promise<R>,
+	): Promise<R> => {
+		return await db.transaction(async (tx) => {
+			const txRepo = userDrizzleRepository(tx);
+			return await fn(txRepo);
+		});
+	},
 });
 
 const userMapper = {
