@@ -20,13 +20,13 @@ interface PaginationWorkspaceRequest {
 
 export type WorkspaceCursor = PaginationCursor<WorkspaceOrderBy, string | Date>;
 
-type PaginatedDevicesQuery = {
-	paginationRequest: PaginationWorkspaceRequest;
-	userId: string;
-};
+interface GetPaginatedWorkspacesQuery {
+	readonly paginationRequest: PaginationWorkspaceRequest;
+	readonly userId: string;
+}
 
 interface PaginatedWorkspaceProps {
-	query: PaginatedDevicesQuery;
+	query: GetPaginatedWorkspacesQuery;
 	repository: WorkspaceRepository;
 }
 

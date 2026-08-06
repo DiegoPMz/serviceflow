@@ -3,7 +3,7 @@ import { Result, Updated } from "@serviceflow/backend/shared/result";
 import { workspaceErrors } from "./common/workspace.errors";
 import type { WorkspaceRepository } from "./common/workspace-repository";
 
-interface ConfirmLogoUploadCommand {
+export interface ConfirmLogoUploadCommand {
 	workspaceId: string;
 	fileKey: string;
 }
@@ -37,6 +37,9 @@ export const confirmLogoUploadHandler = async ({
 		return Result.failure(updateResult.error);
 	}
 
-	await workspaceRepository.update(workspace);
+	await workspaceRepository.transaction(
+		async (txRepo) => await txRepo.update(workspace),
+	);
+
 	return Updated.toResult();
 };

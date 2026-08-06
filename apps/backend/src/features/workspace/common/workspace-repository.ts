@@ -1,3 +1,4 @@
+import type { Transactional } from "@serviceflow/backend/shared/database";
 import type {
 	Pagination,
 	SortDirection,
@@ -6,10 +7,11 @@ import type {
 	WorkspaceCursor,
 	WorkspaceOrderBy,
 } from "../paginated-workspaces";
-import type { Workspace } from "./workspace.model";
+import type { Workspace, WorkspaceRole } from "./workspace.model";
 import type { WorkspaceReadModel } from "./workspace.read-model";
 
-export interface WorkspaceRepository {
+export interface WorkspaceRepository
+	extends Transactional<WorkspaceRepository> {
 	save: (model: Workspace) => Promise<void>;
 	update: (model: Workspace) => Promise<void>;
 	getById: (workspaceId: string) => Promise<Workspace | null>;
@@ -21,4 +23,9 @@ export interface WorkspaceRepository {
 		search?: string;
 		userId: string;
 	}): Promise<Pagination<WorkspaceReadModel>>;
+
+	findMembership: (values: {
+		userId: string;
+		workspaceId: string;
+	}) => Promise<WorkspaceRole[]>;
 }
