@@ -6,9 +6,9 @@ import {
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { ulid } from "ulidx";
-import { workspaceErrors } from "./workspace.errors";
 import { workspaceAuthorization } from "./workspace-authorization";
-import { workspaceDrizzleRepository } from "./workspace-drizzle-repository";
+import { workspaceMemberDrizzleRepository } from "./workspace-drizzle-member-repository";
+import { workspaceMemberErrors } from "./workspace-member.errors";
 
 describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 	test("Should return success when the user has an allowed role", async () => {
@@ -18,7 +18,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			await addMember(tx, { userId, workspaceId, role: "owner" });
 
 			const result = await workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			}).excecute({
 				userId,
 				workspaceId,
@@ -37,7 +37,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			await addMember(tx, { userId, workspaceId, role: "admin" });
 
 			const result = await workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			}).excecute({
 				userId,
 				workspaceId,
@@ -56,7 +56,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			await addMember(tx, { userId, workspaceId, role: "viewer" });
 
 			const result = await workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			}).excecute({
 				userId,
 				workspaceId,
@@ -77,7 +77,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			await addMember(tx, { userId, workspaceId: workspaceB, role: "viewer" });
 
 			const authorization = workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			});
 
 			const resultA = await authorization.excecute({
@@ -97,7 +97,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 
 			expect(resultB.isFailure).toBeTrue();
 			expect(resultB.error.code).toBe(
-				workspaceErrors.INSUFFICIENT_PERMISSIONS.code,
+				workspaceMemberErrors.INSUFFICIENT_PERMISSIONS.code,
 			);
 		});
 	});
@@ -114,7 +114,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			});
 
 			const result = await workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			}).excecute({
 				userId,
 				workspaceId: targetWorkspace,
@@ -122,7 +122,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBeTrue();
-			expect(result.error.code).toBe(workspaceErrors.NOT_A_MEMBER.code);
+			expect(result.error.code).toBe(workspaceMemberErrors.NOT_A_MEMBER.code);
 		});
 	});
 
@@ -132,7 +132,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 
 			const result = await workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			}).excecute({
 				userId,
 				workspaceId,
@@ -140,7 +140,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBeTrue();
-			expect(result.error.code).toBe(workspaceErrors.NOT_A_MEMBER.code);
+			expect(result.error.code).toBe(workspaceMemberErrors.NOT_A_MEMBER.code);
 		});
 	});
 
@@ -149,7 +149,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			const userId = await seedUser(tx);
 
 			const result = await workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			}).excecute({
 				userId,
 				workspaceId: ulid(),
@@ -157,7 +157,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBeTrue();
-			expect(result.error.code).toBe(workspaceErrors.NOT_A_MEMBER.code);
+			expect(result.error.code).toBe(workspaceMemberErrors.NOT_A_MEMBER.code);
 		});
 	});
 
@@ -168,7 +168,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			await addMember(tx, { userId, workspaceId, role: "viewer" });
 
 			const result = await workspaceAuthorization({
-				workspaceRepository: workspaceDrizzleRepository(tx),
+				membersRepository: workspaceMemberDrizzleRepository(tx),
 			}).excecute({
 				userId,
 				workspaceId,
@@ -177,7 +177,7 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 
 			expect(result.isFailure).toBeTrue();
 			expect(result.error.code).toBe(
-				workspaceErrors.INSUFFICIENT_PERMISSIONS.code,
+				workspaceMemberErrors.INSUFFICIENT_PERMISSIONS.code,
 			);
 		});
 	});

@@ -24,3 +24,12 @@ export const clerkConfig = {
 	jwksUrl: raw.CLERK_JWKS_URL,
 	issuer: raw.CLERK_ISSUER,
 };
+
+export const resendConfig = {
+	apiKey: raw.RESEND_API_KEY,
+};
+
+export const appConfig = {
+	url: raw.FRONTEND_URL,
+	invitationCallbackPath: raw.FRONTEND_INVITATION_CALLBACK_PATH,
+};

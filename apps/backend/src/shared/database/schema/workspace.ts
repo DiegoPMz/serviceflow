@@ -1,4 +1,4 @@
-import { WORKSPACE_ROLES } from "@serviceflow/backend/features/workspace/common/workspace.model";
+import { WORKSPACE_ROLES_ARRAY } from "@serviceflow/backend/features/workspace/common/workspace-member.model";
 import {
 	index,
 	integer,
@@ -48,7 +48,9 @@ export const workspaceMembers = sqliteTable(
 			.references(() => users.id, { onDelete: "cascade" })
 			.notNull(),
 
-		role: text("role", { enum: WORKSPACE_ROLES }).default("viewer").notNull(),
+		role: text("role", { enum: WORKSPACE_ROLES_ARRAY })
+			.default("viewer")
+			.notNull(),
 
 		joinedAt: integer("joined_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)
@@ -68,17 +70,25 @@ export const workspaceMembers = sqliteTable(
 export const workspaceInvitations = sqliteTable(
 	"workspace_invitations",
 	{
-		token: text("token", { length: 21 }).primaryKey(),
+		token: text("token", { length: 21 }).notNull(),
 
 		workspaceId: text("workspace_id", { length: 26 })
 			.references(() => workspaces.id, { onDelete: "cascade" })
 			.notNull(),
-		role: text("role", { enum: WORKSPACE_ROLES }).default("viewer").notNull(),
+		role: text("role", { enum: WORKSPACE_ROLES_ARRAY })
+			.default("viewer")
+			.notNull(),
+		email: text("email").notNull(),
 
+		expirationDays: integer("expiration_days").default(7).notNull(),
 		expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)
 			.notNull(),
 	},
-	(table) => [index("invitation_workspace_idx").on(table.workspaceId)],
+	(table) => [
+		primaryKey({ columns: [table.workspaceId, table.email] }),
+		index("invitation_workspace_idx").on(table.workspaceId),
+		uniqueIndex("invitation_token_unique_idx").on(table.token),
+	],
 );

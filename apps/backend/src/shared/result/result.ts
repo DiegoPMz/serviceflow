@@ -39,13 +39,33 @@ export class Result<T = void> {
 }
 
 export class Created {
+	public readonly message: string = "Created";
+
 	static toResult(): Result<Created> {
 		return Result.success(new Created());
 	}
 }
 
 export class Updated {
+	public readonly message: string = "Updated";
+
 	static toResult(): Result<Updated> {
 		return Result.success(new Updated());
+	}
+}
+
+export class Deleted {
+	public readonly message: string = "Deleted";
+
+	static toResult(): Result<Deleted> {
+		return Result.success(new Deleted());
+	}
+}
+
+export class Success {
+	public readonly message: string = "Success";
+
+	static toResult(): Result<Success> {
+		return Result.success(new Success());
 	}
 }

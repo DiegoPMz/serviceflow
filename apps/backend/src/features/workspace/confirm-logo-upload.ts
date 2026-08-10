@@ -37,9 +37,7 @@ export const confirmLogoUploadHandler = async ({
 		return Result.failure(updateResult.error);
 	}
 
-	await workspaceRepository.transaction(
-		async (txRepo) => await txRepo.update(workspace),
-	);
+	await workspaceRepository.update(workspace);
 
 	return Updated.toResult();
 };

@@ -1,6 +1,11 @@
+import type { InvitationRole } from "@serviceflow/backend/features/workspace/common/workspace-invitation.model";
+import { WorkspaceInvitation } from "@serviceflow/backend/features/workspace/common/workspace-invitation.model";
+import { workspaceInvitationDrizzleRepository } from "@serviceflow/backend/features/workspace/common/workspace-invitation-drizzle-repository";
+import type { WorkspaceRole } from "@serviceflow/backend/features/workspace/common/workspace-member.model";
+import { nanoid } from "nanoid";
 import { ulid } from "ulidx";
 import type { DatabaseClient, DatabaseType } from "../client";
-import { type WorkspaceRole, workspaceMembers, workspaces } from "../schema";
+import { workspaceMembers, workspaces } from "../schema";
 
 export const seedWorkspace = async (
 	db: DatabaseType | DatabaseClient,
@@ -43,4 +48,51 @@ export const addMember = async (
 		workspaceId: opts.workspaceId,
 		role: opts.role ?? "owner",
 	});
+};
+
+export const seedWorkspaceInvitation = async (
+	db: DatabaseType | DatabaseClient,
+	opts: {
+		workspaceId: string;
+		email: string;
+		role?: InvitationRole;
+		expirationDays?: number;
+	},
+): Promise<WorkspaceInvitation> => {
+	const result = WorkspaceInvitation.create({
+		workspaceId: opts.workspaceId,
+		email: opts.email,
+		role: opts.role ?? "viewer",
+		...(opts.expirationDays !== undefined
+			? { expirationDays: opts.expirationDays }
+			: {}),
+	});
+
+	if (result.isFailure) {
+		throw new Error(result.error.code);
+	}
+
+	await workspaceInvitationDrizzleRepository(db).save(result.value);
+	return result.value;
+};
+
+export const seedExpiredWorkspaceInvitation = async (
+	db: DatabaseType | DatabaseClient,
+	opts: {
+		workspaceId: string;
+		email: string;
+	},
+): Promise<WorkspaceInvitation> => {
+	const invitation = WorkspaceInvitation.reconstitute({
+		token: nanoid(21),
+		workspaceId: opts.workspaceId,
+		role: "viewer",
+		email: opts.email,
+		expiresAt: new Date(Date.now() - 1000),
+		createdAt: new Date(),
+		expirationDays: 1,
+	});
+
+	await workspaceInvitationDrizzleRepository(db).save(invitation);
+	return invitation;
 };

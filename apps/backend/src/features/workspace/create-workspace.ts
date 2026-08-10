@@ -41,7 +41,7 @@ export async function createWorkspace({
 
 	if (isFailure) return Result.failure(error);
 
-	await repository.transaction(async (txRepo) => await txRepo.save(value));
+	await repository.save(value);
 
 	return Created.toResult();
 }

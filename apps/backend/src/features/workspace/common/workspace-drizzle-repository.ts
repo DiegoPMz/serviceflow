@@ -15,7 +15,7 @@ import type {
 	WorkspaceCursor,
 	WorkspaceOrderBy,
 } from "../paginated-workspaces";
-import { Workspace, type WorkspaceRole } from "./workspace.model";
+import { Workspace } from "./workspace.model";
 import type { WorkspaceReadModel } from "./workspace.read-model";
 import type { WorkspaceRepository } from "./workspace-repository";
 
@@ -98,6 +98,7 @@ export const workspaceDrizzleRepository = (
 			},
 		});
 	},
+
 	getAllPaginated: async ({
 		orderBy,
 		direction,
@@ -199,33 +200,5 @@ export const workspaceDrizzleRepository = (
 				and(eq(dbField, value), gt(workspaces.id, cursor.id)),
 			);
 		}
-	},
-
-	findMembership: async (values: {
-		userId: string;
-		workspaceId: string;
-	}): Promise<WorkspaceRole[]> => {
-		const userRoles = await db
-			.select({
-				role: workspaceMembers.role,
-			})
-			.from(workspaceMembers)
-			.where(
-				and(
-					eq(workspaceMembers.userId, values.userId),
-					eq(workspaceMembers.workspaceId, values.workspaceId),
-				),
-			);
-
-		return userRoles.map((ur) => ur.role);
-	},
-
-	transaction: async <R>(
-		fn: (txRepo: WorkspaceRepository) => Promise<R>,
-	): Promise<R> => {
-		return await db.transaction(async (tx) => {
-			const txRepo = workspaceDrizzleRepository(tx);
-			return await fn(txRepo);
-		});
 	},
 });

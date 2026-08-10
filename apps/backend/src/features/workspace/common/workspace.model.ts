@@ -2,14 +2,6 @@ import { Result, Updated } from "@serviceflow/backend/shared/result";
 import { ulid } from "ulidx";
 import { workspaceErrors } from "./workspace.errors";
 
-export const WORKSPACE_ROLES = [
-	"owner",
-	"admin",
-	"technician",
-	"viewer",
-] as const;
-export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
-
 export interface CreateWorkspaceData {
 	name: string;
 	ownerId: string;

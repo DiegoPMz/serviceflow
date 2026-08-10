@@ -11,6 +11,9 @@ export const envSchema = Type.Object({
 	CLERK_SECRET_KEY: Type.String({ minLength: 1 }),
 	CLERK_JWKS_URL: Type.String({ minLength: 1 }),
 	CLERK_ISSUER: Type.String({ minLength: 1 }),
+	RESEND_API_KEY: Type.String({ minLength: 1 }),
+	FRONTEND_URL: Type.String({ minLength: 1 }),
+	FRONTEND_INVITATION_CALLBACK_PATH: Type.String({ minLength: 1 }),
 });
 
 export type Env = Static<typeof envSchema>;

@@ -77,14 +77,4 @@ export const workspaceErrors = {
 		"LOGO_FILE_NOT_FOUND",
 		"El archivo del logo no se ha subido correctamente o no existe en el almacenamiento.",
 	),
-	NOT_A_MEMBER: new ErrorDetails(
-		"NOT_A_MEMBER",
-		"No perteneces a este workspace o el recurso no existe.",
-		404,
-	),
-	INSUFFICIENT_PERMISSIONS: new ErrorDetails(
-		"INSUFFICIENT_PERMISSIONS",
-		"No tienes los permisos necesarios para realizar esta acción en el workspace.",
-		403,
-	),
 } as const;

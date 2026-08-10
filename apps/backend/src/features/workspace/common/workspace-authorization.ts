@@ -1,7 +1,7 @@
 import { Result } from "@serviceflow/backend/shared/result";
-import { workspaceErrors } from "./workspace.errors";
-import type { WorkspaceRole } from "./workspace.model";
-import type { WorkspaceRepository } from "./workspace-repository";
+import { workspaceMemberErrors } from "./workspace-member.errors";
+import type { WorkspaceRole } from "./workspace-member.model";
+import type { WorkspaceMemberRepository } from "./workspace-member.repository";
 
 export interface AuthorizeWorkspaceInput {
 	workspaceId: string;
@@ -10,7 +10,7 @@ export interface AuthorizeWorkspaceInput {
 }
 
 export interface WorkspaceAuthorizationProps {
-	workspaceRepository: WorkspaceRepository;
+	membersRepository: WorkspaceMemberRepository;
 }
 
 export interface WorkspaceAuthorization {
@@ -20,18 +20,18 @@ export interface WorkspaceAuthorization {
 }
 
 export const workspaceAuthorization = ({
-	workspaceRepository,
+	membersRepository,
 }: WorkspaceAuthorizationProps): WorkspaceAuthorization => ({
 	excecute: async (
 		input: AuthorizeWorkspaceInput,
 	): Promise<Result<WorkspaceRole[]>> => {
-		const membership = await workspaceRepository.findMembership({
+		const membership = await membersRepository.findMembership({
 			userId: input.userId,
 			workspaceId: input.workspaceId,
 		});
 
 		if (membership.length < 1) {
-			return Result.failure(workspaceErrors.NOT_A_MEMBER);
+			return Result.failure(workspaceMemberErrors.NOT_A_MEMBER);
 		}
 
 		const hasAccess = input.requiredRoles.some((role) =>
@@ -39,7 +39,7 @@ export const workspaceAuthorization = ({
 		);
 
 		if (!hasAccess) {
-			return Result.failure(workspaceErrors.INSUFFICIENT_PERMISSIONS);
+			return Result.failure(workspaceMemberErrors.INSUFFICIENT_PERMISSIONS);
 		}
 
 		return Result.success(membership);
