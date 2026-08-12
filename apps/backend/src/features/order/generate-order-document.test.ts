@@ -32,7 +32,7 @@ import { workspaceDrizzleRepository } from "../workspace/common/workspace-drizzl
 import { OrderErrors } from "./common/order.errors";
 import { OrderDrizzleRepository } from "./common/order-drizzle-repository";
 import { PdfMakeOrderPdfGenerator } from "./common/pdfMake-pdf-generator";
-import { generateOrderDocumentCommandHandler } from "./generate-order-document";
+import { generateOrderDocumentHandler } from "./generate-order-document";
 
 describe("GenerateOrderDocument Integration Tests", () => {
 	let storageService: StorageService;
@@ -98,7 +98,7 @@ describe("GenerateOrderDocument Integration Tests", () => {
 				userId,
 			});
 
-			const result = await generateOrderDocumentCommandHandler({
+			const result = await generateOrderDocumentHandler({
 				command: {
 					orderId,
 					deviceImageBase64: ONE_PIXEL_PNG,
@@ -136,7 +136,7 @@ describe("GenerateOrderDocument Integration Tests", () => {
 
 	test("Should return ORDER_NOT_FOUND", async () => {
 		await runTestInTransaction(async (tx) => {
-			const result = await generateOrderDocumentCommandHandler({
+			const result = await generateOrderDocumentHandler({
 				command: {
 					orderId: crypto.randomUUID(),
 					deviceImageBase64: ONE_PIXEL_PNG,
@@ -172,7 +172,7 @@ describe("GenerateOrderDocument Integration Tests", () => {
 				documentKey: storageKeys.orderDocument(workspaceId, "existing"),
 			});
 
-			const result = await generateOrderDocumentCommandHandler({
+			const result = await generateOrderDocumentHandler({
 				command: {
 					orderId,
 					deviceImageBase64: ONE_PIXEL_PNG,

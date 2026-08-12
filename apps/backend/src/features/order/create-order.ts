@@ -34,7 +34,7 @@ interface CreateOrderHandlerProps {
 	userRepository: UserRepository;
 }
 
-export const createOrderCommandHandler = async ({
+export const createOrderHandler = async ({
 	command,
 	clientRepository,
 	deviceRepository,

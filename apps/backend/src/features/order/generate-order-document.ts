@@ -21,7 +21,7 @@ interface GenerateOrderDocumentProps {
 	storageService: StorageService;
 }
 
-export const generateOrderDocumentCommandHandler = async ({
+export const generateOrderDocumentHandler = async ({
 	command,
 	orderRepository,
 	workspaceRepository,

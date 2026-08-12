@@ -22,10 +22,7 @@ import { deviceDrizzleRepository } from "../device/common/device-drizzle-reposit
 import { userDrizzleRepository } from "../user/common/user-drizzle-repository";
 import { workspaceDrizzleRepository } from "../workspace/common/workspace-drizzle-repository";
 import { OrderDrizzleRepository } from "./common/order-drizzle-repository";
-import {
-	type CreateOrderCommand,
-	createOrderCommandHandler,
-} from "./create-order";
+import { type CreateOrderCommand, createOrderHandler } from "./create-order";
 
 const seedDeviceWithComponents = async (
 	tx: DatabaseClient,
@@ -95,7 +92,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -151,7 +148,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(workspaceId, userId, clientId, deviceId, []),
 				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
@@ -188,7 +185,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const first = await createOrderCommandHandler({
+			const first = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -204,7 +201,7 @@ describe("Create-Order Integration Tests", () => {
 			});
 			expect(first.isSuccess).toBe(true);
 
-			const second = await createOrderCommandHandler({
+			const second = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -245,7 +242,7 @@ describe("Create-Order Integration Tests", () => {
 				(await seedClient(tx, { workspaceId })).id,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -275,7 +272,7 @@ describe("Create-Order Integration Tests", () => {
 			await addMember(tx, { userId, workspaceId });
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(workspaceId, userId, clientId, ulid(), []),
 				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
@@ -309,7 +306,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(workspaceId, userId, clientId, deviceId, [
 					otherDevice.componentIds[0] as string,
 				]),
@@ -346,7 +343,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(workspaceId, userId, clientId, deviceId, [
 					ulid(),
 				]),
@@ -374,7 +371,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -418,7 +415,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -454,7 +451,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -487,7 +484,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
@@ -522,7 +519,7 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
-			const result = await createOrderCommandHandler({
+			const result = await createOrderHandler({
 				command: validCommand(
 					workspaceId,
 					userId,
