@@ -24,7 +24,8 @@
 		"react-dom": "19.2.8",
 		"resend": "6.18.1",
 		"@react-email/components": "1.0.12",
-		"ulidx": "2.4.1"
+		"ulidx": "2.4.1",
+		"@serviceflow/schemas": "catalog:"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "catalog:",

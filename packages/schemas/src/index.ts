@@ -1,1 +1,1 @@
-export * from "./workspace/create-workspace.schema";
+export * from "./workspace";

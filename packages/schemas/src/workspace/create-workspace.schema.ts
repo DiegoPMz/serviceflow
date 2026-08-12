@@ -1,7 +1,20 @@
-import { type Static, Type as t } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
+import {
+	companyAddressSchema,
+	companyEmailSchema,
+	companyNameSchema,
+	companyPhoneSchema,
+	workspaceNameSchema,
+} from "./workspace.primitives";
 
-export const createWorkspaceSchema = t.Object({
-	name: t.String({ minLength: 1, maxLength: 250 }),
+export const createWorkspaceBodySchema = Type.Object({
+	workspaceName: workspaceNameSchema,
+	companyDetails: Type.Object({
+		name: companyNameSchema,
+		phone: companyPhoneSchema,
+		email: companyEmailSchema,
+		address: companyAddressSchema,
+	}),
 });
 
-export type CreateWorkspaceRequest = Static<typeof createWorkspaceSchema>;
+export type CreateWorkspaceRequest = Static<typeof createWorkspaceBodySchema>;

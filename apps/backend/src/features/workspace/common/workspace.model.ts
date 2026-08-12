@@ -155,7 +155,7 @@ export class WorkspaceCompany {
 			new WorkspaceCompany(
 				data.name.trim(),
 				data.phone.trim(),
-				data.email.trim(),
+				data.email.toLowerCase().trim(),
 				data.address.trim(),
 				null,
 			),

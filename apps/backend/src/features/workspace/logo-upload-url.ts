@@ -4,6 +4,11 @@ import { Result } from "@serviceflow/backend/shared/result";
 import { workspaceErrors } from "./common/workspace.errors";
 import type { WorkspaceRepository } from "./common/workspace-repository";
 
+export interface LogoUploadUrlDto {
+	uploadUrl: string;
+	workspaceKey: string;
+}
+
 export const LogoUploadUrlHandler = async (
 	query: {
 		workspaceId: string;
@@ -12,7 +17,7 @@ export const LogoUploadUrlHandler = async (
 	},
 	storageService: StorageService,
 	workspaceRepository: WorkspaceRepository,
-): Promise<Result<{ uploadUrl: string; workspaceKey: string }>> => {
+): Promise<Result<LogoUploadUrlDto>> => {
 	const { workspaceId, mimeType, fileExtension } = query;
 
 	const workspace = await workspaceRepository.getById(workspaceId);
