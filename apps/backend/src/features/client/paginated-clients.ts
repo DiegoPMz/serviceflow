@@ -31,7 +31,7 @@ interface PaginatedClientProps {
 	query: PaginatedClientsQuery;
 	repository: ClientRepository;
 }
-export const paginatedClientQueryHandler = async ({
+export const paginatedClientHandler = async ({
 	query,
 	repository,
 }: PaginatedClientProps): Promise<Result<Pagination<ClientReadModel>>> => {

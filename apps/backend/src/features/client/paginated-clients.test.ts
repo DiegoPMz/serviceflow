@@ -3,7 +3,7 @@ import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.se
 import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { first, runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { clientDrizzleRepository } from "./common/client-drizzle-repository";
-import { paginatedClientQueryHandler } from "./paginated-clients";
+import { paginatedClientHandler } from "./paginated-clients";
 
 describe("Paginated-Clients Integration Tests", () => {
 	// ── A. Cursor Validation ─────────────────────────────────────────
@@ -12,7 +12,7 @@ describe("Paginated-Clients Integration Tests", () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -44,7 +44,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				}),
 			).toString("base64");
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -68,7 +68,7 @@ describe("Paginated-Clients Integration Tests", () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
@@ -91,7 +91,7 @@ describe("Paginated-Clients Integration Tests", () => {
 			await seedClient(tx, { workspaceId, name: "Mine" });
 			await seedClient(tx, { workspaceId: otherWorkspaceId, name: "Theirs" });
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
@@ -113,14 +113,14 @@ describe("Paginated-Clients Integration Tests", () => {
 			await seedClient(tx, { workspaceId: workspaceId1, name: "WS1 Client" });
 			await seedClient(tx, { workspaceId: workspaceId2, name: "WS2 Client" });
 
-			const result1 = await paginatedClientQueryHandler({
+			const result1 = await paginatedClientHandler({
 				query: {
 					workspaceId: workspaceId1,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: clientDrizzleRepository(tx),
 			});
-			const result2 = await paginatedClientQueryHandler({
+			const result2 = await paginatedClientHandler({
 				query: {
 					workspaceId: workspaceId2,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
@@ -145,7 +145,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				await seedClient(tx, { workspaceId, name });
 			}
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
@@ -170,7 +170,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				await seedClient(tx, { workspaceId, name });
 			}
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "desc" },
@@ -207,7 +207,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				email: "bravo@example.com",
 			});
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "email", direction: "asc" },
@@ -244,7 +244,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				id: "00000000000000000000000003",
 			});
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "id", direction: "asc" },
@@ -270,7 +270,7 @@ describe("Paginated-Clients Integration Tests", () => {
 			await seedClient(tx, { workspaceId, name: "Juan Pérez" });
 			await seedClient(tx, { workspaceId, name: "María López" });
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -304,7 +304,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				email: "other@example.com",
 			});
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -338,7 +338,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				phoneNumber: "+525511223344",
 			});
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -363,7 +363,7 @@ describe("Paginated-Clients Integration Tests", () => {
 
 			await seedClient(tx, { workspaceId, name: "Juan Pérez" });
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -392,7 +392,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				await seedClient(tx, { workspaceId, name });
 			}
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
@@ -417,7 +417,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				await seedClient(tx, { workspaceId, name });
 			}
 
-			const page1 = await paginatedClientQueryHandler({
+			const page1 = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
@@ -428,7 +428,7 @@ describe("Paginated-Clients Integration Tests", () => {
 			expect(page1.isSuccess).toBe(true);
 			expect(page1.value.hasNextPage).toBe(true);
 
-			const page2 = await paginatedClientQueryHandler({
+			const page2 = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -457,7 +457,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				await seedClient(tx, { workspaceId, name });
 			}
 
-			const result = await paginatedClientQueryHandler({
+			const result = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 5, orderBy: "name", direction: "asc" },
@@ -492,7 +492,7 @@ describe("Paginated-Clients Integration Tests", () => {
 				id: "00000000000000000000000003",
 			});
 
-			const page1 = await paginatedClientQueryHandler({
+			const page1 = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
@@ -503,7 +503,7 @@ describe("Paginated-Clients Integration Tests", () => {
 			expect(page1.isSuccess).toBe(true);
 			expect(page1.value.items).toHaveLength(2);
 
-			const page2 = await paginatedClientQueryHandler({
+			const page2 = await paginatedClientHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {

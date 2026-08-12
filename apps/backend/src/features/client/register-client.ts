@@ -16,19 +16,21 @@ interface props {
 	repository: ClientRepository;
 }
 
-export const registerClientCommandHandler = async ({
-	repository,
-	command,
-}: props) => {
+export const registerClientHandler = async ({ repository, command }: props) => {
 	const clientExists = await repository.clientExists({
 		email: command.email,
 		phone: command.phoneNumber,
 	});
 
-	if (clientExists) return Result.failure(ClientErrors.CLIENT_ALREADY_EXISTS);
+	if (clientExists) {
+		return Result.failure(ClientErrors.CLIENT_ALREADY_EXISTS);
+	}
 
 	const newClient = Client.create({ ...command });
-	if (newClient.isFailure) return Result.failure(newClient.error);
+
+	if (newClient.isFailure) {
+		return Result.failure(newClient.error);
+	}
 
 	await repository.save(newClient.value);
 	return Created.toResult();

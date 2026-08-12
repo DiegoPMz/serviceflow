@@ -5,7 +5,7 @@ import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import { clientDrizzleRepository } from "./common/client-drizzle-repository";
-import { registerClientCommandHandler } from "./register-client";
+import { registerClientHandler } from "./register-client";
 
 const validCommand = (workspaceId: string) => ({
 	name: "Juan Pérez",
@@ -21,7 +21,7 @@ describe("Register-Client Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			const command = validCommand(workspaceId);
 
-			const result = await registerClientCommandHandler({
+			const result = await registerClientHandler({
 				command,
 				repository: clientDrizzleRepository(tx),
 			});
@@ -49,12 +49,12 @@ describe("Register-Client Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			const command = validCommand(workspaceId);
 
-			await registerClientCommandHandler({
+			await registerClientHandler({
 				command,
 				repository: clientDrizzleRepository(tx),
 			});
 
-			const result = await registerClientCommandHandler({
+			const result = await registerClientHandler({
 				command: { ...validCommand(workspaceId), email: command.email },
 				repository: clientDrizzleRepository(tx),
 			});
@@ -75,12 +75,12 @@ describe("Register-Client Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			const command = validCommand(workspaceId);
 
-			await registerClientCommandHandler({
+			await registerClientHandler({
 				command,
 				repository: clientDrizzleRepository(tx),
 			});
 
-			const result = await registerClientCommandHandler({
+			const result = await registerClientHandler({
 				command: {
 					...validCommand(workspaceId),
 					phoneNumber: command.phoneNumber,
