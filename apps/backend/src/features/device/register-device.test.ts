@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
-	clients,
-	type DatabaseClient,
 	deviceComponents,
 	devices,
-	workspaces,
 } from "@serviceflow/backend/shared/database";
 import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.seeds";
 import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
@@ -13,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import type { ComponentType } from "./common/device.model";
 import { deviceDrizzleRepository } from "./common/device-drizzle-repository";
-import { registerDeviceCommandHandler } from "./register-device";
+import { registerDeviceHandler } from "./register-device";
 
 const validCommand = (
 	workspaceId: string,
@@ -38,7 +35,7 @@ describe("Register-Device Integration Tests", () => {
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 			const command = validCommand(workspaceId, clientId);
 
-			const result = await registerDeviceCommandHandler({
+			const result = await registerDeviceHandler({
 				command,
 				repository: deviceDrizzleRepository(tx),
 			});
@@ -76,12 +73,12 @@ describe("Register-Device Integration Tests", () => {
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 			const command = validCommand(workspaceId, clientId);
 
-			await registerDeviceCommandHandler({
+			await registerDeviceHandler({
 				command,
 				repository: deviceDrizzleRepository(tx),
 			});
 
-			const result = await registerDeviceCommandHandler({
+			const result = await registerDeviceHandler({
 				command: {
 					...validCommand(workspaceId, clientId),
 					serialNumber: command.serialNumber,
@@ -105,7 +102,7 @@ describe("Register-Device Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
-			const result = await registerDeviceCommandHandler({
+			const result = await registerDeviceHandler({
 				command: validCommand(workspaceId, clientId, { brand: "" }),
 				repository: deviceDrizzleRepository(tx),
 			});
@@ -123,7 +120,7 @@ describe("Register-Device Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
-			const result = await registerDeviceCommandHandler({
+			const result = await registerDeviceHandler({
 				command: validCommand(workspaceId, clientId, {
 					components: [
 						{
@@ -150,7 +147,7 @@ describe("Register-Device Integration Tests", () => {
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
 			const command = validCommand(workspaceId, clientId, { components: [] });
-			const result = await registerDeviceCommandHandler({
+			const result = await registerDeviceHandler({
 				command,
 				repository: deviceDrizzleRepository(tx),
 			});
@@ -197,7 +194,7 @@ describe("Register-Device Integration Tests", () => {
 					},
 				],
 			});
-			const result = await registerDeviceCommandHandler({
+			const result = await registerDeviceHandler({
 				command,
 				repository: deviceDrizzleRepository(tx),
 			});
@@ -232,7 +229,7 @@ describe("Register-Device Integration Tests", () => {
 
 			const serial = `SN-SHARED`;
 
-			const first = await registerDeviceCommandHandler({
+			const first = await registerDeviceHandler({
 				command: validCommand(workspaceId1, clientId1, {
 					serialNumber: serial,
 				}),
@@ -240,7 +237,7 @@ describe("Register-Device Integration Tests", () => {
 			});
 			expect(first.isSuccess).toBe(true);
 
-			const second = await registerDeviceCommandHandler({
+			const second = await registerDeviceHandler({
 				command: validCommand(workspaceId2, clientId2, {
 					serialNumber: serial,
 				}),

@@ -14,6 +14,8 @@
 		"@aws-sdk/client-s3": "3.1094.0",
 		"@aws-sdk/s3-request-presigner": "3.1094.0",
 		"@libsql/client": "0.17.4",
+		"@react-email/components": "1.0.12",
+		"@serviceflow/schemas": "catalog:",
 		"@sinclair/typebox": "0.34.49",
 		"drizzle-orm": "0.45.2",
 		"elysia": "latest",
@@ -23,9 +25,7 @@
 		"react": "19.2.8",
 		"react-dom": "19.2.8",
 		"resend": "6.18.1",
-		"@react-email/components": "1.0.12",
-		"ulidx": "2.4.1",
-		"@serviceflow/schemas": "catalog:"
+		"ulidx": "2.4.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "catalog:",

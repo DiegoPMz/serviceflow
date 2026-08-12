@@ -22,9 +22,7 @@ interface RegisterDeviceProps {
 	repository: DeviceRepository;
 }
 
-export const registerDeviceCommandHandler = async (
-	props: RegisterDeviceProps,
-) => {
+export const registerDeviceHandler = async (props: RegisterDeviceProps) => {
 	const { command, repository } = props;
 
 	const deviceExists = await repository.exists({
@@ -46,12 +44,13 @@ export const registerDeviceCommandHandler = async (
 
 	const device = newDevice.value;
 
-	for (const component of command.components) {
-		const res = device.addComponent(component);
-		if (res.isFailure) return Result.failure(res.error);
+	for (const componentInput of command.components) {
+		const addResult = device.addComponent(componentInput);
+		if (addResult.isFailure) {
+			return Result.failure(addResult.error);
+		}
 	}
 
-	await repository.save(device);
-
+	await repository.transaction(async (txRepo) => await txRepo.save(device));
 	return Created.toResult();
 };

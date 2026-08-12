@@ -37,7 +37,7 @@ interface PaginatedDeviceProps {
 	query: PaginatedDevicesQuery;
 	repository: DeviceRepository;
 }
-export const paginatedDeviceQueryHandler = async ({
+export const paginatedDeviceHandler = async ({
 	query,
 	repository,
 }: PaginatedDeviceProps): Promise<Result<Pagination<DeviceReadModel>>> => {

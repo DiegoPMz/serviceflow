@@ -7,7 +7,7 @@ import { first, runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { ulid } from "ulidx";
 import type { DeviceReadModel } from "./common/device.read-model";
 import { deviceDrizzleRepository } from "./common/device-drizzle-repository";
-import { paginatedDeviceQueryHandler } from "./paginated-devices";
+import { paginatedDeviceHandler } from "./paginated-devices";
 
 describe("Paginated-Devices Integration Tests", () => {
 	// ── A. Cursor Validation ─────────────────────────────────────────
@@ -17,7 +17,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			await seedClient(tx, { workspaceId });
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -53,7 +53,7 @@ describe("Paginated-Devices Integration Tests", () => {
 				}),
 			).toString("base64");
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -80,7 +80,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			const workspaceId = await seedWorkspace(tx);
 			await seedClient(tx, { workspaceId });
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "brand", direction: "asc" },
@@ -105,7 +105,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			const client2 = (await seedClient(tx, { workspaceId: ws2 })).id;
 			await seedDevice(tx, { workspaceId: ws2, clientId: client2 });
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId: ws1,
 					paginationRequest: { limit: 10, orderBy: "brand", direction: "asc" },
@@ -187,7 +187,7 @@ describe("Paginated-Devices Integration Tests", () => {
 					serialNumber: "SN-003",
 				});
 
-				const result = await paginatedDeviceQueryHandler({
+				const result = await paginatedDeviceHandler({
 					query: {
 						workspaceId,
 						paginationRequest: {
@@ -236,7 +236,7 @@ describe("Paginated-Devices Integration Tests", () => {
 					serialNumber: "SN-003",
 				});
 
-				const result = await paginatedDeviceQueryHandler({
+				const result = await paginatedDeviceHandler({
 					query: {
 						workspaceId,
 						paginationRequest: {
@@ -280,7 +280,7 @@ describe("Paginated-Devices Integration Tests", () => {
 				id: "00000000000000000000000003",
 			});
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 10, orderBy: "id", direction: "asc" },
@@ -347,7 +347,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			let hasNextPage = true;
 
 			while (hasNextPage) {
-				const response = await paginatedDeviceQueryHandler({
+				const response = await paginatedDeviceHandler({
 					query: {
 						paginationRequest: {
 							limit: pageSize,
@@ -409,7 +409,7 @@ describe("Paginated-Devices Integration Tests", () => {
 				serialNumber: "SN-XYZ",
 			});
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -441,7 +441,7 @@ describe("Paginated-Devices Integration Tests", () => {
 				serialNumber: "SN-ABC",
 			});
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -471,7 +471,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			await seedDevice(tx, { workspaceId, clientId, brand: "B" });
 			await seedDevice(tx, { workspaceId, clientId, brand: "C" });
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 2, orderBy: "brand", direction: "asc" },
@@ -497,7 +497,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			await seedDevice(tx, { workspaceId, clientId, brand: "B" });
 			await seedDevice(tx, { workspaceId, clientId, brand: "C" });
 
-			const page1 = await paginatedDeviceQueryHandler({
+			const page1 = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 2, orderBy: "brand", direction: "asc" },
@@ -508,7 +508,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			expect(page1.isSuccess).toBe(true);
 			expect(page1.value.hasNextPage).toBe(true);
 
-			const page2 = await paginatedDeviceQueryHandler({
+			const page2 = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
@@ -537,7 +537,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			await seedDevice(tx, { workspaceId, clientId, brand: "A" });
 			await seedDevice(tx, { workspaceId, clientId, brand: "B" });
 
-			const result = await paginatedDeviceQueryHandler({
+			const result = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 5, orderBy: "brand", direction: "asc" },
@@ -576,7 +576,7 @@ describe("Paginated-Devices Integration Tests", () => {
 				id: "00000000000000000000000003",
 			});
 
-			const page1 = await paginatedDeviceQueryHandler({
+			const page1 = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: { limit: 2, orderBy: "brand", direction: "asc" },
@@ -587,7 +587,7 @@ describe("Paginated-Devices Integration Tests", () => {
 			expect(page1.isSuccess).toBe(true);
 			expect(page1.value.items).toHaveLength(2);
 
-			const page2 = await paginatedDeviceQueryHandler({
+			const page2 = await paginatedDeviceHandler({
 				query: {
 					workspaceId,
 					paginationRequest: {
