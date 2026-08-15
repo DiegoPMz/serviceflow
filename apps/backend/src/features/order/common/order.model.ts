@@ -3,6 +3,14 @@ import { ulid } from "ulidx";
 import type { ComponentType } from "../../device/common/device.model";
 import { OrderErrors } from "./order.errors";
 
+export const ORDER_STATUSES_ARRAY = [
+	"pendiente",
+	"entregada",
+	"cancelada",
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES_ARRAY)[number];
+
 type CreateOrderData = Omit<
 	Order,
 	| "id"
@@ -12,8 +20,12 @@ type CreateOrderData = Omit<
 	| "attachDocumentKey"
 	| "folio"
 	| "_orderComponents"
+	| "_status"
 	| "orderComponents"
+	| "status"
 	| "addComponent"
+	| "deliver"
+	| "cancel"
 > & { folio: Folio };
 
 interface AddOrderComponent {
@@ -46,13 +58,46 @@ export class Order {
 		private _orderComponents: OrderComponent[],
 
 		public readonly createdAt: Date,
-		public readonly updatedAt: Date,
+		public updatedAt: Date,
 		public documentKey: string | null,
 		public readonly userNameSnapshot: string,
+		private _status: OrderStatus,
 	) {}
 
 	public attachDocumentKey(key: string): Result<Updated> {
 		this.documentKey = key;
+		return Updated.toResult();
+	}
+
+	get status(): OrderStatus {
+		return this._status;
+	}
+
+	deliver(): Result<Updated> {
+		if (this._status === "entregada") {
+			return Result.failure(OrderErrors.ORDER_ALREADY_DELIVERED);
+		}
+
+		if (this._status === "cancelada") {
+			return Result.failure(OrderErrors.ORDER_CANNOT_DELIVER_CANCELED);
+		}
+
+		this._status = "entregada";
+		this.updatedAt = new Date();
+		return Updated.toResult();
+	}
+
+	cancel(): Result<Updated> {
+		if (this._status === "cancelada") {
+			return Result.failure(OrderErrors.ORDER_ALREADY_CANCELED);
+		}
+
+		if (this._status === "entregada") {
+			return Result.failure(OrderErrors.ORDER_CANNOT_CANCEL_DELIVERED);
+		}
+
+		this._status = "cancelada";
+		this.updatedAt = new Date();
 		return Updated.toResult();
 	}
 
@@ -129,6 +174,7 @@ export class Order {
 				now,
 				null,
 				data.userNameSnapshot,
+				"pendiente",
 			),
 		);
 	}
@@ -154,6 +200,7 @@ export class Order {
 			entity.updatedAt,
 			entity.documentKey,
 			entity.userNameSnapshot,
+			entity.status,
 		);
 	}
 }
@@ -178,6 +225,7 @@ interface OrderReconstitute {
 	updatedAt: Date;
 	documentKey: string | null;
 	userNameSnapshot: string;
+	status: OrderStatus;
 }
 
 export class Folio {

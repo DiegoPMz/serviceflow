@@ -2,9 +2,12 @@ import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response"
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
 import { respond } from "@serviceflow/backend/shared/http/respond";
 import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import {
+	changeOrderStatusBodySchema,
 	createOrderBodySchema,
 	generateOrderDocumentBodySchema,
+	listOrdersQuerySchema,
 	orderIdSchema,
 	workspaceIdSchema,
 } from "@serviceflow/schemas";
@@ -15,11 +18,16 @@ import type { UserRepository } from "../user/common/user-repository";
 import type { WorkspaceAuthorization } from "../workspace/common/workspace-authorization";
 import { WORKSPACE_ROLES } from "../workspace/common/workspace-member.model";
 import type { WorkspaceRepository } from "../workspace/common/workspace-repository";
+import { changeOrderStatusHandler } from "./change-order-status";
+import type { OrderDetailsReadModel } from "./common/order-details.read-model";
 import type { OrderRepository } from "./common/order-repository";
+import type { OrderSummaryReadModel } from "./common/order-summary.read-model";
 import type { PdfGenerator } from "./common/pdf-generator";
 import { createOrderHandler } from "./create-order";
 import { generateOrderDocumentHandler } from "./generate-order-document";
+import { getOrderDetailsHandler } from "./get-order-details";
 import { GetOrderDocumentHandler } from "./get-order-document-url";
+import { paginatedOrderHandler } from "./paginated-orders";
 
 export interface OrderDependencies {
 	orderRepository: OrderRepository;
@@ -88,7 +96,156 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 		)
 
 		// ---------------------------------------------------------------------
-		// 2. POST /v1/workspaces/:workspaceId/orders/:orderId/document - Generar documento
+		// 2. GET /v1/workspaces/:workspaceId/orders - Listar Órdenes Paginadas
+		// ---------------------------------------------------------------------
+		.get(
+			"/:workspaceId/orders",
+			async ({
+				params,
+				query,
+				auth,
+				set,
+			}): Promise<ApiResponse<Pagination<OrderSummaryReadModel>>> => {
+				const authResult = await deps.workspaceAuthorization.excecute({
+					workspaceId: params.workspaceId,
+					userId: auth.userId,
+					requiredRoles: [
+						WORKSPACE_ROLES.OWNER,
+						WORKSPACE_ROLES.ADMIN,
+						WORKSPACE_ROLES.TECHNICIAN,
+						WORKSPACE_ROLES.VIEWER,
+					],
+				});
+
+				if (authResult.isFailure) {
+					return respond.failure(authResult.error, set);
+				}
+
+				const result = await paginatedOrderHandler({
+					query: {
+						workspaceId: params.workspaceId,
+						status: query.status,
+						paginationRequest: {
+							limit: query.limit ?? 10,
+							cursor: query.cursor,
+							orderBy: query.orderBy ?? "createdAt",
+							direction: query.direction ?? "desc",
+							search: query.search,
+						},
+					},
+					repository: deps.orderRepository,
+				});
+
+				if (result.isFailure) {
+					return respond.failure(result.error, set);
+				}
+
+				return respond.success(result.value, set);
+			},
+			{
+				auth: true,
+				params: t.Object({
+					workspaceId: workspaceIdSchema,
+				}),
+				query: listOrdersQuerySchema,
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// 3. GET /v1/workspaces/:workspaceId/orders/:orderId - Detalles de una Orden
+		// ---------------------------------------------------------------------
+		.get(
+			"/:workspaceId/orders/:orderId",
+			async ({
+				params,
+				auth,
+				set,
+			}): Promise<ApiResponse<OrderDetailsReadModel>> => {
+				const authResult = await deps.workspaceAuthorization.excecute({
+					workspaceId: params.workspaceId,
+					userId: auth.userId,
+					requiredRoles: [
+						WORKSPACE_ROLES.OWNER,
+						WORKSPACE_ROLES.ADMIN,
+						WORKSPACE_ROLES.TECHNICIAN,
+						WORKSPACE_ROLES.VIEWER,
+					],
+				});
+
+				if (authResult.isFailure) {
+					return respond.failure(authResult.error, set);
+				}
+
+				const result = await getOrderDetailsHandler({
+					query: {
+						workspaceId: params.workspaceId,
+						orderId: params.orderId,
+					},
+					orderRepository: deps.orderRepository,
+					userRepository: deps.userRepository,
+				});
+
+				if (result.isFailure) {
+					return respond.failure(result.error, set);
+				}
+
+				return respond.success(result.value, set);
+			},
+			{
+				auth: true,
+				params: t.Object({
+					workspaceId: workspaceIdSchema,
+					orderId: orderIdSchema,
+				}),
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// 4. PATCH /v1/workspaces/:workspaceId/orders/:orderId/status - Cambiar estado
+		// ---------------------------------------------------------------------
+		.patch(
+			"/:workspaceId/orders/:orderId/status",
+			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
+				const authResult = await deps.workspaceAuthorization.excecute({
+					workspaceId: params.workspaceId,
+					userId: auth.userId,
+					requiredRoles: [
+						WORKSPACE_ROLES.OWNER,
+						WORKSPACE_ROLES.ADMIN,
+						WORKSPACE_ROLES.TECHNICIAN,
+					],
+				});
+
+				if (authResult.isFailure) {
+					return respond.failure(authResult.error, set);
+				}
+
+				const result = await changeOrderStatusHandler({
+					command: {
+						orderId: params.orderId,
+						status: body.status,
+					},
+					orderRepository: deps.orderRepository,
+				});
+
+				if (result.isFailure) {
+					return respond.failure(result.error, set);
+				}
+
+				return respond.success(undefined, set);
+			},
+			{
+				auth: true,
+				params: t.Object({
+					workspaceId: workspaceIdSchema,
+					orderId: orderIdSchema,
+				}),
+				body: changeOrderStatusBodySchema,
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// 5. POST /v1/workspaces/:workspaceId/orders/:orderId/document - Generar documento
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/orders/:orderId/document",
@@ -136,7 +293,7 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 		)
 
 		// ---------------------------------------------------------------------
-		// 3. GET /v1/workspaces/:workspaceId/orders/:orderId/document - URL del documento
+		// 6. GET /v1/workspaces/:workspaceId/orders/:orderId/document - URL del documento
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/orders/:orderId/document",

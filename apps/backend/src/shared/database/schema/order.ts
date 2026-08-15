@@ -1,3 +1,4 @@
+import { ORDER_STATUSES_ARRAY } from "@serviceflow/backend/features/order/common/order.model";
 import { relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sqliteNowEffort } from "../helpers";
@@ -24,9 +25,7 @@ export const orders = sqliteTable(
 			.references(() => devices.id, { onDelete: "restrict" })
 			.notNull(),
 
-		userId: text("user_id", { length: 26 })
-			.references(() => users.id, { onDelete: "restrict" })
-			.notNull(),
+		userId: text("user_id", { length: 26 }).notNull(),
 
 		clientNameSnapshot: text("client_name_snapshot", { length: 200 }).notNull(),
 		clientEmailSnapshot: text("client_email_snapshot", {
@@ -52,6 +51,9 @@ export const orders = sqliteTable(
 		}).notNull(),
 
 		documentKey: text("document_key"),
+		status: text("status", { enum: ORDER_STATUSES_ARRAY })
+			.default("pendiente")
+			.notNull(),
 		observations: text("observations").notNull(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
@@ -68,6 +70,7 @@ export const orders = sqliteTable(
 		index("orders_user_id_idx").on(table.userId),
 		index("orders_device_id_idx").on(table.deviceId),
 		index("orders_workspace_date_idx").on(table.workspaceId, table.createdAt),
+		index("orders_workspace_status_idx").on(table.workspaceId, table.status),
 	],
 );
 

@@ -23,6 +23,17 @@ export const orderObservationsSchema = Type.String({
 
 export const orderQuantitySchema = Type.Integer({ minimum: 1 });
 
+export const orderStatusSchema = Type.Union([
+	Type.Literal("entregada"),
+	Type.Literal("cancelada"),
+]);
+
+export const orderStatusFilterSchema = Type.Union([
+	Type.Literal("pendiente"),
+	Type.Literal("entregada"),
+	Type.Literal("cancelada"),
+]);
+
 export const orderComponentItemSchema = Type.Object({
 	id: orderComponentIdSchema,
 	quantity: orderQuantitySchema,

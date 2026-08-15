@@ -1,15 +1,28 @@
 import {
 	type DatabaseClient,
+	type DatabaseType,
 	orderComponents,
 	orders,
+	users,
 } from "@serviceflow/backend/shared/database";
-import { eq } from "drizzle-orm";
+import {
+	Cursor,
+	type Pagination,
+	type SortDirection,
+} from "@serviceflow/backend/shared/pagination";
+import { and, asc, desc, eq, gt, like, lt, or, type SQL } from "drizzle-orm";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { ComponentType } from "../../device/common/device.model";
-import { Order } from "./order.model";
+import type { OrderCursor, OrderOrderBy } from "../paginated-orders";
+import { Order, type OrderStatus } from "./order.model";
 import type { OrderRepository } from "./order-repository";
+import {
+	OrderSummaryReadModel,
+	type OrderSummaryReadModelData,
+} from "./order-summary.read-model";
 
 export const OrderDrizzleRepository = (
-	db: DatabaseClient,
+	db: DatabaseClient | DatabaseType,
 ): OrderRepository => ({
 	save: async (model: Order): Promise<void> => {
 		await db.insert(orders).values({
@@ -34,6 +47,7 @@ export const OrderDrizzleRepository = (
 			clientEmailSnapshot: model.clientEmailSnapshot,
 			clientLocationSnapshot: model.clientLocationSnapshot,
 			userNameSnapshot: model.userNameSnapshot,
+			status: model.status,
 		});
 
 		for (const item of model.orderComponents) {
@@ -92,6 +106,7 @@ export const OrderDrizzleRepository = (
 			updatedAt: new Date(entity.updatedAt),
 			documentKey: entity.documentKey,
 			userNameSnapshot: entity.userNameSnapshot,
+			status: entity.status as OrderStatus,
 		});
 	},
 
@@ -104,4 +119,152 @@ export const OrderDrizzleRepository = (
 			})
 			.where(eq(orders.id, model.id));
 	},
+
+	updateStatus: async (model: Order): Promise<void> => {
+		await db
+			.update(orders)
+			.set({
+				status: model.status,
+				updatedAt: model.updatedAt,
+			})
+			.where(eq(orders.id, model.id));
+	},
+
+	getAllPaginated: async ({
+		limit,
+		cursor,
+		orderBy,
+		direction,
+		search,
+		workspaceId,
+		status,
+	}: {
+		limit: number;
+		cursor?: OrderCursor;
+		orderBy: OrderOrderBy;
+		direction: SortDirection;
+		search?: string;
+		workspaceId: string;
+		status?: OrderStatus;
+	}): Promise<Pagination<OrderSummaryReadModel>> => {
+		const orderByMapper: Record<OrderOrderBy, SQLiteColumn> = {
+			id: orders.id,
+			folio: orders.folio,
+			createdAt: orders.createdAt,
+			updatedAt: orders.updatedAt,
+			clientName: orders.clientNameSnapshot,
+			deviceBrand: orders.deviceBrandSnapshot,
+			status: orders.status,
+			userName: orders.userNameSnapshot,
+		};
+
+		const valueMapper: Record<
+			OrderOrderBy,
+			(order: OrderSummaryReadModelData) => string | number
+		> = {
+			id: (order) => order.id,
+			folio: (order) => order.folio,
+			createdAt: (order) => order.createdAt.getTime(),
+			updatedAt: (order) => order.updatedAt.getTime(),
+			clientName: (order) => order.clientNameSnapshot,
+			deviceBrand: (order) => order.deviceBrandSnapshot,
+			status: (order) => order.status,
+			userName: (order) => order.userNameSnapshot,
+		};
+
+		const dbField = orderByMapper[orderBy];
+
+		const searchCondition = search
+			? or(
+					like(orders.folio, `%${search}%`),
+					like(orders.clientNameSnapshot, `%${search}%`),
+					like(orders.deviceBrandSnapshot, `%${search}%`),
+					like(orders.deviceModelSnapshot, `%${search}%`),
+					like(orders.clientPhoneSnapshot, `%${search}%`),
+				)
+			: undefined;
+
+		const statusCondition = status ? eq(orders.status, status) : undefined;
+
+		const sortCondition = buildSortConditions();
+
+		const ordersDb: OrderSummaryReadModelData[] = await db
+			.select({
+				id: orders.id,
+				folio: orders.folio,
+				status: orders.status,
+				clientNameSnapshot: orders.clientNameSnapshot,
+				clientPhoneSnapshot: orders.clientPhoneSnapshot,
+				deviceBrandSnapshot: orders.deviceBrandSnapshot,
+				deviceModelSnapshot: orders.deviceModelSnapshot,
+				userNameSnapshot: orders.userNameSnapshot,
+				userPictureUrl: users.pictureUrl,
+				createdAt: orders.createdAt,
+				updatedAt: orders.updatedAt,
+			})
+			.from(orders)
+			.innerJoin(users, eq(orders.userId, users.id))
+			.where(
+				and(
+					eq(orders.workspaceId, workspaceId),
+					statusCondition,
+					searchCondition,
+					sortCondition,
+				),
+			)
+			.orderBy(...buildOrderBy())
+			.limit(limit + 1);
+
+		const hasNextPage = ordersDb.length > limit;
+		const items = ordersDb.slice(0, limit);
+		const lastItem = items.at(-1);
+
+		let nextCursor: string | null = null;
+
+		if (hasNextPage && lastItem) {
+			nextCursor = Cursor.encode<OrderCursor>({
+				id: lastItem.id,
+				orderBy,
+				direction,
+				value: valueMapper[orderBy](lastItem),
+			});
+		}
+
+		return {
+			items: items.map((i) => OrderSummaryReadModel.create(i)),
+			cursor: nextCursor,
+			hasNextPage,
+		};
+
+		function buildOrderBy(): SQL[] {
+			return direction === "desc"
+				? [desc(dbField), desc(orders.id)]
+				: [asc(dbField), asc(orders.id)];
+		}
+
+		function buildSortConditions(): SQL | undefined {
+			if (!cursor) return undefined;
+
+			const value = DATE_FIELDS.has(orderBy)
+				? new Date(cursor.value as number)
+				: cursor.value;
+
+			if (direction === "desc") {
+				return or(
+					lt(dbField, value),
+					and(eq(dbField, value), lt(orders.id, cursor.id)),
+				);
+			}
+
+			return or(
+				gt(dbField, value),
+				and(eq(dbField, value), gt(orders.id, cursor.id)),
+			);
+		}
+	},
 });
+
+const DATE_FIELDS: ReadonlySet<OrderOrderBy> = new Set([
+	"createdAt",
+	"updatedAt",
+]);

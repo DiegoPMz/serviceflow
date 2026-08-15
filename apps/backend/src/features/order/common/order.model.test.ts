@@ -82,6 +82,7 @@ describe("Order.create", () => {
 		const order = result.value;
 		expect(ULID_REGEX.test(order.id)).toBe(true);
 		expect(order.folio).toBe("TEST1");
+		expect(order.status).toBe("pendiente");
 		expect(order.clientId).toBe("client-1");
 		expect(order.deviceId).toBe("device-1");
 		expect(order.userId).toBe("user-1");
@@ -291,5 +292,89 @@ describe("Order.attachDocumentKey", () => {
 
 		expect(result.isSuccess).toBe(true);
 		expect(order.documentKey).toBe("https://example.com/order.pdf");
+	});
+});
+
+describe("Order lifecycle status", () => {
+	const createdOrder = () => Order.create(validOrderData()).value;
+
+	test("Should default to pending status", () => {
+		expect(createdOrder().status).toBe("pendiente");
+	});
+
+	test("Should deliver a pending order and bump updatedAt", () => {
+		const order = createdOrder();
+		order.updatedAt = new Date("2020-01-01T00:00:00Z");
+		const originalUpdatedAt = order.updatedAt.getTime();
+
+		const result = order.deliver();
+
+		expect(result.isSuccess).toBe(true);
+		expect(order.status).toBe("entregada");
+		expect(order.updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt);
+	});
+
+	test("Should cancel a pending order and bump updatedAt", () => {
+		const order = createdOrder();
+		order.updatedAt = new Date("2020-01-01T00:00:00Z");
+		const originalUpdatedAt = order.updatedAt.getTime();
+
+		const result = order.cancel();
+
+		expect(result.isSuccess).toBe(true);
+		expect(order.status).toBe("cancelada");
+		expect(order.updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt);
+	});
+
+	test("Should return ORDER_ALREADY_DELIVERED when delivering a delivered order", () => {
+		const order = createdOrder();
+		order.deliver();
+
+		const result = order.deliver();
+
+		expect(result.isFailure).toBe(true);
+		expect(result.error.code).toBe("ORDER_ALREADY_DELIVERED");
+	});
+
+	test("Should return ORDER_ALREADY_CANCELED when cancelling a cancelled order", () => {
+		const order = createdOrder();
+		order.cancel();
+
+		const result = order.cancel();
+
+		expect(result.isFailure).toBe(true);
+		expect(result.error.code).toBe("ORDER_ALREADY_CANCELED");
+	});
+
+	test("Should return ORDER_CANNOT_DELIVER_CANCELED when delivering a cancelled order", () => {
+		const order = createdOrder();
+		order.cancel();
+
+		const result = order.deliver();
+
+		expect(result.isFailure).toBe(true);
+		expect(result.error.code).toBe("ORDER_CANNOT_DELIVER_CANCELED");
+	});
+
+	test("Should return ORDER_CANNOT_CANCEL_DELIVERED when cancelling a delivered order", () => {
+		const order = createdOrder();
+		order.deliver();
+
+		const result = order.cancel();
+
+		expect(result.isFailure).toBe(true);
+		expect(result.error.code).toBe("ORDER_CANNOT_CANCEL_DELIVERED");
+	});
+
+	test("Should keep status unchanged and not bump updatedAt on a failed transition", () => {
+		const order = createdOrder();
+		order.deliver();
+		const updatedAtAfterDeliver = order.updatedAt.getTime();
+
+		const result = order.cancel();
+
+		expect(result.isFailure).toBe(true);
+		expect(order.status).toBe("entregada");
+		expect(order.updatedAt.getTime()).toBe(updatedAtAfterDeliver);
 	});
 });

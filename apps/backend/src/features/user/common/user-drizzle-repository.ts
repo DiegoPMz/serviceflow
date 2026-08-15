@@ -39,6 +39,17 @@ export const userDrizzleRepository = (
 			return await fn(txRepo);
 		});
 	},
+
+	getPictureUrlById: async (id: string): Promise<string | null> => {
+		const entity = await db.query.users.findFirst({
+			where: (users, { eq }) => eq(users.id, id),
+			columns: {
+				pictureUrl: true,
+			},
+		});
+
+		return entity ? entity.pictureUrl : null;
+	},
 });
 
 const userMapper = {
