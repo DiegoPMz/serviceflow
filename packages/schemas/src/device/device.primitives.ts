@@ -5,6 +5,7 @@ export const deviceClientIdSchema = Type.String({
 	minLength: 26,
 	maxLength: 26,
 });
+export const deviceIdSchema = Type.String({ minLength: 26, maxLength: 26 });
 
 // Device
 export const deviceSerialNumberSchema = Type.String({
