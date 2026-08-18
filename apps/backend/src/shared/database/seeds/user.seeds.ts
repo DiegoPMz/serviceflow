@@ -6,7 +6,7 @@ export const seedUser = async (
 	tx: DatabaseClient | DatabaseType,
 	overrides?: Partial<typeof users.$inferInsert>,
 ) => {
-	const userId = ulid();
+	const userId = overrides?.id ?? ulid();
 	const now = new Date();
 	await tx.insert(users).values({
 		id: userId,
