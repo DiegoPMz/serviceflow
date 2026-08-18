@@ -27,6 +27,7 @@ export const clerkConfig = {
 
 export const resendConfig = {
 	apiKey: raw.RESEND_API_KEY,
+	fromDomain: raw.RESEND_FROM_DOMAIN,
 };
 
 export const appConfig = {

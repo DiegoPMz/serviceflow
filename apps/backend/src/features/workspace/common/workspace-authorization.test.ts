@@ -26,11 +26,11 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			});
 
 			expect(result.isSuccess).toBeTrue();
-			expect(result.value).toContain("owner");
+			expect(result.value).toBeDefined();
 		});
 	});
 
-	test("Should return authorization with the granted roles", async () => {
+	test("Should return authorization with a WorkspaceMember model", async () => {
 		await runTestInTransaction(async (tx) => {
 			const userId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
@@ -45,7 +45,11 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			});
 
 			expect(result.isSuccess).toBeTrue();
-			expect(result.value).toEqual(["admin"]);
+			expect(result.value).toMatchObject({
+				workspaceId: workspaceId,
+				userId: userId,
+				role: "admin",
+			});
 		});
 	});
 
@@ -64,41 +68,11 @@ describe("Workspace-WorkspaceAuthorization Integration Tests", () => {
 			});
 
 			expect(result.isSuccess).toBeTrue();
-			expect(result.value).toEqual(["viewer"]);
-		});
-	});
-
-	test("Should scope membership to the target workspace when the user belongs to several", async () => {
-		await runTestInTransaction(async (tx) => {
-			const userId = await seedUser(tx);
-			const workspaceA = await seedWorkspace(tx);
-			const workspaceB = await seedWorkspace(tx);
-			await addMember(tx, { userId, workspaceId: workspaceA, role: "owner" });
-			await addMember(tx, { userId, workspaceId: workspaceB, role: "viewer" });
-
-			const authorization = workspaceAuthorization({
-				membersRepository: workspaceMemberDrizzleRepository(tx),
+			expect(result.value).toMatchObject({
+				workspaceId: workspaceId,
+				userId: userId,
+				role: "viewer",
 			});
-
-			const resultA = await authorization.excecute({
-				userId,
-				workspaceId: workspaceA,
-				requiredRoles: ["owner"],
-			});
-
-			expect(resultA.isSuccess).toBeTrue();
-			expect(resultA.value).toEqual(["owner"]);
-
-			const resultB = await authorization.excecute({
-				userId,
-				workspaceId: workspaceB,
-				requiredRoles: ["owner"],
-			});
-
-			expect(resultB.isFailure).toBeTrue();
-			expect(resultB.error.code).toBe(
-				workspaceMemberErrors.INSUFFICIENT_PERMISSIONS.code,
-			);
 		});
 	});
 

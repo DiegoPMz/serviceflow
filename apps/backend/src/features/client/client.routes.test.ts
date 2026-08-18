@@ -6,7 +6,7 @@ import Elysia from "elysia";
 import { workspaceMemberErrors } from "../workspace/common/workspace-member.errors";
 import {
 	WORKSPACE_ROLES,
-	type WorkspaceRole,
+	type WorkspaceMember,
 } from "../workspace/common/workspace-member.model";
 import { type ClientDependencies, clientRoutes } from "./index";
 
@@ -94,7 +94,7 @@ describe("Client HTTP Routes - Unit Tests", () => {
 		test("should return 403 if user lacks required roles (e.g., viewer trying to create a client)", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(
+					Result.failure<WorkspaceMember>(
 						workspaceMemberErrors.INSUFFICIENT_PERMISSIONS,
 					),
 				),
@@ -125,7 +125,7 @@ describe("Client HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(403);
 		});
 
-		test("should return 400 when the client already exists", async () => {
+		test("should return 409 when the client already exists", async () => {
 			mockDeps.clientRepository.clientExists = mock(() =>
 				Promise.resolve(true),
 			);
@@ -142,7 +142,7 @@ describe("Client HTTP Routes - Unit Tests", () => {
 				),
 			);
 
-			expect(response.status).toBe(400);
+			expect(response.status).toBe(409);
 
 			const body = await response.json();
 			expect(body.success).toBe(false);
@@ -191,7 +191,7 @@ describe("Client HTTP Routes - Unit Tests", () => {
 		test("should return 403 if the user is not a member of the workspace", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(workspaceMemberErrors.NOT_A_MEMBER),
+					Result.failure<WorkspaceMember>(workspaceMemberErrors.NOT_A_MEMBER),
 				),
 			);
 

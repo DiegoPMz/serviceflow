@@ -6,7 +6,7 @@ import Elysia from "elysia";
 import { workspaceMemberErrors } from "../workspace/common/workspace-member.errors";
 import {
 	WORKSPACE_ROLES,
-	type WorkspaceRole,
+	type WorkspaceMember,
 } from "../workspace/common/workspace-member.model";
 import { Order } from "./common/order.model";
 import type { OrderSummaryReadModel } from "./common/order-summary.read-model";
@@ -190,7 +190,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 		test("should return 403 if user lacks required roles (e.g., viewer trying to create an order)", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(
+					Result.failure<WorkspaceMember>(
 						workspaceMemberErrors.INSUFFICIENT_PERMISSIONS,
 					),
 				),
@@ -341,7 +341,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 		test("should return 403 if user lacks required roles", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(
+					Result.failure<WorkspaceMember>(
 						workspaceMemberErrors.INSUFFICIENT_PERMISSIONS,
 					),
 				),
@@ -478,7 +478,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 		test("should return 403 if user lacks required roles", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(
+					Result.failure<WorkspaceMember>(
 						workspaceMemberErrors.INSUFFICIENT_PERMISSIONS,
 					),
 				),
@@ -542,7 +542,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 		test("should return 403 if the user is not a member of the workspace", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(workspaceMemberErrors.NOT_A_MEMBER),
+					Result.failure<WorkspaceMember>(workspaceMemberErrors.NOT_A_MEMBER),
 				),
 			);
 
@@ -654,7 +654,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 		test("should return 403 if user lacks membership", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(workspaceMemberErrors.NOT_A_MEMBER),
+					Result.failure<WorkspaceMember>(workspaceMemberErrors.NOT_A_MEMBER),
 				),
 			);
 
@@ -777,7 +777,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 		test("should return 403 if the user is not a member of the workspace", async () => {
 			mockDeps.workspaceAuthorization.excecute = mock(() =>
 				Promise.resolve(
-					Result.failure<WorkspaceRole[]>(workspaceMemberErrors.NOT_A_MEMBER),
+					Result.failure<WorkspaceMember>(workspaceMemberErrors.NOT_A_MEMBER),
 				),
 			);
 

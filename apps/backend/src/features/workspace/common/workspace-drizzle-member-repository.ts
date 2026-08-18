@@ -5,31 +5,12 @@ import {
 	workspaceMembers,
 } from "@serviceflow/backend/shared/database";
 import { and, eq } from "drizzle-orm";
-import type { WorkspaceMember, WorkspaceRole } from "./workspace-member.model";
+import { WorkspaceMember } from "./workspace-member.model";
 import type { WorkspaceMemberRepository } from "./workspace-member.repository";
 
 export const workspaceMemberDrizzleRepository = (
 	db: DatabaseClient | DatabaseType,
 ): WorkspaceMemberRepository => ({
-	findMembership: async (values: {
-		userId: string;
-		workspaceId: string;
-	}): Promise<WorkspaceRole[]> => {
-		const userRoles = await db
-			.select({
-				role: workspaceMembers.role,
-			})
-			.from(workspaceMembers)
-			.where(
-				and(
-					eq(workspaceMembers.userId, values.userId),
-					eq(workspaceMembers.workspaceId, values.workspaceId),
-				),
-			);
-
-		return userRoles.map((ur) => ur.role);
-	},
-
 	existsByEmailAndWorkspace: async (
 		email: string,
 		workspaceId: string,
@@ -57,5 +38,45 @@ export const workspaceMemberDrizzleRepository = (
 			joinedAt: member.joinedAt,
 			updatedAt: member.updatedAt,
 		});
+	},
+
+	findMembership: async (values: {
+		userId: string;
+		workspaceId: string;
+	}): Promise<WorkspaceMember | null> => {
+		const member = await db
+			.select({
+				workspaceId: workspaceMembers.workspaceId,
+				userId: workspaceMembers.userId,
+				role: workspaceMembers.role,
+				joinedAt: workspaceMembers.joinedAt,
+				updatedAt: workspaceMembers.updatedAt,
+			})
+			.from(workspaceMembers)
+			.where(
+				and(
+					eq(workspaceMembers.userId, values.userId),
+					eq(workspaceMembers.workspaceId, values.workspaceId),
+				),
+			)
+			.get();
+
+		if (!member) return null;
+		return WorkspaceMember.reconstitute(member);
+	},
+
+	update: async (member: WorkspaceMember): Promise<void> => {
+		await db
+			.update(workspaceMembers)
+			.set({
+				role: member.role,
+				updatedAt: member.updatedAt,
+			})
+			.where(
+				and(
+					eq(workspaceMembers.userId, member.userId),
+					eq(workspaceMembers.workspaceId, member.workspaceId),
+				),
+			);
 	},
 });

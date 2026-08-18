@@ -1,4 +1,4 @@
-import { Result } from "@serviceflow/backend/shared/result";
+import { Result, Updated } from "@serviceflow/backend/shared/result";
 import { workspaceMemberErrors } from "./workspace-member.errors";
 
 export const WORKSPACE_ROLES_ARRAY = [
@@ -22,10 +22,18 @@ export class WorkspaceMember {
 	private constructor(
 		public readonly workspaceId: string,
 		public readonly userId: string,
-		public readonly role: WorkspaceRole,
+		private _role: WorkspaceRole,
 		public readonly joinedAt: Date,
-		public readonly updatedAt: Date,
+		private _updatedAt: Date,
 	) {}
+
+	public get role(): WorkspaceRole {
+		return this._role;
+	}
+
+	public get updatedAt(): Date {
+		return this._updatedAt;
+	}
 
 	static create(props: {
 		workspaceId: string;
@@ -58,6 +66,25 @@ export class WorkspaceMember {
 				now,
 			),
 		);
+	}
+
+	public changeRole(newRole: WorkspaceRole): Result<Updated> {
+		if (this._role === newRole) {
+			return Updated.toResult();
+		}
+
+		if (this._role === WORKSPACE_ROLES.OWNER) {
+			return Result.failure(workspaceMemberErrors.CANNOT_CHANGE_OWNER_ROLE);
+		}
+
+		if (newRole === WORKSPACE_ROLES.OWNER) {
+			return Result.failure(workspaceMemberErrors.CANNOT_ASSIGN_OWNER_ROLE);
+		}
+
+		this._role = newRole;
+		this._updatedAt = new Date();
+
+		return Updated.toResult();
 	}
 
 	static reconstitute(props: {

@@ -1,6 +1,8 @@
-import type { WorkspaceMember, WorkspaceRole } from "./workspace-member.model";
+import type { WorkspaceMember } from "./workspace-member.model";
 
 export interface WorkspaceMemberRepository {
+	update(member: WorkspaceMember): Promise<void>;
+
 	existsByEmailAndWorkspace(
 		email: string,
 		workspaceId: string,
@@ -11,5 +13,5 @@ export interface WorkspaceMemberRepository {
 	findMembership: (values: {
 		userId: string;
 		workspaceId: string;
-	}) => Promise<WorkspaceRole[]>;
+	}) => Promise<WorkspaceMember | null>;
 }

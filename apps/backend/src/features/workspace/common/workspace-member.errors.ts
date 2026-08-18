@@ -31,4 +31,15 @@ export const workspaceMemberErrors = {
 		"El usuario ya es miembro de este espacio de trabajo.",
 		400,
 	),
+	CANNOT_CHANGE_OWNER_ROLE: new ErrorDetails(
+		"CANNOT_CHANGE_OWNER_ROLE",
+		"El rol del propietario del workspace no se puede modificar directamente.",
+		400,
+	),
+	// Cuando intentas promover a alguien a OWNER
+	CANNOT_ASSIGN_OWNER_ROLE: new ErrorDetails(
+		"CANNOT_ASSIGN_OWNER_ROLE",
+		"No se puede asignar el rol de propietario mediante un cambio de rol tradicional.",
+		400,
+	),
 };

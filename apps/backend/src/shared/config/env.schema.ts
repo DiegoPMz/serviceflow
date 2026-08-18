@@ -12,6 +12,7 @@ export const envSchema = Type.Object({
 	CLERK_JWKS_URL: Type.String({ minLength: 1 }),
 	CLERK_ISSUER: Type.String({ minLength: 1 }),
 	RESEND_API_KEY: Type.String({ minLength: 1 }),
+	RESEND_FROM_DOMAIN: Type.String({ minLength: 1 }),
 	FRONTEND_URL: Type.String({ minLength: 1 }),
 	FRONTEND_INVITATION_CALLBACK_PATH: Type.String({ minLength: 1 }),
 });

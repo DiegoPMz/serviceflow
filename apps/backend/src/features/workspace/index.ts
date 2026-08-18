@@ -14,6 +14,7 @@ import {
 	inviteUserToWorkspaceBodySchema,
 	listWorkspacesQuerySchema,
 	logoUploadUrlBodySchema,
+	updateWorkspaceMemberRoleBodySchema,
 	workspaceIdSchema,
 } from "@serviceflow/schemas";
 import Elysia, { t } from "elysia";
@@ -37,6 +38,7 @@ import { inviteUserToWorkspaceHandler } from "./invite-user-to-workspace";
 import { type LogoUploadUrlDto, LogoUploadUrlHandler } from "./logo-upload-url";
 import { getPaginatedWorkspaces } from "./paginated-workspaces";
 import { rejectWorkspaceInvitationHandler } from "./reject-workspace-invitation";
+import { updateWorkspaceMemberRoleHandler } from "./update-workspace-member-role";
 
 export interface WorkspaceDependencies {
 	storageService: StorageService;
@@ -342,5 +344,46 @@ export const workspaceRoutes = (
 				params: t.Object({
 					token: invitationTokenSchema,
 				}),
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// 8. PATCH /v1/workspaces/:workspaceId/members/:memberId - Cambiar rol
+		// ---------------------------------------------------------------------
+		.patch(
+			"/:workspaceId/members/:memberId",
+			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
+				const authResult = await deps.workspaceAuthorization.excecute({
+					workspaceId: params.workspaceId,
+					userId: auth.userId,
+					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
+				});
+
+				if (authResult.isFailure) {
+					return respond.failure(authResult.error, set);
+				}
+
+				const result = await updateWorkspaceMemberRoleHandler({
+					command: {
+						workspaceId: params.workspaceId,
+						targetUserId: params.memberId,
+						newRole: body.role,
+					},
+					workspaceMemberRepository: deps.memberRepository,
+				});
+
+				if (result.isFailure) {
+					return respond.failure(result.error, set);
+				}
+
+				return respond.success(undefined, set);
+			},
+			{
+				auth: true,
+				params: t.Object({
+					workspaceId: workspaceIdSchema,
+					memberId: workspaceIdSchema,
+				}),
+				body: updateWorkspaceMemberRoleBodySchema,
 			},
 		);
