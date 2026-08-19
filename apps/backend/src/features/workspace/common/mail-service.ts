@@ -6,8 +6,14 @@ export interface SendWorkspaceInvitationParams {
 	acceptUrl: string;
 }
 
+export interface SendWorkspaceResponse {
+	emailId: string;
+}
+
 export interface MailService {
 	sendWorkspaceInvitation: (
 		params: SendWorkspaceInvitationParams,
-	) => Promise<void>;
+	) => Promise<SendWorkspaceResponse>;
+
+	cancelInvitationEmail: (emailId: string) => Promise<void>;
 }

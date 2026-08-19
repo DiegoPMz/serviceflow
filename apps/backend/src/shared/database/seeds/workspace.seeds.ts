@@ -57,6 +57,7 @@ export const seedWorkspaceInvitation = async (
 		email: string;
 		role?: InvitationRole;
 		expirationDays?: number;
+		emailId?: string;
 	},
 ): Promise<WorkspaceInvitation> => {
 	const result = WorkspaceInvitation.create({
@@ -66,6 +67,7 @@ export const seedWorkspaceInvitation = async (
 		...(opts.expirationDays !== undefined
 			? { expirationDays: opts.expirationDays }
 			: {}),
+		...(opts.emailId !== undefined ? { emailId: opts.emailId } : {}),
 	});
 
 	if (result.isFailure) {
@@ -91,6 +93,11 @@ export const seedExpiredWorkspaceInvitation = async (
 		expiresAt: new Date(Date.now() - 1000),
 		createdAt: new Date(),
 		expirationDays: 1,
+		emailId: null,
+		status: "pending",
+		acceptedAt: null,
+		cancelledAt: null,
+		rejectedAt: null,
 	});
 
 	await workspaceInvitationDrizzleRepository(db).save(invitation);

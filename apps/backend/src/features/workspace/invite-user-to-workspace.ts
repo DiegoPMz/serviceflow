@@ -1,8 +1,10 @@
 import { Created, Result } from "@serviceflow/backend/shared/result";
 import { UserErrors } from "../user/common/user.errors";
+import type { User } from "../user/common/user.model";
 import type { UserRepository } from "../user/common/user-repository";
 import type { MailService } from "./common/mail-service";
 import { workspaceErrors } from "./common/workspace.errors";
+import type { Workspace } from "./common/workspace.model";
 import {
 	type InvitationRole,
 	WorkspaceInvitation,
@@ -54,22 +56,6 @@ export const inviteUserToWorkspaceHandler = async ({
 		workspaceId,
 	);
 
-	let invitation: WorkspaceInvitation;
-
-	if (existingInvitation) {
-		existingInvitation.renew();
-		invitation = existingInvitation;
-
-		await invitationRepository.update(invitation);
-	} else {
-		const result = WorkspaceInvitation.create({ workspaceId, role, email });
-		if (result.isFailure) return Result.failure(result.error);
-
-		invitation = result.value;
-
-		await invitationRepository.save(invitation);
-	}
-
 	const [workspace, inviter] = await Promise.all([
 		workspaceRepository.getById(workspaceId),
 		userRepository.getById(inviterId),
@@ -78,15 +64,76 @@ export const inviteUserToWorkspaceHandler = async ({
 	if (!workspace) return Result.failure(workspaceErrors.WORKSPACE_NOT_FOUND);
 	if (!inviter) return Result.failure(UserErrors.USER_NOT_FOUND);
 
-	const acceptUrl = `${appUrl}/invitaciones/aceptar?token=${invitation.token}`;
+	if (existingInvitation) {
+		const renewInvitationResult = existingInvitation.renew();
 
-	await mailService.sendWorkspaceInvitation({
-		to: invitation.email,
-		workspaceName: workspace.name,
-		inviterEmail: inviter.email,
-		role: invitation.role,
-		acceptUrl: acceptUrl,
-	});
+		if (renewInvitationResult.isFailure) {
+			return Result.failure(renewInvitationResult.error);
+		}
+
+		const previousEmailId = existingInvitation.emailId;
+
+		const mailSenderResponse = await sendInvitation({
+			invitation: existingInvitation,
+			inviter,
+			workspace,
+		});
+
+		existingInvitation.linkEmail(mailSenderResponse.emailId);
+		await invitationRepository.update(existingInvitation);
+
+		if (previousEmailId) {
+			mailService.cancelInvitationEmail(previousEmailId).catch((error) => {
+				console.error(
+					`Failed to cancel previous email ${previousEmailId}:`,
+					error,
+				);
+			});
+		}
+	}
+
+	if (!existingInvitation) {
+		const invitationResult = WorkspaceInvitation.create({
+			workspaceId,
+			role,
+			email,
+		});
+
+		if (invitationResult.isFailure) {
+			return Result.failure(invitationResult.error);
+		}
+
+		const newInvitation = invitationResult.value;
+
+		const mailSenderResponse = await sendInvitation({
+			invitation: newInvitation,
+			inviter,
+			workspace,
+		});
+
+		newInvitation.linkEmail(mailSenderResponse.emailId);
+		await invitationRepository.save(newInvitation);
+	}
 
 	return Created.toResult();
+
+	async function sendInvitation({
+		inviter,
+		workspace,
+		invitation,
+	}: {
+		workspace: Workspace;
+		inviter: User;
+		invitation: WorkspaceInvitation;
+	}) {
+		const acceptUrl = `${appUrl}/invitaciones/aceptar?token=${invitation.token}`;
+
+		return await mailService.sendWorkspaceInvitation({
+			to: invitation.email,
+			workspaceName: workspace.name,
+			inviterEmail: inviter.email,
+			role: invitation.role,
+			acceptUrl: acceptUrl,
+		});
+	}
 };

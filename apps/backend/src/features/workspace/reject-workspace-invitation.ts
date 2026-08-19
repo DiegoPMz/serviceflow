@@ -22,27 +22,28 @@ export const rejectWorkspaceInvitationHandler = async ({
 }: RejectWorkspaceInvitationHandlerProps): Promise<Result<Success>> => {
 	const { token, userId } = command;
 
-	const invitation = await invitationRepository.findByToken(token);
-
-	if (!invitation) {
-		return Result.failure(workspaceInvitationErrors.NOT_FOUND);
-	}
-
-	if (invitation.isExpired()) {
-		return Result.failure(workspaceInvitationErrors.EXPIRED);
-	}
-
-	const user = await userRepository.getById(userId);
+	const [user, invitation] = await Promise.all([
+		userRepository.getById(userId),
+		invitationRepository.findByToken(token),
+	]);
 
 	if (!user) {
 		return Result.failure(UserErrors.USER_NOT_FOUND);
+	}
+
+	if (!invitation) {
+		return Result.failure(workspaceInvitationErrors.NOT_FOUND);
 	}
 
 	if (!invitation.isForEmail(user.email)) {
 		return Result.failure(workspaceInvitationErrors.EMAIL_MISMATCH);
 	}
 
-	await invitationRepository.deleteByToken(token);
+	const rejectResult = invitation.reject();
+	if (rejectResult.isFailure) {
+		return Result.failure(rejectResult.error);
+	}
 
+	await invitationRepository.update(invitation);
 	return Success.toResult();
 };

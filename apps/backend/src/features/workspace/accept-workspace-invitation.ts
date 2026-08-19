@@ -31,19 +31,13 @@ export const acceptWorkspaceInvitationHandler = async ({
 	const { token, userId } = command;
 
 	const user = await userRepository.getById(userId);
-
 	if (!user) {
 		return Result.failure(UserErrors.USER_NOT_FOUND);
 	}
 
 	const invitation = await invitationRepository.findByToken(token);
-
 	if (!invitation) {
 		return Result.failure(workspaceInvitationErrors.NOT_FOUND);
-	}
-
-	if (invitation.isExpired()) {
-		return Result.failure(workspaceInvitationErrors.EXPIRED);
 	}
 
 	if (!invitation.isForEmail(user.email)) {
@@ -59,6 +53,11 @@ export const acceptWorkspaceInvitationHandler = async ({
 		return Result.failure(workspaceMemberErrors.USER_ALREADY_MEMBER);
 	}
 
+	const invitationAccepted = invitation.accept();
+	if (invitationAccepted.isFailure) {
+		return Result.failure(invitationAccepted.error);
+	}
+
 	const newMember = WorkspaceMember.create({
 		userId: userId,
 		workspaceId: invitation.workspaceId,
@@ -71,7 +70,7 @@ export const acceptWorkspaceInvitationHandler = async ({
 
 	await unitOfWork.transaction(async ({ invitations, members }) => {
 		await members.addMember(newMember.value);
-		await invitations.deleteByToken(invitation.token);
+		await invitations.update(invitation);
 	});
 
 	return Success.toResult();

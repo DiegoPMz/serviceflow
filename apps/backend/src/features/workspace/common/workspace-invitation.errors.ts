@@ -41,4 +41,34 @@ export const workspaceInvitationErrors = {
 		"El usuario ya es miembro activo de este espacio de trabajo.",
 		400,
 	),
+	ALREADY_ACCEPTED: new ErrorDetails(
+		"INVITATION_ALREADY_ACCEPTED",
+		"La invitación ya ha sido aceptada previamente.",
+		400,
+	),
+	ALREADY_CANCELLED: new ErrorDetails(
+		"INVITATION_ALREADY_CANCELLED",
+		"La invitación ya ha sido cancelada.",
+		400,
+	),
+	CANNOT_CANCEL_ACCEPTED: new ErrorDetails(
+		"INVITATION_CANNOT_CANCEL_ACCEPTED",
+		"No se puede cancelar una invitación que ya fue aceptada.",
+		400,
+	),
+	CANNOT_RENEW_NON_PENDING: new ErrorDetails(
+		"INVITATION_CANNOT_RENEW_NON_PENDING",
+		"Solo se pueden renovar invitaciones que estén en estado pendiente.",
+		400,
+	),
+	ALREADY_REJECTED: new ErrorDetails(
+		"INVITATION_ALREADY_REJECTED",
+		"La invitación ya ha sido rechazada.",
+		400,
+	),
+	CANNOT_CANCEL_REJECTED: new ErrorDetails(
+		"INVITATION_CANNOT_CANCEL_REJECTED",
+		"No se puede cancelar una invitación que ya fue rechazada por el usuario.",
+		400,
+	),
 };

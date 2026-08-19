@@ -3,11 +3,32 @@ import {
 	type DatabaseType,
 	workspaceInvitations,
 } from "@serviceflow/backend/shared/database";
-import { and, eq } from "drizzle-orm";
+import {
+	Cursor,
+	type Pagination,
+	type SortDirection,
+} from "@serviceflow/backend/shared/pagination";
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	gt,
+	gte,
+	inArray,
+	lt,
+	or,
+	type SQL,
+} from "drizzle-orm";
+import type {
+	WorkspaceInvitationCursor,
+	WorkspaceInvitationOrderBy,
+} from "../paginated-workspace-invitations";
 import {
 	type InvitationRole,
 	WorkspaceInvitation,
 } from "./workspace-invitation.model";
+import type { WorkspaceInvitationReadModel } from "./workspace-invitation.read-model";
 import type { WorkspaceInvitationRepository } from "./workspace-invitation-repository";
 
 export const workspaceInvitationDrizzleRepository = (
@@ -19,6 +40,11 @@ export const workspaceInvitationDrizzleRepository = (
 			workspaceId: invitation.workspaceId,
 			role: invitation.role,
 			email: invitation.email,
+			emailId: invitation.emailId,
+			status: invitation.status,
+			acceptedAt: invitation.acceptedAt,
+			cancelledAt: invitation.cancelledAt,
+			rejectedAt: invitation.rejectedAt,
 			expirationDays: invitation.expirationDays,
 			expiresAt: invitation.expiresAt,
 			createdAt: invitation.createdAt,
@@ -30,6 +56,11 @@ export const workspaceInvitationDrizzleRepository = (
 			.update(workspaceInvitations)
 			.set({
 				token: invitation.token,
+				emailId: invitation.emailId,
+				status: invitation.status,
+				acceptedAt: invitation.acceptedAt,
+				cancelledAt: invitation.cancelledAt,
+				rejectedAt: invitation.rejectedAt,
 				expiresAt: invitation.expiresAt,
 			})
 			.where(
@@ -71,6 +102,113 @@ export const workspaceInvitationDrizzleRepository = (
 		return toModel(entity);
 	},
 
+	getAllPaginated: async ({
+		workspaceId,
+		createdAfter,
+		limit,
+		cursor,
+		orderBy,
+		direction,
+	}: {
+		workspaceId: string;
+		createdAfter: Date;
+		limit: number;
+		cursor?: WorkspaceInvitationCursor;
+		orderBy: WorkspaceInvitationOrderBy;
+		direction: SortDirection;
+	}): Promise<Pagination<WorkspaceInvitationReadModel>> => {
+		const statuses: WorkspaceInvitationReadModel["status"][] = [
+			"accepted",
+			"pending",
+			"rejected",
+		];
+
+		const baseConditions = [
+			eq(workspaceInvitations.workspaceId, workspaceId),
+			inArray(workspaceInvitations.status, statuses),
+			gte(workspaceInvitations.createdAt, createdAfter),
+		];
+
+		const sortCondition = buildSortConditions();
+		const conditions = sortCondition
+			? and(...baseConditions, sortCondition)
+			: and(...baseConditions);
+
+		const entities = await db
+			.select({
+				token: workspaceInvitations.token,
+				email: workspaceInvitations.email,
+				status: workspaceInvitations.status,
+				createdAt: workspaceInvitations.createdAt,
+			})
+			.from(workspaceInvitations)
+			.where(conditions)
+			.orderBy(...buildOrderBy())
+			.limit(limit + 1);
+
+		const hasNextPage = entities.length > limit;
+		const items = entities.slice(0, limit);
+		const lastItem = items.at(-1);
+
+		let nextCursor: string | null = null;
+
+		if (hasNextPage && lastItem) {
+			nextCursor = Cursor.encode<WorkspaceInvitationCursor>({
+				id: lastItem.token,
+				orderBy,
+				direction,
+				value: lastItem.createdAt.toISOString(),
+			});
+		}
+
+		return {
+			items: items.map((entity) => ({
+				token: entity.token,
+				email: entity.email,
+				status: entity.status as WorkspaceInvitationReadModel["status"],
+				issuedAt: entity.createdAt.toISOString(),
+			})),
+			cursor: nextCursor,
+			hasNextPage,
+		};
+
+		function buildOrderBy(): SQL[] {
+			return direction === "desc"
+				? [
+						desc(workspaceInvitations.createdAt),
+						desc(workspaceInvitations.token),
+					]
+				: [
+						asc(workspaceInvitations.createdAt),
+						asc(workspaceInvitations.token),
+					];
+		}
+
+		function buildSortConditions(): SQL | undefined {
+			if (!cursor) return undefined;
+
+			const value = new Date(cursor.value ?? 0);
+
+			if (direction === "desc") {
+				return or(
+					lt(workspaceInvitations.createdAt, value),
+					and(
+						eq(workspaceInvitations.createdAt, value),
+						lt(workspaceInvitations.token, cursor.id),
+					),
+				);
+			}
+
+			return or(
+				gt(workspaceInvitations.createdAt, value),
+				and(
+					eq(workspaceInvitations.createdAt, value),
+					gt(workspaceInvitations.token, cursor.id),
+				),
+			);
+		}
+	},
+
 	transaction: async <R>(
 		fn: (txRepo: WorkspaceInvitationRepository) => Promise<R>,
 	): Promise<R> => {
@@ -89,6 +227,11 @@ const toModel = (
 		workspaceId: entity.workspaceId,
 		role: entity.role as InvitationRole,
 		email: entity.email,
+		emailId: entity.emailId,
+		status: entity.status,
+		acceptedAt: entity.acceptedAt,
+		cancelledAt: entity.cancelledAt,
+		rejectedAt: entity.rejectedAt,
 		expiresAt: entity.expiresAt,
 		createdAt: entity.createdAt,
 		expirationDays: entity.expirationDays,

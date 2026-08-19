@@ -79,6 +79,16 @@ export const workspaceInvitations = sqliteTable(
 			.default("viewer")
 			.notNull(),
 		email: text("email").notNull(),
+		emailId: text("email_id"),
+
+		status: text("status", {
+			enum: ["pending", "accepted", "cancelled", "rejected"],
+		})
+			.default("pending")
+			.notNull(),
+		acceptedAt: integer("accepted_at", { mode: "timestamp" }),
+		cancelledAt: integer("cancelled_at", { mode: "timestamp" }),
+		rejectedAt: integer("rejected_at", { mode: "timestamp" }),
 
 		expirationDays: integer("expiration_days").default(7).notNull(),
 		expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),

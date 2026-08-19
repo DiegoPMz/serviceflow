@@ -79,4 +79,15 @@ export const workspaceMemberDrizzleRepository = (
 				),
 			);
 	},
+
+	remove: async (member: WorkspaceMember): Promise<void> => {
+		await db
+			.delete(workspaceMembers)
+			.where(
+				and(
+					eq(workspaceMembers.userId, member.userId),
+					eq(workspaceMembers.workspaceId, member.workspaceId),
+				),
+			);
+	},
 });

@@ -3,6 +3,8 @@ import type { WorkspaceMember } from "./workspace-member.model";
 export interface WorkspaceMemberRepository {
 	update(member: WorkspaceMember): Promise<void>;
 
+	remove(member: WorkspaceMember): Promise<void>;
+
 	existsByEmailAndWorkspace(
 		email: string,
 		workspaceId: string,

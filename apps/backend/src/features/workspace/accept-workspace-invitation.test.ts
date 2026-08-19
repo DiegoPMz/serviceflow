@@ -76,7 +76,7 @@ const countInvitations = async (tx: DatabaseClient, token: string) => {
 };
 
 describe("Accept-Workspace-Invitation Integration Tests", () => {
-	test("Should accept a valid invitation creating a member and deleting the invitation", async () => {
+	test("Should accept a valid invitation creating a member and marking the invitation as accepted", async () => {
 		await runTestInTransaction(async (tx) => {
 			const email = inviteEmail("invitado");
 			const userId = await seedUser(tx, { email });
@@ -98,7 +98,9 @@ describe("Accept-Workspace-Invitation Integration Tests", () => {
 			expect(memberships[0]?.role).toBe("viewer");
 
 			const remaining = await countInvitations(tx, invitation.token);
-			expect(remaining.length).toBe(0);
+			expect(remaining.length).toBe(1);
+			expect(remaining[0]?.status).toBe("accepted");
+			expect(remaining[0]?.acceptedAt).toBeDefined();
 		});
 	});
 
@@ -216,11 +218,12 @@ describe("Accept-Workspace-Invitation Integration Tests", () => {
 			expect(memberships.length).toBe(1);
 
 			const remaining = await countInvitations(tx, invitation.token);
-			expect(remaining.length).toBe(0);
+			expect(remaining.length).toBe(1);
+			expect(remaining[0]?.status).toBe("accepted");
 		});
 	});
 
-	test("Should return INVITATION_NOT_FOUND when the token is reused after acceptance", async () => {
+	test("Should return USER_ALREADY_MEMBER when the token is reused after acceptance", async () => {
 		await runTestInTransaction(async (tx) => {
 			const email = inviteEmail("invitado");
 			const userId = await seedUser(tx, { email });
@@ -241,7 +244,9 @@ describe("Accept-Workspace-Invitation Integration Tests", () => {
 				userId,
 			});
 			expect(second.isFailure).toBe(true);
-			expect(second.error.code).toBe(workspaceInvitationErrors.NOT_FOUND.code);
+			expect(second.error.code).toBe(
+				workspaceMemberErrors.USER_ALREADY_MEMBER.code,
+			);
 
 			const memberships = await countMemberships(tx, userId, workspaceId);
 			expect(memberships.length).toBe(1);

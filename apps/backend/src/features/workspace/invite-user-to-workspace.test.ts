@@ -8,6 +8,7 @@ import {
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { and, eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { ulid } from "ulidx";
 import { userDrizzleRepository } from "../user/common/user-drizzle-repository";
 import type {
@@ -44,8 +45,10 @@ const buildMailService = (sent: SendWorkspaceInvitationParams[]) =>
 		sendWorkspaceInvitation: mock(
 			async (params: SendWorkspaceInvitationParams) => {
 				sent.push(params);
+				return { emailId: `email-${nanoid(21)}` };
 			},
 		),
+		cancelInvitationEmail: mock(async () => {}),
 	}) as MailService;
 
 const buildHandler = (
@@ -92,6 +95,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			expect(invitation?.workspaceId).toBe(workspaceId);
 			expect(invitation?.role).toBe("technician");
 			expect(invitation?.token).toHaveLength(21);
+			expect(invitation?.emailId).toBeDefined();
 
 			const now = Date.now();
 			expect(invitation?.expiresAt.getTime()).toBeGreaterThan(
@@ -203,7 +207,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 				.select()
 				.from(workspaceInvitations)
 				.where(eq(workspaceInvitations.workspaceId, workspaceId));
-			expect(rows.length).toBe(1);
+			expect(rows.length).toBe(0);
 			expect(sent.length).toBe(0);
 		});
 	});
@@ -228,7 +232,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 				.select()
 				.from(workspaceInvitations)
 				.where(eq(workspaceInvitations.workspaceId, workspaceId));
-			expect(rows.length).toBe(1);
+			expect(rows.length).toBe(0);
 			expect(sent.length).toBe(0);
 		});
 	});
@@ -237,6 +241,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 		await runTestInTransaction(async (tx) => {
 			const inviterId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
+			await addMember(tx, { userId: inviterId, workspaceId });
 
 			const sent: SendWorkspaceInvitationParams[] = [];
 			const result = await buildHandler(
@@ -266,6 +271,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 		await runTestInTransaction(async (tx) => {
 			const inviterId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
+			await addMember(tx, { userId: inviterId, workspaceId });
 
 			const sent: SendWorkspaceInvitationParams[] = [];
 			const result = await buildHandler(
@@ -280,10 +286,11 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 		});
 	});
 
-	test("Should return INVITATION_WORKSPACE_ID_REQUIRED when the workspace id is empty", async () => {
+	test("Should return WORKSPACE_NOT_FOUND when the workspace id is empty or whitespace", async () => {
 		await runTestInTransaction(async (tx) => {
 			const inviterId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
+			await addMember(tx, { userId: inviterId, workspaceId });
 
 			const sent: SendWorkspaceInvitationParams[] = [];
 			const result = await buildHandler(
@@ -293,7 +300,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			);
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("INVITATION_WORKSPACE_ID_REQUIRED");
+			expect(result.error.code).toBe("WORKSPACE_NOT_FOUND");
 
 			const rows = await tx
 				.select()
@@ -378,7 +385,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 		});
 	});
 
-	test("Should propagate a mail service failure after persisting the invitation", async () => {
+	test("Should not persist the invitation when the mail service fails", async () => {
 		await runTestInTransaction(async (tx) => {
 			const inviterId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
@@ -388,6 +395,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 				sendWorkspaceInvitation: mock(async () => {
 					throw new Error("Resend service unavailable");
 				}),
+				cancelInvitationEmail: mock(async () => {}),
 			} as MailService;
 
 			const exec = () =>
@@ -403,7 +411,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 				.select()
 				.from(workspaceInvitations)
 				.where(eq(workspaceInvitations.workspaceId, workspaceId));
-			expect(rows.length).toBe(1);
+			expect(rows.length).toBe(0);
 		});
 	});
 

@@ -37,7 +37,7 @@ const countInvitations = async (tx: DatabaseClient, token: string) => {
 };
 
 describe("Reject-Workspace-Invitation Integration Tests", () => {
-	test("Should reject a valid invitation deleting it", async () => {
+	test("Should reject a valid invitation marking it as rejected", async () => {
 		await runTestInTransaction(async (tx) => {
 			const email = inviteEmail("invitado");
 			const userId = await seedUser(tx, { email });
@@ -55,7 +55,9 @@ describe("Reject-Workspace-Invitation Integration Tests", () => {
 			expect(result.isSuccess).toBe(true);
 
 			const remaining = await countInvitations(tx, invitation.token);
-			expect(remaining.length).toBe(0);
+			expect(remaining.length).toBe(1);
+			expect(remaining[0]?.status).toBe("rejected");
+			expect(remaining[0]?.rejectedAt).toBeDefined();
 		});
 	});
 
@@ -143,7 +145,7 @@ describe("Reject-Workspace-Invitation Integration Tests", () => {
 		});
 	});
 
-	test("Should return INVITATION_NOT_FOUND when the token is reused after rejection", async () => {
+	test("Should return INVITATION_ALREADY_REJECTED when the token is reused after rejection", async () => {
 		await runTestInTransaction(async (tx) => {
 			const email = inviteEmail("invitado");
 			const userId = await seedUser(tx, { email });
@@ -164,7 +166,9 @@ describe("Reject-Workspace-Invitation Integration Tests", () => {
 				userId,
 			});
 			expect(second.isFailure).toBe(true);
-			expect(second.error.code).toBe(workspaceInvitationErrors.NOT_FOUND.code);
+			expect(second.error.code).toBe(
+				workspaceInvitationErrors.ALREADY_REJECTED.code,
+			);
 		});
 	});
 });

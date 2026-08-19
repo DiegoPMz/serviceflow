@@ -8,6 +8,7 @@ import type { ErrorResponse, Resend } from "resend";
 import type {
 	MailService,
 	SendWorkspaceInvitationParams,
+	SendWorkspaceResponse,
 } from "./mail-service";
 
 export interface ResendMailServiceConfig {
@@ -23,7 +24,7 @@ export const createResendMailService = ({
 }: ResendMailServiceConfig): MailService => ({
 	sendWorkspaceInvitation: async (
 		params: SendWorkspaceInvitationParams,
-	): Promise<void> => {
+	): Promise<SendWorkspaceResponse> => {
 		const html = await render(
 			WorkspaceInvitationEmail({
 				workspaceName: params.workspaceName,
@@ -34,7 +35,7 @@ export const createResendMailService = ({
 			}),
 		);
 
-		const { error } = await resendClient.emails.send({
+		const { data, error } = await resendClient.emails.send({
 			from: fromDomain,
 			to: params.to,
 			subject: `Te han invitado a unirte a ${params.workspaceName}`,
@@ -43,6 +44,18 @@ export const createResendMailService = ({
 
 		if (error) {
 			throw ResendErrorDetailsException(error);
+		}
+
+		return {
+			emailId: data.id,
+		};
+	},
+
+	cancelInvitationEmail: async (messageId: string): Promise<void> => {
+		const { error } = await resendClient.emails.cancel(messageId);
+
+		if (error) {
+			console.error(error);
 		}
 	},
 });

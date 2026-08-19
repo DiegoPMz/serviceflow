@@ -42,4 +42,29 @@ export const workspaceMemberErrors = {
 		"No se puede asignar el rol de propietario mediante un cambio de rol tradicional.",
 		400,
 	),
+	CANNOT_REMOVE_OWNER: new ErrorDetails(
+		"CANNOT_REMOVE_OWNER",
+		"El propietario del workspace no puede ser eliminado.",
+		400,
+	),
+	CANNOT_REMOVE_SELF: new ErrorDetails(
+		"CANNOT_REMOVE_SELF",
+		"No puedes eliminarte a ti mismo del workspace.",
+		400,
+	),
+	ONLY_OWNER_CAN_REMOVE_ADMIN: new ErrorDetails(
+		"ONLY_OWNER_CAN_REMOVE_ADMIN",
+		"Solo el propietario del workspace puede eliminar a un administrador.",
+		403,
+	),
+	ALREADY_REJECTED: new ErrorDetails(
+		"INVITATION_ALREADY_REJECTED",
+		"La invitación ya ha sido rechazada.",
+		400,
+	),
+	CANNOT_CANCEL_REJECTED: new ErrorDetails(
+		"INVITATION_CANNOT_CANCEL_REJECTED",
+		"No se puede cancelar una invitación que ya fue rechazada por el usuario.",
+		400,
+	),
 };
