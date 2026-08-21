@@ -1,4 +1,4 @@
-import { Created, Result } from "@serviceflow/backend/shared/result";
+import { Result } from "@serviceflow/backend/shared/result";
 import { ClientErrors } from "../client/common/client.errors";
 import type { ClientRepository } from "../client/common/client-repository";
 import { DeviceErrors } from "../device/common/device.errors";
@@ -41,7 +41,7 @@ export const createOrderHandler = async ({
 	workspaceRepository,
 	orderRepository,
 	userRepository,
-}: CreateOrderHandlerProps) => {
+}: CreateOrderHandlerProps): Promise<Result<string>> => {
 	const [client, device, workspace, user] = await Promise.all([
 		clientRepository.getByIds(command.clientId, command.workspaceId),
 		deviceRepository.getByIds(command.deviceId, command.workspaceId),
@@ -132,5 +132,5 @@ export const createOrderHandler = async ({
 	workspace.increaseCount();
 	await workspaceRepository.update(workspace);
 
-	return Created.toResult();
+	return Result.success(order.id);
 };

@@ -49,7 +49,7 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/orders",
-			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, auth, body, set }): Promise<ApiResponse<string>> => {
 				const authResult = await deps.workspaceAuthorization.excecute({
 					workspaceId: params.workspaceId,
 					userId: auth.userId,
@@ -84,7 +84,7 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 					return respond.failure(result.error, set);
 				}
 
-				return respond.success(undefined, set, 201);
+				return respond.success(result.value, set, 201);
 			},
 			{
 				auth: true,

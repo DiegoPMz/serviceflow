@@ -16,11 +16,14 @@ import {
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
+import { ClientErrors } from "../client/common/client.errors";
 import { clientDrizzleRepository } from "../client/common/client-drizzle-repository";
+import { DeviceErrors } from "../device/common/device.errors";
 import type { ComponentType } from "../device/common/device.model";
 import { deviceDrizzleRepository } from "../device/common/device-drizzle-repository";
 import { userDrizzleRepository } from "../user/common/user-drizzle-repository";
 import { workspaceDrizzleRepository } from "../workspace/common/workspace-drizzle-repository";
+import { OrderErrors } from "./common/order.errors";
 import { OrderDrizzleRepository } from "./common/order-drizzle-repository";
 import { type CreateOrderCommand, createOrderHandler } from "./create-order";
 
@@ -108,6 +111,7 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isSuccess).toBe(true);
+			expect(result.value).toBeString();
 
 			const [order] = await tx
 				.select()
@@ -158,6 +162,7 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isSuccess).toBe(true);
+			expect(result.value).toBeString();
 
 			const storedOrders = await tx
 				.select()
@@ -200,6 +205,7 @@ describe("Create-Order Integration Tests", () => {
 				userRepository: userDrizzleRepository(tx),
 			});
 			expect(first.isSuccess).toBe(true);
+			expect(first.value).toBeString();
 
 			const second = await createOrderHandler({
 				command: validCommand(
@@ -216,6 +222,7 @@ describe("Create-Order Integration Tests", () => {
 				userRepository: userDrizzleRepository(tx),
 			});
 			expect(second.isSuccess).toBe(true);
+			expect(second.value).toBeString();
 
 			const storedOrders = await tx
 				.select()
@@ -258,7 +265,7 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("CLIENT_NOT_FOUND");
+			expect(result.error.code).toBe(ClientErrors.CLIENT_NOT_FOUND.code);
 
 			const storedOrders = await tx.select().from(orders);
 			expect(storedOrders.length).toBe(0);
@@ -282,7 +289,7 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_NOT_FOUND");
+			expect(result.error.code).toBe(DeviceErrors.DEVICE_NOT_FOUND.code);
 
 			const storedOrders = await tx.select().from(orders);
 			expect(storedOrders.length).toBe(0);
@@ -318,7 +325,11 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_COMPONENT_NOT_FOUND");
+			expect(result.error.code).toBe(
+				DeviceErrors.DEVICE_COMPONENT_NOT_FOUND(
+					otherDevice.componentIds[0] as string,
+				).code,
+			);
 
 			const storedOrders = await tx.select().from(orders);
 			expect(storedOrders.length).toBe(0);
@@ -343,9 +354,11 @@ describe("Create-Order Integration Tests", () => {
 				clientId,
 			);
 
+			const nonExistendComponentId = ulid();
+
 			const result = await createOrderHandler({
 				command: validCommand(workspaceId, userId, clientId, deviceId, [
-					ulid(),
+					nonExistendComponentId,
 				]),
 				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
@@ -355,7 +368,9 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_COMPONENT_NOT_FOUND");
+			expect(result.error.code).toBe(
+				DeviceErrors.DEVICE_COMPONENT_NOT_FOUND(nonExistendComponentId).code,
+			);
 		});
 	});
 
@@ -390,7 +405,9 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ORDER_COMPONENT_QUANTITY_INVALID");
+			expect(result.error.code).toBe(
+				OrderErrors.ORDER_COMPONENT_QUANTITY_INVALID.code,
+			);
 
 			const storedOrders = await tx.select().from(orders);
 			expect(storedOrders.length).toBe(0);
