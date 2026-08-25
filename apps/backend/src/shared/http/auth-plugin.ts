@@ -13,18 +13,25 @@ export const createAuthPlugin = ({
 	userSyncService,
 }: AuthPluginConfig) =>
 	new Elysia({ name: "auth-plugin" }).macro("auth", (enabled: boolean) => ({
-		async resolve({ headers, status, set }) {
+		async resolve({ headers, status, set, query }) {
 			if (!enabled) return;
 
+			let token: string | undefined;
+
 			const authorization = headers.authorization;
-			if (!authorization?.startsWith("Bearer ")) {
+			if (authorization?.startsWith("Bearer ")) {
+				token = authorization.slice(7);
+			} else if (typeof query?.token === "string" && query.token) {
+				token = query.token;
+			}
+
+			if (!token) {
 				return status(
 					AuthErrors.MISSING_HEADER.statusCode,
 					respond.failure(AuthErrors.MISSING_HEADER, set),
 				);
 			}
 
-			const token = authorization.slice(7);
 			const verifyResult = await tokenVerifier.verify(token);
 
 			if (verifyResult.isFailure) {

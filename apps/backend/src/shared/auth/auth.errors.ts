@@ -21,4 +21,9 @@ export const AuthErrors = {
 		"El perfil de usuario devuelto por el proveedor de identidad no contiene el nombre o email requeridos.",
 		502,
 	),
+	UNAUTHENTICATED_USER: new ErrorDetails(
+		"AUTH_UNAUTHENTICATED_USER",
+		"La petición no incluye las credenciales de autenticación necesarias o la sesión ha expirado.",
+		401,
+	),
 } as const;
