@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <Just for testing porpuses> */
+
 import { describe, expect, test } from "bun:test";
 import type { DatabaseClient } from "@serviceflow/backend/shared/database";
 import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
@@ -8,10 +10,22 @@ import {
 import { first, runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import {
 	WORKSPACE_ROLES,
+	WorkspaceMember,
 	type WorkspaceRole,
 } from "../workspace/common/workspace-member.model";
 import { userDrizzleRepository } from "./common/user-drizzle-repository";
 import { paginatedUserHandler } from "./paginated-users";
+
+const fakeMemberRepository = (role: WorkspaceRole): any => ({
+	findMembership: async () =>
+		WorkspaceMember.reconstitute({
+			workspaceId: "ws",
+			userId: "current-user",
+			role,
+			joinedAt: new Date(),
+			updatedAt: new Date(),
+		}),
+});
 
 const seedWorkspaceUser = async (
 	tx: DatabaseClient,
@@ -34,7 +48,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.ADMIN],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 10,
 						cursor: "not-a-valid-cursor!!!",
@@ -43,6 +57,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -69,7 +84,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 10,
 						cursor,
@@ -78,6 +93,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -94,10 +110,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -118,10 +135,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -143,10 +161,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -169,10 +188,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "desc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -207,7 +227,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 10,
 						orderBy: "createdAt",
@@ -215,6 +235,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -244,7 +265,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 10,
 						orderBy: "createdAt",
@@ -252,6 +273,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -282,10 +304,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "id", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -315,7 +338,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 10,
 						orderBy: "name",
@@ -324,6 +347,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -348,7 +372,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 10,
 						orderBy: "name",
@@ -357,6 +381,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -374,7 +399,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 10,
 						orderBy: "name",
@@ -383,6 +408,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -404,10 +430,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -430,10 +457,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const page1 = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(page1.isSuccess).toBe(true);
@@ -442,7 +470,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const page2 = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 2,
 						orderBy: "name",
@@ -451,6 +479,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(page2.isSuccess).toBe(true);
@@ -482,7 +511,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const page1 = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 2,
 						orderBy: "createdAt",
@@ -490,6 +519,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(page1.isSuccess).toBe(true);
@@ -499,7 +529,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const page2 = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 2,
 						orderBy: "createdAt",
@@ -508,6 +538,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(page2.isSuccess).toBe(true);
@@ -538,10 +569,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const page1 = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(page1.isSuccess).toBe(true);
@@ -550,7 +582,7 @@ describe("Paginated-Users Integration Tests", () => {
 			const page2 = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: {
 						limit: 2,
 						orderBy: "name",
@@ -559,6 +591,7 @@ describe("Paginated-Users Integration Tests", () => {
 					},
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(page2.isSuccess).toBe(true);
@@ -595,10 +628,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -649,10 +683,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.OWNER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.OWNER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -685,10 +720,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.ADMIN],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.ADMIN),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -719,10 +755,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.TECHNICIAN],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.TECHNICIAN),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -754,10 +791,11 @@ describe("Paginated-Users Integration Tests", () => {
 			const result = await paginatedUserHandler({
 				query: {
 					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.VIEWER],
+					currentUserId: "current-user",
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
 				repository: userDrizzleRepository(tx),
+				memberRepository: fakeMemberRepository(WORKSPACE_ROLES.VIEWER),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -766,31 +804,6 @@ describe("Paginated-Users Integration Tests", () => {
 				expect(user.name).toBeDefined();
 				expect(user.email).toBeDefined();
 			}
-		});
-	});
-
-	test("Should include roles when current user has owner among multiple roles", async () => {
-		await runTestInTransaction(async (tx) => {
-			const workspaceId = await seedWorkspace(tx);
-
-			await seedWorkspaceUser(
-				tx,
-				workspaceId,
-				{ name: "Ana" },
-				WORKSPACE_ROLES.OWNER,
-			);
-
-			const result = await paginatedUserHandler({
-				query: {
-					workspaceId,
-					currentUserRoles: [WORKSPACE_ROLES.VIEWER, WORKSPACE_ROLES.OWNER],
-					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
-				},
-				repository: userDrizzleRepository(tx),
-			});
-
-			expect(result.isSuccess).toBe(true);
-			expect(first(result.value.items).role).toBe("owner");
 		});
 	});
 });

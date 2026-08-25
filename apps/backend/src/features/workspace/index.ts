@@ -5,6 +5,7 @@ import type {
 import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
 import { respond } from "@serviceflow/backend/shared/http/respond";
+import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
 import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
 import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import {
@@ -27,7 +28,10 @@ import type { WorkspaceReadModel } from "./common/workspace.read-model";
 import type { WorkspaceAuthorization } from "./common/workspace-authorization";
 import type { WorkspaceInvitationReadModel } from "./common/workspace-invitation.read-model";
 import type { WorkspaceInvitationRepository } from "./common/workspace-invitation-repository";
-import { WORKSPACE_ROLES } from "./common/workspace-member.model";
+import {
+	WORKSPACE_ROLES,
+	WORKSPACE_ROLES_ARRAY,
+} from "./common/workspace-member.model";
 import type { WorkspaceMemberRepository } from "./common/workspace-member.repository";
 import type { WorkspaceRepository } from "./common/workspace-repository";
 import type { WorkspacesUnitOfWork } from "./common/workspaces.unit-of-work";
@@ -64,12 +68,15 @@ export interface WorkspaceDependencies {
 	db: DatabaseClient | DatabaseType;
 }
 
+const OWNER_ADMIN_ROLES = [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN];
+
 export const workspaceRoutes = (
 	auth: AuthPlugin,
 	deps: WorkspaceDependencies,
 ) =>
 	new Elysia({ prefix: "/v1/workspaces" })
-		.use(auth)
+		.use(workspaceAuthPlugin(auth, deps.workspaceAuthorization))
+		.guard({ auth: true })
 
 		// ---------------------------------------------------------------------
 		// 1. POST /v1/workspaces - Crear un Workspace
@@ -93,8 +100,10 @@ export const workspaceRoutes = (
 				return respond.success(undefined, set, 201);
 			},
 			{
-				auth: true,
 				body: createWorkspaceBodySchema,
+				workspaceAuth: {
+					enabled: false,
+				},
 			},
 		)
 
@@ -129,13 +138,83 @@ export const workspaceRoutes = (
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				query: listWorkspacesQuerySchema,
+				workspaceAuth: {
+					enabled: false,
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 3. GET /v1/workspaces/:workspaceId - Detalles de Workspace
+		// 3. POST /v1/workspaces/invitations/:token/accept - Aceptar invitación
+		// ---------------------------------------------------------------------
+		.post(
+			"/invitations/:token/accept",
+			async ({ params, auth, set }): Promise<ApiResponse<undefined>> => {
+				const result = await acceptWorkspaceInvitationHandler({
+					command: {
+						token: params.token,
+						userId: auth.userId,
+					},
+					invitationRepository: deps.workspaceInvitationRepository,
+					memberRepository: deps.memberRepository,
+					userRepository: deps.userRepository,
+					unitOfWork: deps.unitOfWork,
+				});
+
+				if (result.isFailure) {
+					return respond.failure(result.error, set);
+				}
+
+				return respond.success(undefined, set);
+			},
+			{
+				params: t.Object({
+					token: invitationTokenSchema,
+				}),
+				workspaceAuth: {
+					enabled: false,
+				},
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// 4. POST /v1/workspaces/invitations/:token/reject - Rechazar invitación
+		// ---------------------------------------------------------------------
+		.post(
+			"/invitations/:token/reject",
+			async ({ params, auth, set }): Promise<ApiResponse<undefined>> => {
+				const result = await rejectWorkspaceInvitationHandler({
+					command: {
+						token: params.token,
+						userId: auth.userId,
+					},
+					invitationRepository: deps.workspaceInvitationRepository,
+					userRepository: deps.userRepository,
+				});
+
+				if (result.isFailure) {
+					return respond.failure(result.error, set);
+				}
+
+				return respond.success(undefined, set);
+			},
+			{
+				params: t.Object({
+					token: invitationTokenSchema,
+				}),
+				workspaceAuth: {
+					enabled: false,
+				},
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// Rutas con :workspaceId - autorización vía workspaceAuthPlugin
+		// ---------------------------------------------------------------------
+
+		// ---------------------------------------------------------------------
+		// 5. GET /v1/workspaces/:workspaceId - Detalles de Workspace
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId",
@@ -159,34 +238,21 @@ export const workspaceRoutes = (
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 				}),
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 3. POST /v1/workspaces/:workspaceId/logo/upload-url - Pedir URL de subida
+		// 6. POST /v1/workspaces/:workspaceId/logo/upload-url - Pedir URL de subida
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/logo/upload-url",
-			async ({
-				params,
-				auth,
-				body,
-				set,
-			}): Promise<ApiResponse<LogoUploadUrlDto>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, body, set }): Promise<ApiResponse<LogoUploadUrlDto>> => {
 				const result = await LogoUploadUrlHandler(
 					{
 						workspaceId: params.workspaceId,
@@ -204,30 +270,22 @@ export const workspaceRoutes = (
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 				}),
 				body: logoUploadUrlBodySchema,
+				workspaceAuth: {
+					requiredRoles: [...OWNER_ADMIN_ROLES],
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 4. POST /v1/workspaces/:workspaceId/logo/confirm - Confirmar Carga
+		// 7. POST /v1/workspaces/:workspaceId/logo/confirm - Confirmar Carga
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/logo/confirm",
-			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
 				const result = await confirmLogoUploadHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -244,30 +302,22 @@ export const workspaceRoutes = (
 				return respond.success(undefined, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 				}),
 				body: confirmLogoUploadBodySchema,
+				workspaceAuth: {
+					requiredRoles: [...OWNER_ADMIN_ROLES],
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 5. POST /v1/workspaces/:workspaceId/invitations - Invitar usuario
+		// 8. POST /v1/workspaces/:workspaceId/invitations - Invitar usuario
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/invitations",
 			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await inviteUserToWorkspaceHandler({
 					command: {
 						inviterId: auth.userId,
@@ -290,35 +340,26 @@ export const workspaceRoutes = (
 				return respond.success(undefined, set, 201);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 				}),
 				body: inviteUserToWorkspaceBodySchema,
+				workspaceAuth: {
+					requiredRoles: [...OWNER_ADMIN_ROLES],
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 6. GET /v1/workspaces/:workspaceId/invitations - Listar invitaciones
+		// 9. GET /v1/workspaces/:workspaceId/invitations - Listar invitaciones
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/invitations",
 			async ({
 				params,
 				query,
-				auth,
 				set,
 			}): Promise<ApiResponse<Pagination<WorkspaceInvitationReadModel>>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await getPaginatedWorkspaceInvitations({
 					query: {
 						workspaceId: params.workspaceId,
@@ -340,90 +381,22 @@ export const workspaceRoutes = (
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 				}),
 				query: listWorkspaceInvitationsQuerySchema,
+				workspaceAuth: {
+					requiredRoles: [...OWNER_ADMIN_ROLES],
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 7. POST /v1/workspaces/invitations/:token/accept - Aceptar invitación
-		// ---------------------------------------------------------------------
-		.post(
-			"/invitations/:token/accept",
-			async ({ params, auth, set }): Promise<ApiResponse<undefined>> => {
-				const result = await acceptWorkspaceInvitationHandler({
-					command: {
-						token: params.token,
-						userId: auth.userId,
-					},
-					invitationRepository: deps.workspaceInvitationRepository,
-					memberRepository: deps.memberRepository,
-					userRepository: deps.userRepository,
-					unitOfWork: deps.unitOfWork,
-				});
-
-				if (result.isFailure) {
-					return respond.failure(result.error, set);
-				}
-
-				return respond.success(undefined, set);
-			},
-			{
-				auth: true,
-				params: t.Object({
-					token: invitationTokenSchema,
-				}),
-			},
-		)
-
-		// ---------------------------------------------------------------------
-		// 8. POST /v1/workspaces/invitations/:token/reject - Rechazar invitación
-		// ---------------------------------------------------------------------
-		.post(
-			"/invitations/:token/reject",
-			async ({ params, auth, set }): Promise<ApiResponse<undefined>> => {
-				const result = await rejectWorkspaceInvitationHandler({
-					command: {
-						token: params.token,
-						userId: auth.userId,
-					},
-					invitationRepository: deps.workspaceInvitationRepository,
-					userRepository: deps.userRepository,
-				});
-
-				if (result.isFailure) {
-					return respond.failure(result.error, set);
-				}
-
-				return respond.success(undefined, set);
-			},
-			{
-				auth: true,
-				params: t.Object({
-					token: invitationTokenSchema,
-				}),
-			},
-		)
-
-		// ---------------------------------------------------------------------
-		// 9. PATCH /v1/workspaces/:workspaceId/invitations/:token - Cancelar invitación
+		// 10. PATCH /v1/workspaces/:workspaceId/invitations/:token - Cancelar invitación
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/invitations/:token",
-			async ({ params, auth, set }): Promise<ApiResponse<undefined>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, set }): Promise<ApiResponse<undefined>> => {
 				const result = await cancelWorkspaceInvitationHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -440,30 +413,22 @@ export const workspaceRoutes = (
 				return respond.success(undefined, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					token: invitationTokenSchema,
 				}),
+				workspaceAuth: {
+					requiredRoles: [...OWNER_ADMIN_ROLES],
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 10. PATCH /v1/workspaces/:workspaceId/members/:memberId - Cambiar rol
+		// 11. PATCH /v1/workspaces/:workspaceId/members/:memberId - Cambiar rol
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/members/:memberId",
-			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
 				const result = await updateWorkspaceMemberRoleHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -480,17 +445,19 @@ export const workspaceRoutes = (
 				return respond.success(undefined, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					memberId: workspaceIdSchema,
 				}),
 				body: updateWorkspaceMemberRoleBodySchema,
+				workspaceAuth: {
+					requiredRoles: [...OWNER_ADMIN_ROLES],
+				},
 			},
 		)
 
 		// ---------------------------------------------------------------------
-		// 11. DELETE /v1/workspaces/:workspaceId/members/:memberId - Eliminar miembro
+		// 12. DELETE /v1/workspaces/:workspaceId/members/:memberId - Eliminar miembro
 		// ---------------------------------------------------------------------
 		.delete(
 			"/:workspaceId/members/:memberId",
@@ -499,16 +466,6 @@ export const workspaceRoutes = (
 				auth,
 				set,
 			}): Promise<ApiResponse<RemovedWorkspaceMember>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [WORKSPACE_ROLES.OWNER, WORKSPACE_ROLES.ADMIN],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await removeWorkspaceMemberHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -525,10 +482,12 @@ export const workspaceRoutes = (
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					memberId: workspaceIdSchema,
 				}),
+				workspaceAuth: {
+					requiredRoles: [...OWNER_ADMIN_ROLES],
+				},
 			},
 		);

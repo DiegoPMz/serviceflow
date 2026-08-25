@@ -1,6 +1,7 @@
 import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
 import { respond } from "@serviceflow/backend/shared/http/respond";
+import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
 import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import {
 	deviceIdSchema,
@@ -11,7 +12,10 @@ import {
 } from "@serviceflow/schemas";
 import Elysia, { t } from "elysia";
 import type { WorkspaceAuthorization } from "../workspace/common/workspace-authorization";
-import { WORKSPACE_ROLES } from "../workspace/common/workspace-member.model";
+import {
+	WORKSPACE_ROLES,
+	WORKSPACE_ROLES_ARRAY,
+} from "../workspace/common/workspace-member.model";
 import type { DeviceReadModel } from "./common/device.read-model";
 import type { DeviceComponentReadModel } from "./common/device-component.read-model";
 import type { DeviceRepository } from "./common/device-repository";
@@ -26,28 +30,14 @@ export interface DeviceDependencies {
 
 export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 	new Elysia({ prefix: "/v1/workspaces" })
-		.use(auth)
+		.use(workspaceAuthPlugin(auth, deps.workspaceAuthorization))
 
 		// ---------------------------------------------------------------------
 		// 1. POST /v1/workspaces/:workspaceId/devices - Registrar un Dispositivo
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/devices",
-			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
 				const result = await registerDeviceHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -67,11 +57,17 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 				return respond.success(undefined, set, 201);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 				}),
 				body: registerDeviceBodySchema,
+				workspaceAuth: {
+					requiredRoles: [
+						WORKSPACE_ROLES.OWNER,
+						WORKSPACE_ROLES.ADMIN,
+						WORKSPACE_ROLES.TECHNICIAN,
+					],
+				},
 			},
 		)
 
@@ -83,24 +79,8 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 			async ({
 				params,
 				query,
-				auth,
 				set,
 			}): Promise<ApiResponse<Pagination<DeviceReadModel>>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-						WORKSPACE_ROLES.VIEWER,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await paginatedDeviceHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -123,11 +103,13 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 				}),
 				query: listDevicesQuerySchema,
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
 			},
 		)
 
@@ -139,24 +121,8 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 			async ({
 				params,
 				query,
-				auth,
 				set,
 			}): Promise<ApiResponse<Pagination<DeviceComponentReadModel>>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-						WORKSPACE_ROLES.VIEWER,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await paginatedDeviceComponentsHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -179,11 +145,13 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					deviceId: deviceIdSchema,
 				}),
 				query: listDeviceComponentsQuerySchema,
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
 			},
 		);

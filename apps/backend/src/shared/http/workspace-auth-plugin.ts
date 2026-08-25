@@ -16,10 +16,10 @@ export const workspaceAuthPlugin = (
 		.macro(
 			"workspaceAuth",
 			({
-				requiredRoles,
+				requiredRoles = [],
 				enabled = true,
 			}: {
-				requiredRoles: WorkspaceRole[];
+				requiredRoles?: WorkspaceRole[];
 				enabled?: boolean;
 			}) => ({
 				beforeHandle: async ({ auth, params, status }) => {

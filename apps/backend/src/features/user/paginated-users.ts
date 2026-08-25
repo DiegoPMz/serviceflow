@@ -7,7 +7,11 @@ import type {
 	SortDirection,
 } from "@serviceflow/backend/shared/pagination/types";
 import { Result } from "@serviceflow/backend/shared/result";
-import type { WorkspaceRole } from "../workspace/common/workspace-member.model";
+import {
+	WORKSPACE_ROLES,
+	type WorkspaceRole,
+} from "../workspace/common/workspace-member.model";
+import type { WorkspaceMemberRepository } from "../workspace/common/workspace-member.repository";
 import type { UserDetailsReadModel } from "./common/user-details.read-model";
 import type { UserRepository } from "./common/user-repository";
 
@@ -32,25 +36,40 @@ export type UserCursor = PaginationCursor<UserOrderBy, string | number>;
 type PaginatedUsersQuery = {
 	paginationRequest: PaginationUserRequest;
 	workspaceId: string;
-	currentUserRoles: WorkspaceRole[];
+	currentUserId: string;
 };
 
 interface PaginatedUsersProps {
 	query: PaginatedUsersQuery;
 	repository: UserRepository;
+	memberRepository: WorkspaceMemberRepository;
 }
+
+const ROLE_VISIBILITY: readonly WorkspaceRole[] = [
+	WORKSPACE_ROLES.OWNER,
+	WORKSPACE_ROLES.ADMIN,
+];
 
 export const paginatedUserHandler = async ({
 	query,
 	repository,
+	memberRepository,
 }: PaginatedUsersProps): Promise<Result<Pagination<UserDetailsReadModel>>> => {
-	const { paginationRequest: pagination, currentUserRoles } = query;
+	const { paginationRequest: pagination, currentUserId } = query;
 
 	const cursor = Cursor.validate<UserCursor>(pagination);
 
 	if (cursor.isFailure) {
 		return Result.failure(cursor.error);
 	}
+
+	const membership = await memberRepository.findMembership({
+		userId: currentUserId,
+		workspaceId: query.workspaceId,
+	});
+
+	const canViewRoles =
+		membership !== null && ROLE_VISIBILITY.includes(membership.role);
 
 	const users = await repository.getAllPaginated({
 		limit: pagination.limit,
@@ -61,10 +80,7 @@ export const paginatedUserHandler = async ({
 		workspaceId: query.workspaceId,
 	});
 
-	if (
-		currentUserRoles.includes("owner") ||
-		currentUserRoles.includes("admin")
-	) {
+	if (canViewRoles) {
 		return Result.success(users);
 	}
 

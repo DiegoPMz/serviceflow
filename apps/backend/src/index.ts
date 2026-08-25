@@ -1,6 +1,7 @@
 import cors from "@elysia/cors";
 import openapi from "@elysia/openapi";
 import Elysia from "elysia";
+import type { Server } from "elysia/universal";
 import { Resend } from "resend";
 import { clientRoutes } from "./features/client";
 import { clientDrizzleRepository } from "./features/client/common/client-drizzle-repository";
@@ -34,6 +35,8 @@ import {
 	cloudflareR2StorageService,
 	s3Client,
 } from "./shared/object-storage/cloudflare-r2-storage-service";
+import { BunWebSocketAdapter } from "./shared/realtime/bun-websocket";
+import { realtimeRouter } from "./shared/realtime/realtime.routes";
 
 const userRepository = userDrizzleRepository(db);
 
@@ -69,6 +72,10 @@ const mailService = createResendMailService({
 	appName: "TecnoFix",
 });
 
+let serverInstance: Server | undefined;
+
+const realtimePublisher = new BunWebSocketAdapter(() => serverInstance);
+
 export const app = new Elysia()
 	.use(openapi())
 	.use(
@@ -82,8 +89,14 @@ export const app = new Elysia()
 	.get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
 	.use(errorPlugin)
 	.use(
+		realtimeRouter(auth, {
+			workspaceAuthorization,
+		}),
+	)
+	.use(
 		userRoutes(auth, {
 			userRepository,
+			memberRepository,
 			workspaceAuthorization,
 		}),
 	)
@@ -114,17 +127,25 @@ export const app = new Elysia()
 		}),
 	)
 	.use(
-		orderRoutes(auth, {
-			orderRepository,
-			clientRepository,
-			deviceRepository,
-			workspaceRepository,
-			userRepository,
-			pdfGenerator: PdfMakeOrderPdfGenerator,
-			storageService,
-			workspaceAuthorization,
-		}),
-	)
-	.listen(3000);
+		orderRoutes(
+			auth,
+			{
+				orderRepository,
+				clientRepository,
+				deviceRepository,
+				workspaceRepository,
+				userRepository,
+				pdfGenerator: PdfMakeOrderPdfGenerator,
+				storageService,
+				workspaceAuthorization,
+			},
+			realtimePublisher,
+		),
+	);
+
+// biome-ignore lint/style/noNonNullAssertion: <>
+serverInstance = app.listen(3000).server!;
+
+export type App = typeof app;
 
 console.log(`🦊 Elysia esta corriendo en http://localhost:3000`);

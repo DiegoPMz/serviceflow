@@ -20,7 +20,7 @@
 		"@serviceflow/schemas": "catalog:",
 		"@sinclair/typebox": "0.34.49",
 		"drizzle-orm": "0.45.2",
-		"elysia": "latest",
+		"elysia": "catalog:",
 		"jose": "6.2.4",
 		"nanoid": "5.1.16",
 		"pdfmake": "0.3.11",

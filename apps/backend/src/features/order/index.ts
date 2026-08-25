@@ -1,8 +1,10 @@
 import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
 import { respond } from "@serviceflow/backend/shared/http/respond";
+import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
 import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
 import type { Pagination } from "@serviceflow/backend/shared/pagination";
+import type { RealtimePublisher } from "@serviceflow/backend/shared/realtime/realtime-publisher";
 import {
 	changeOrderStatusBodySchema,
 	createOrderBodySchema,
@@ -16,7 +18,10 @@ import type { ClientRepository } from "../client/common/client-repository";
 import type { DeviceRepository } from "../device/common/device-repository";
 import type { UserRepository } from "../user/common/user-repository";
 import type { WorkspaceAuthorization } from "../workspace/common/workspace-authorization";
-import { WORKSPACE_ROLES } from "../workspace/common/workspace-member.model";
+import {
+	WORKSPACE_ROLES,
+	WORKSPACE_ROLES_ARRAY,
+} from "../workspace/common/workspace-member.model";
 import type { WorkspaceRepository } from "../workspace/common/workspace-repository";
 import { changeOrderStatusHandler } from "./change-order-status";
 import type { OrderDetailsReadModel } from "./common/order-details.read-model";
@@ -25,6 +30,7 @@ import type { OrderSummaryReadModel } from "./common/order-summary.read-model";
 import type { PdfGenerator } from "./common/pdf-generator";
 import { createOrderHandler } from "./create-order";
 import { generateOrderDocumentHandler } from "./generate-order-document";
+import { publishOrderCreatedEvent } from "./get-order-created-event-payload";
 import { getOrderDetailsHandler } from "./get-order-details";
 import { GetOrderDocumentHandler } from "./get-order-document-url";
 import { paginatedOrderHandler } from "./paginated-orders";
@@ -40,9 +46,14 @@ export interface OrderDependencies {
 	workspaceAuthorization: WorkspaceAuthorization;
 }
 
-export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
+export const orderRoutes = (
+	auth: AuthPlugin,
+	deps: OrderDependencies,
+	realtimePublisher: RealtimePublisher,
+) =>
 	new Elysia({ prefix: "/v1/workspaces" })
-		.use(auth)
+		.use(workspaceAuthPlugin(auth, deps.workspaceAuthorization))
+		.guard({ auth: true })
 
 		// ---------------------------------------------------------------------
 		// 1. POST /v1/workspaces/:workspaceId/orders - Crear una Orden
@@ -50,20 +61,6 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 		.post(
 			"/:workspaceId/orders",
 			async ({ params, auth, body, set }): Promise<ApiResponse<string>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await createOrderHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -84,14 +81,29 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 					return respond.failure(result.error, set);
 				}
 
+				await publishOrderCreatedEvent({
+					query: {
+						orderId: result.value,
+						userId: auth.userId,
+						workspaceId: params.workspaceId,
+					},
+					orderRepository: deps.orderRepository,
+					userRepository: deps.userRepository,
+					realtimePublisher,
+				});
+
 				return respond.success(result.value, set, 201);
 			},
 			{
-				auth: true,
-				params: t.Object({
-					workspaceId: workspaceIdSchema,
-				}),
+				params: t.Object({ workspaceId: workspaceIdSchema }),
 				body: createOrderBodySchema,
+				workspaceAuth: {
+					requiredRoles: [
+						WORKSPACE_ROLES.OWNER,
+						WORKSPACE_ROLES.ADMIN,
+						WORKSPACE_ROLES.TECHNICIAN,
+					],
+				},
 			},
 		)
 
@@ -103,24 +115,8 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 			async ({
 				params,
 				query,
-				auth,
 				set,
 			}): Promise<ApiResponse<Pagination<OrderSummaryReadModel>>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-						WORKSPACE_ROLES.VIEWER,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await paginatedOrderHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -143,11 +139,11 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
-				params: t.Object({
-					workspaceId: workspaceIdSchema,
-				}),
+				params: t.Object({ workspaceId: workspaceIdSchema }),
 				query: listOrdersQuerySchema,
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
 			},
 		)
 
@@ -156,26 +152,7 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/orders/:orderId",
-			async ({
-				params,
-				auth,
-				set,
-			}): Promise<ApiResponse<OrderDetailsReadModel>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-						WORKSPACE_ROLES.VIEWER,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, set }): Promise<ApiResponse<OrderDetailsReadModel>> => {
 				const result = await getOrderDetailsHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -192,11 +169,13 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					orderId: orderIdSchema,
 				}),
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
 			},
 		)
 
@@ -205,21 +184,7 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/orders/:orderId/status",
-			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
 				const result = await changeOrderStatusHandler({
 					command: {
 						orderId: params.orderId,
@@ -235,12 +200,18 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 				return respond.success(undefined, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					orderId: orderIdSchema,
 				}),
 				body: changeOrderStatusBodySchema,
+				workspaceAuth: {
+					requiredRoles: [
+						WORKSPACE_ROLES.OWNER,
+						WORKSPACE_ROLES.ADMIN,
+						WORKSPACE_ROLES.TECHNICIAN,
+					],
+				},
 			},
 		)
 
@@ -249,21 +220,7 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/orders/:orderId/document",
-			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
+			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
 				const result = await generateOrderDocumentHandler({
 					command: {
 						orderId: params.orderId,
@@ -283,12 +240,18 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 				return respond.success(undefined, set, 201);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					orderId: orderIdSchema,
 				}),
 				body: generateOrderDocumentBodySchema,
+				workspaceAuth: {
+					requiredRoles: [
+						WORKSPACE_ROLES.OWNER,
+						WORKSPACE_ROLES.ADMIN,
+						WORKSPACE_ROLES.TECHNICIAN,
+					],
+				},
 			},
 		)
 
@@ -299,24 +262,8 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 			"/:workspaceId/orders/:orderId/document",
 			async ({
 				params,
-				auth,
 				set,
 			}): Promise<ApiResponse<{ signedDownloadUrl: string }>> => {
-				const authResult = await deps.workspaceAuthorization.excecute({
-					workspaceId: params.workspaceId,
-					userId: auth.userId,
-					requiredRoles: [
-						WORKSPACE_ROLES.OWNER,
-						WORKSPACE_ROLES.ADMIN,
-						WORKSPACE_ROLES.TECHNICIAN,
-						WORKSPACE_ROLES.VIEWER,
-					],
-				});
-
-				if (authResult.isFailure) {
-					return respond.failure(authResult.error, set);
-				}
-
 				const result = await GetOrderDocumentHandler({
 					query: { orderId: params.orderId },
 					storageService: deps.storageService,
@@ -330,10 +277,12 @@ export const orderRoutes = (auth: AuthPlugin, deps: OrderDependencies) =>
 				return respond.success(result.value, set);
 			},
 			{
-				auth: true,
 				params: t.Object({
 					workspaceId: workspaceIdSchema,
 					orderId: orderIdSchema,
 				}),
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
 			},
 		);

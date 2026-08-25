@@ -43,6 +43,9 @@ describe("User HTTP Routes - Unit Tests", () => {
 			workspaceAuthorization: {
 				excecute: mock(() => Promise.resolve(Result.success(true))),
 			} as any,
+			memberRepository: {
+				findMembership: mock(() => Promise.resolve(null)),
+			} as any,
 		};
 	});
 
