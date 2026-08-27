@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import Elysia, { t } from "elysia";
-import type { ApiErrorResponse } from "./api-response";
+import { ErrorDetails, ErrorDetailsException } from "../result";
 import { errorPlugin } from "./error-handler-plugin";
 
 describe("Error Handler Plugin", () => {
@@ -19,6 +19,9 @@ describe("Error Handler Plugin", () => {
 		})
 		.get("/test-crash", () => {
 			throw new Error("Unhandled database connection failure");
+		})
+		.get("/test-error-details", () => {
+			throw ErrorDetailsException.of(new ErrorDetails("TEST_CODE", "msg", 502));
 		});
 
 	const isoTimestampRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -35,20 +38,20 @@ describe("Error Handler Plugin", () => {
 			}),
 		);
 
+		expect(response.status).toBe(400);
+
 		const body = await response.json();
 
-		expect(body).toEqual({
-			success: false,
-			error: {
-				code: "VALIDATION_ERROR",
-				message: "Los datos enviados en la solicitud no son válidos",
-				details: {
-					email: "El formato del correo electrónico no es válido",
-					age: "La edad debe ser un número válido",
-				},
-				timestamp: expect.stringMatching(isoTimestampRegex),
+		expect(body).toMatchObject({
+			code: "VALIDATION_ERROR",
+			message: "Los datos enviados en la solicitud no son válidos",
+			statusCode: 400,
+			details: {
+				email: "El formato del correo electrónico no es válido",
+				age: "La edad debe ser un número válido",
 			},
 		});
+		expect(body.timestamp).toMatch(isoTimestampRegex);
 	});
 
 	test("should handle unmapped routes and return a 404 response", async () => {
@@ -60,16 +63,14 @@ describe("Error Handler Plugin", () => {
 
 		expect(response.status).toBe(404);
 
-		const body = (await response.json()) as ApiErrorResponse;
+		const body = await response.json();
 
-		expect(body).toEqual({
-			success: false,
-			error: {
-				code: "ENDPOINT_NOT_FOUND",
-				message: "El endpoint solicitado no existe",
-				timestamp: expect.stringMatching(isoTimestampRegex),
-			},
+		expect(body).toMatchObject({
+			code: "ENDPOINT_NOT_FOUND",
+			message: "El endpoint solicitado no existe",
+			statusCode: 404,
 		});
+		expect(body.timestamp).toMatch(isoTimestampRegex);
 	});
 
 	test("should catch unhandled exceptions and return a generic 500 server error response", async () => {
@@ -81,15 +82,32 @@ describe("Error Handler Plugin", () => {
 
 		expect(response.status).toBe(500);
 
-		const body = (await response.json()) as ApiErrorResponse;
+		const body = await response.json();
 
-		expect(body).toEqual({
-			success: false,
-			error: {
-				code: "INTERNAL_SERVER_ERROR",
-				message: "Ocurrió un error inesperado en el servidor",
-				timestamp: expect.stringMatching(isoTimestampRegex),
-			},
+		expect(body).toMatchObject({
+			code: "INTERNAL_SERVER_ERROR",
+			message: "Ocurrió un error inesperado en el servidor",
+			statusCode: 500,
 		});
+		expect(body.timestamp).toMatch(isoTimestampRegex);
+	});
+
+	test("should render a generic 500 server error when an ErrorDetailsException is thrown", async () => {
+		const response = await app.handle(
+			new Request("http://localhost/test-error-details", {
+				method: "GET",
+			}),
+		);
+
+		expect(response.status).toBe(500);
+
+		const body = await response.json();
+
+		expect(body).toMatchObject({
+			code: "INTERNAL_SERVER_ERROR",
+			message: "Ocurrió un error inesperado en el servidor",
+			statusCode: 500,
+		});
+		expect(body.timestamp).toMatch(isoTimestampRegex);
 	});
 });

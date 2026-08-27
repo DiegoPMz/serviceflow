@@ -1,15 +1,10 @@
-import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
-import { respond } from "@serviceflow/backend/shared/http/respond";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
-import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import { listUsersQuerySchema, workspaceIdSchema } from "@serviceflow/schemas";
 import Elysia, { t } from "elysia";
 import type { WorkspaceAuthorization } from "../workspace/common/workspace-authorization";
 import { WORKSPACE_ROLES_ARRAY } from "../workspace/common/workspace-member.model";
 import type { WorkspaceMemberRepository } from "../workspace/common/workspace-member.repository";
-import type { UserDto } from "./common/user.dto";
-import type { UserDetailsReadModel } from "./common/user-details.read-model";
 import type { UserRepository } from "./common/user-repository";
 import { getProfileHandler } from "./get-profile";
 import { paginatedUserHandler } from "./paginated-users";
@@ -35,17 +30,17 @@ export const userRoutes = (
 		.use(
 			new Elysia({ prefix: "/users" }).use(auth).get(
 				"/me",
-				async ({ auth, set }): Promise<ApiResponse<UserDto>> => {
+				async ({ auth, status }) => {
 					const result = await getProfileHandler({
 						query: { userId: auth.userId },
 						repository: userRepository,
 					});
 
 					if (result.isFailure) {
-						return respond.failure(result.error, set);
+						return status(result.error.statusCode, { ...result.error });
 					}
 
-					return respond.success(result.value, set);
+					return status(200, result.value);
 				},
 				{
 					auth: true,
@@ -61,12 +56,7 @@ export const userRoutes = (
 				.use(workspaceAuthPlugin(auth, workspaceAuthorization))
 				.get(
 					"/:workspaceId/users",
-					async ({
-						params,
-						query,
-						auth,
-						set,
-					}): Promise<ApiResponse<Pagination<UserDetailsReadModel>>> => {
+					async ({ params, query, auth, status }) => {
 						const result = await paginatedUserHandler({
 							query: {
 								workspaceId: params.workspaceId,
@@ -84,10 +74,10 @@ export const userRoutes = (
 						});
 
 						if (result.isFailure) {
-							return respond.failure(result.error, set);
+							return status(result.error.statusCode, { ...result.error });
 						}
 
-						return respond.success(result.value, set);
+						return status(200, result.value);
 					},
 					{
 						auth: true,

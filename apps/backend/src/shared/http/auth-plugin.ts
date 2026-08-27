@@ -1,7 +1,7 @@
 import Elysia from "elysia";
 import type { TokenVerifier, UserSyncService } from "../auth";
 import { AuthErrors } from "../auth/auth.errors";
-import { respond } from "./respond";
+import { ErrorDetailsException } from "../result";
 
 export interface AuthPluginConfig {
 	tokenVerifier: TokenVerifier;
@@ -13,7 +13,7 @@ export const createAuthPlugin = ({
 	userSyncService,
 }: AuthPluginConfig) =>
 	new Elysia({ name: "auth-plugin" }).macro("auth", (enabled: boolean) => ({
-		async resolve({ headers, status, set, query }) {
+		async resolve({ headers, status, query }) {
 			if (!enabled) return;
 
 			let token: string | undefined;
@@ -26,19 +26,17 @@ export const createAuthPlugin = ({
 			}
 
 			if (!token) {
-				return status(
-					AuthErrors.MISSING_HEADER.statusCode,
-					respond.failure(AuthErrors.MISSING_HEADER, set),
-				);
+				return status(AuthErrors.MISSING_HEADER.statusCode, {
+					...AuthErrors.MISSING_HEADER,
+				});
 			}
 
 			const verifyResult = await tokenVerifier.verify(token);
 
 			if (verifyResult.isFailure) {
-				return status(
-					verifyResult.error.statusCode,
-					respond.failure(verifyResult.error, set),
-				);
+				return status(AuthErrors.UNAUTHENTICATED_USER.statusCode, {
+					...AuthErrors.UNAUTHENTICATED_USER,
+				});
 			}
 
 			const externalId = verifyResult.value.externalId;
@@ -48,10 +46,7 @@ export const createAuthPlugin = ({
 				const syncResult = await userSyncService.ensureUserSynced(externalId);
 
 				if (syncResult.isFailure) {
-					return status(
-						syncResult.error.statusCode,
-						respond.failure(syncResult.error, set),
-					);
+					throw ErrorDetailsException.of(syncResult.error);
 				}
 
 				userId = syncResult.value.id;

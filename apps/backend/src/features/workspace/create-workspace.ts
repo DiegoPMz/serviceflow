@@ -1,4 +1,4 @@
-import { Created, Result } from "@serviceflow/backend/shared/result";
+import { Result } from "@serviceflow/backend/shared/result";
 import { Workspace, WorkspaceCompany } from "./common/workspace.model";
 import type { WorkspaceRepository } from "./common/workspace-repository";
 
@@ -21,7 +21,7 @@ interface createWorkspaceProps {
 export async function createWorkspace({
 	command: { companyDetails, userId, workspaceName },
 	repository,
-}: createWorkspaceProps): Promise<Result<Created>> {
+}: createWorkspaceProps): Promise<Result<{ workspaceId: string }>> {
 	const company = WorkspaceCompany.create({
 		name: companyDetails.name,
 		email: companyDetails.email,
@@ -43,5 +43,5 @@ export async function createWorkspace({
 
 	await repository.save(value);
 
-	return Created.toResult();
+	return Result.success({ workspaceId: value.id });
 }

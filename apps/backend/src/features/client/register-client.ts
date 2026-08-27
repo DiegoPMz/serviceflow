@@ -1,4 +1,4 @@
-import { Created, Result } from "@serviceflow/backend/shared/result";
+import { Result } from "@serviceflow/backend/shared/result";
 import { ClientErrors } from "./common/client.errors";
 import { Client } from "./common/client.model";
 import type { ClientRepository } from "./common/client-repository";
@@ -33,5 +33,5 @@ export const registerClientHandler = async ({ repository, command }: props) => {
 	}
 
 	await repository.save(newClient.value);
-	return Created.toResult();
+	return Result.success(newClient.value.id);
 };

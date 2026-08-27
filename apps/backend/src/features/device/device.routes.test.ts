@@ -8,6 +8,7 @@ import {
 	WORKSPACE_ROLES,
 	type WorkspaceMember,
 } from "../workspace/common/workspace-member.model";
+import { DeviceErrors } from "./common/device.errors";
 import { type DeviceDependencies, deviceRoutes } from "./index";
 
 const mockUserId = "01H8X5Y9Z0123456789ABCDEF1";
@@ -171,7 +172,8 @@ describe("Device HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(409);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
+			expect(body.code).toBe(DeviceErrors.DEVICE_ALREADY_EXISTS.code);
+			expect(body.statusCode).toBe(409);
 		});
 
 		test("should return 201 Created when the device is successfully registered", async () => {
@@ -191,7 +193,7 @@ describe("Device HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(201);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
+			expect(body).toHaveProperty("deviceId");
 		});
 	});
 
@@ -277,8 +279,7 @@ describe("Device HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data).toEqual({
+			expect(body).toEqual({
 				items: [],
 				cursor: null,
 				hasNextPage: false,
@@ -362,7 +363,8 @@ describe("Device HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(404);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
+			expect(body.code).toBe(DeviceErrors.DEVICE_NOT_FOUND.code);
+			expect(body.statusCode).toBe(404);
 			expect(
 				mockDeps.deviceRepository.getDeviceComponentsPaginated,
 			).not.toHaveBeenCalled();
@@ -400,9 +402,8 @@ describe("Device HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data.items).toHaveLength(1);
-			expect(body.data.items[0]).toEqual({
+			expect(body.items).toHaveLength(1);
+			expect(body.items[0]).toEqual({
 				id: "01H8X5Y9Z0123456789ABCDEF8",
 				name: "Batería",
 				partNumber: "BAT-001",

@@ -100,7 +100,7 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(201);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
+			expect(body).toHaveProperty("workspaceId");
 		});
 	});
 
@@ -316,8 +316,7 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data).toEqual(paginatedResponse);
+			expect(body).toEqual(paginatedResponse);
 			expect(
 				mockDeps.workspaceInvitationRepository.getAllPaginated,
 			).toHaveBeenCalled();
@@ -474,8 +473,6 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 
 			expect(response.status).toBe(200);
 
-			const body = await response.json();
-			expect(body.success).toBe(true);
 			expect(mockDeps.workspaceInvitationRepository.update).toHaveBeenCalled();
 			expect(mockDeps.mailService.cancelInvitationEmail).toHaveBeenCalledWith(
 				"resend-msg-1",
@@ -573,8 +570,6 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 
 			expect(response.status).toBe(200);
 
-			const body = await response.json();
-			expect(body.success).toBe(true);
 			expect(mockDeps.memberRepository.update).toHaveBeenCalled();
 		});
 
@@ -700,8 +695,7 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data.memberId).toBe(validMemberId);
+			expect(body.memberId).toBe(validMemberId);
 			expect(mockDeps.memberRepository.remove).toHaveBeenCalled();
 		});
 

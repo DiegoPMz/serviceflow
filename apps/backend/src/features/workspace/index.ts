@@ -2,12 +2,9 @@ import type {
 	DatabaseClient,
 	DatabaseType,
 } from "@serviceflow/backend/shared/database";
-import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
-import { respond } from "@serviceflow/backend/shared/http/respond";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
 import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
-import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import {
 	confirmLogoUploadBodySchema,
 	createWorkspaceBodySchema,
@@ -24,9 +21,7 @@ import type { UserRepository } from "../user/common/user-repository";
 import { acceptWorkspaceInvitationHandler } from "./accept-workspace-invitation";
 import { cancelWorkspaceInvitationHandler } from "./cancel-workspace-invitation";
 import type { MailService } from "./common/mail-service";
-import type { WorkspaceReadModel } from "./common/workspace.read-model";
 import type { WorkspaceAuthorization } from "./common/workspace-authorization";
-import type { WorkspaceInvitationReadModel } from "./common/workspace-invitation.read-model";
 import type { WorkspaceInvitationRepository } from "./common/workspace-invitation-repository";
 import {
 	WORKSPACE_ROLES,
@@ -37,22 +32,16 @@ import type { WorkspaceRepository } from "./common/workspace-repository";
 import type { WorkspacesUnitOfWork } from "./common/workspaces.unit-of-work";
 import { confirmLogoUploadHandler } from "./confirm-logo-upload";
 import { createWorkspace } from "./create-workspace";
-import {
-	getWorkspaceSummaryHandler,
-	type WorkspaceSummaryReadModel,
-} from "./get-workspace-summary";
+import { getWorkspaceSummaryHandler } from "./get-workspace-summary";
 import { inviteUserToWorkspaceHandler } from "./invite-user-to-workspace";
-import { type LogoUploadUrlDto, LogoUploadUrlHandler } from "./logo-upload-url";
+import { LogoUploadUrlHandler } from "./logo-upload-url";
 import {
 	getPaginatedWorkspaceInvitations,
 	type WorkspaceInvitationOrderBy,
 } from "./paginated-workspace-invitations";
 import { getPaginatedWorkspaces } from "./paginated-workspaces";
 import { rejectWorkspaceInvitationHandler } from "./reject-workspace-invitation";
-import {
-	type RemovedWorkspaceMember,
-	removeWorkspaceMemberHandler,
-} from "./remove-workspace-member";
+import { removeWorkspaceMemberHandler } from "./remove-workspace-member";
 import { updateWorkspaceMemberRoleHandler } from "./update-workspace-member-role";
 
 export interface WorkspaceDependencies {
@@ -83,7 +72,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/",
-			async ({ body, auth, set }): Promise<ApiResponse<undefined>> => {
+			async ({ body, auth, status }) => {
 				const result = await createWorkspace({
 					command: {
 						userId: auth.userId,
@@ -94,10 +83,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set, 201);
+				return status("Created", result.value);
 			},
 			{
 				body: createWorkspaceBodySchema,
@@ -112,11 +101,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.get(
 			"/",
-			async ({
-				query,
-				auth,
-				set,
-			}): Promise<ApiResponse<Pagination<WorkspaceReadModel>>> => {
+			async ({ query, auth, status }) => {
 				const result = await getPaginatedWorkspaces({
 					query: {
 						userId: auth.userId,
@@ -132,10 +117,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				query: listWorkspacesQuerySchema,
@@ -150,7 +135,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/invitations/:token/accept",
-			async ({ params, auth, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, auth, status }) => {
 				const result = await acceptWorkspaceInvitationHandler({
 					command: {
 						token: params.token,
@@ -163,10 +148,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set);
+				return status("OK");
 			},
 			{
 				params: t.Object({
@@ -183,7 +168,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/invitations/:token/reject",
-			async ({ params, auth, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, auth, status }) => {
 				const result = await rejectWorkspaceInvitationHandler({
 					command: {
 						token: params.token,
@@ -194,10 +179,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set);
+				return status("OK");
 			},
 			{
 				params: t.Object({
@@ -210,19 +195,11 @@ export const workspaceRoutes = (
 		)
 
 		// ---------------------------------------------------------------------
-		// Rutas con :workspaceId - autorización vía workspaceAuthPlugin
-		// ---------------------------------------------------------------------
-
-		// ---------------------------------------------------------------------
 		// 5. GET /v1/workspaces/:workspaceId - Detalles de Workspace
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId",
-			async ({
-				params,
-				auth,
-				set,
-			}): Promise<ApiResponse<WorkspaceSummaryReadModel>> => {
+			async ({ params, auth, status }) => {
 				const result = await getWorkspaceSummaryHandler({
 					query: {
 						userId: auth.userId,
@@ -232,10 +209,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({
@@ -252,7 +229,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/logo/upload-url",
-			async ({ params, body, set }): Promise<ApiResponse<LogoUploadUrlDto>> => {
+			async ({ params, body, status }) => {
 				const result = await LogoUploadUrlHandler(
 					{
 						workspaceId: params.workspaceId,
@@ -264,10 +241,10 @@ export const workspaceRoutes = (
 				);
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({
@@ -285,7 +262,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/logo/confirm",
-			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, body, status }) => {
 				const result = await confirmLogoUploadHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -296,10 +273,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set);
+				return status("OK");
 			},
 			{
 				params: t.Object({
@@ -317,7 +294,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/invitations",
-			async ({ params, auth, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, auth, body, status }) => {
 				const result = await inviteUserToWorkspaceHandler({
 					command: {
 						inviterId: auth.userId,
@@ -334,10 +311,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set, 201);
+				return status("Created");
 			},
 			{
 				params: t.Object({
@@ -355,11 +332,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/invitations",
-			async ({
-				params,
-				query,
-				set,
-			}): Promise<ApiResponse<Pagination<WorkspaceInvitationReadModel>>> => {
+			async ({ params, query, status }) => {
 				const result = await getPaginatedWorkspaceInvitations({
 					query: {
 						workspaceId: params.workspaceId,
@@ -375,10 +348,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({
@@ -396,7 +369,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/invitations/:token",
-			async ({ params, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, status }) => {
 				const result = await cancelWorkspaceInvitationHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -407,10 +380,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set);
+				return status("OK");
 			},
 			{
 				params: t.Object({
@@ -428,7 +401,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/members/:memberId",
-			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, body, status }) => {
 				const result = await updateWorkspaceMemberRoleHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -439,10 +412,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set);
+				return status("OK");
 			},
 			{
 				params: t.Object({
@@ -461,11 +434,7 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.delete(
 			"/:workspaceId/members/:memberId",
-			async ({
-				params,
-				auth,
-				set,
-			}): Promise<ApiResponse<RemovedWorkspaceMember>> => {
+			async ({ params, auth, status }) => {
 				const result = await removeWorkspaceMemberHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -476,10 +445,10 @@ export const workspaceRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({

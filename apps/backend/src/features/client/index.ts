@@ -1,8 +1,5 @@
-import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
-import { respond } from "@serviceflow/backend/shared/http/respond";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
-import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import {
 	listClientsQuerySchema,
 	registerClientBodySchema,
@@ -14,7 +11,6 @@ import {
 	WORKSPACE_ROLES,
 	WORKSPACE_ROLES_ARRAY,
 } from "../workspace/common/workspace-member.model";
-import type { ClientReadModel } from "./common/client.read-model";
 import type { ClientRepository } from "./common/client-repository";
 import { paginatedClientHandler } from "./paginated-clients";
 import { registerClientHandler } from "./register-client";
@@ -33,7 +29,7 @@ export const clientRoutes = (auth: AuthPlugin, deps: ClientDependencies) =>
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/clients",
-			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, body, status }) => {
 				const result = await registerClientHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -46,10 +42,10 @@ export const clientRoutes = (auth: AuthPlugin, deps: ClientDependencies) =>
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set, 201);
+				return status("Created", { clientId: result.value });
 			},
 			{
 				params: t.Object({
@@ -71,11 +67,7 @@ export const clientRoutes = (auth: AuthPlugin, deps: ClientDependencies) =>
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/clients",
-			async ({
-				params,
-				query,
-				set,
-			}): Promise<ApiResponse<Pagination<ClientReadModel>>> => {
+			async ({ params, query, status }) => {
 				const result = await paginatedClientHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -91,10 +83,10 @@ export const clientRoutes = (auth: AuthPlugin, deps: ClientDependencies) =>
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({

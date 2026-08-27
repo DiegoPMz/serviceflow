@@ -3,11 +3,13 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Result } from "@serviceflow/backend/shared/result";
 import Elysia from "elysia";
+import { ClientErrors } from "../client/common/client.errors";
 import { workspaceMemberErrors } from "../workspace/common/workspace-member.errors";
 import {
 	WORKSPACE_ROLES,
 	type WorkspaceMember,
 } from "../workspace/common/workspace-member.model";
+import { OrderErrors } from "./common/order.errors";
 import { Order } from "./common/order.model";
 import type { OrderSummaryReadModel } from "./common/order-summary.read-model";
 import { type OrderDependencies, orderRoutes } from "./index";
@@ -237,7 +239,8 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(404);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
+			expect(body.code).toBe(ClientErrors.CLIENT_NOT_FOUND.code);
+			expect(body.statusCode).toBe(404);
 		});
 
 		test("should return 201 Created when the order is successfully created", async () => {
@@ -282,7 +285,8 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(201);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
+			expect(body).toHaveProperty("orderId");
+			expect(body.orderId).toBeString();
 			expect(mockWorkspace.increaseCount).toHaveBeenCalled();
 		});
 	});
@@ -382,7 +386,8 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(404);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
+			expect(body.code).toBe(OrderErrors.ORDER_NOT_FOUND.code);
+			expect(body.statusCode).toBe(404);
 			expect(mockDeps.orderRepository.updateStatus).not.toHaveBeenCalled();
 		});
 
@@ -403,8 +408,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(422);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
-			expect(body.error.code).toBe("ORDER_CANNOT_DELIVER_CANCELED");
+			expect(body.code).toBe("ORDER_CANNOT_DELIVER_CANCELED");
 			expect(mockDeps.orderRepository.updateStatus).not.toHaveBeenCalled();
 		});
 
@@ -424,8 +428,6 @@ describe("Order HTTP Routes - Unit Tests", () => {
 
 			expect(response.status).toBe(200);
 
-			const body = await response.json();
-			expect(body.success).toBe(true);
 			expect(mockDeps.orderRepository.updateStatus).toHaveBeenCalled();
 
 			const persistedOrder = (
@@ -512,8 +514,6 @@ describe("Order HTTP Routes - Unit Tests", () => {
 
 			expect(response.status).toBe(201);
 
-			const body = await response.json();
-			expect(body.success).toBe(true);
 			expect(mockDeps.orderRepository.update).toHaveBeenCalled();
 		});
 	});
@@ -584,7 +584,8 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(404);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
+			expect(body.code).toBe(OrderErrors.ORDER_DOCUMENT_NOT_GENERATED.code);
+			expect(body.statusCode).toBe(404);
 		});
 
 		test("should return 200 with the signed download url", async () => {
@@ -602,8 +603,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data).toEqual({
+			expect(body).toEqual({
 				signedDownloadUrl: "https://cdn.example.com/doc.pdf",
 			});
 		});
@@ -709,9 +709,8 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data.items).toHaveLength(1);
-			expect(body.data.hasNextPage).toBe(false);
+			expect(body.items).toHaveLength(1);
+			expect(body.hasNextPage).toBe(false);
 
 			expect(mockDeps.orderRepository.getAllPaginated).toHaveBeenCalledWith({
 				limit: 20,
@@ -816,8 +815,8 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(404);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
-			expect(body.error.code).toBe("ORDER_NOT_FOUND");
+			expect(body.code).toBe("ORDER_NOT_FOUND");
+			expect(body.statusCode).toBe(404);
 		});
 
 		test("should return 200 with the order details", async () => {
@@ -838,14 +837,11 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data.id).toBe(validOrderId);
-			expect(body.data.technician.name).toBe("Juan Pérez");
-			expect(body.data.technician.pictureUrl).toBe(
-				"https://example.com/avatar.png",
-			);
-			expect(body.data.client.name).toBe("Juan Pérez");
-			expect(body.data.device.fullName).toBe("Samsung Galaxy S21");
+			expect(body.id).toBe(validOrderId);
+			expect(body.technician.name).toBe("Juan Pérez");
+			expect(body.technician.pictureUrl).toBe("https://example.com/avatar.png");
+			expect(body.client.name).toBe("Juan Pérez");
+			expect(body.device.fullName).toBe("Samsung Galaxy S21");
 
 			expect(mockDeps.orderRepository.getById).toHaveBeenCalledWith(
 				validOrderId,

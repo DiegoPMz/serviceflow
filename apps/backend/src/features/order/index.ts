@@ -1,9 +1,6 @@
-import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
-import { respond } from "@serviceflow/backend/shared/http/respond";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
 import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
-import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import type { RealtimePublisher } from "@serviceflow/backend/shared/realtime/realtime-publisher";
 import {
 	changeOrderStatusBodySchema,
@@ -24,9 +21,7 @@ import {
 } from "../workspace/common/workspace-member.model";
 import type { WorkspaceRepository } from "../workspace/common/workspace-repository";
 import { changeOrderStatusHandler } from "./change-order-status";
-import type { OrderDetailsReadModel } from "./common/order-details.read-model";
 import type { OrderRepository } from "./common/order-repository";
-import type { OrderSummaryReadModel } from "./common/order-summary.read-model";
 import type { PdfGenerator } from "./common/pdf-generator";
 import { createOrderHandler } from "./create-order";
 import { generateOrderDocumentHandler } from "./generate-order-document";
@@ -60,7 +55,7 @@ export const orderRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/orders",
-			async ({ params, auth, body, set }): Promise<ApiResponse<string>> => {
+			async ({ params, auth, body, status }) => {
 				const result = await createOrderHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -78,7 +73,7 @@ export const orderRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
 				await publishOrderCreatedEvent({
@@ -92,7 +87,7 @@ export const orderRoutes = (
 					realtimePublisher,
 				});
 
-				return respond.success(result.value, set, 201);
+				return status("Created", { orderId: result.value });
 			},
 			{
 				params: t.Object({ workspaceId: workspaceIdSchema }),
@@ -112,11 +107,7 @@ export const orderRoutes = (
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/orders",
-			async ({
-				params,
-				query,
-				set,
-			}): Promise<ApiResponse<Pagination<OrderSummaryReadModel>>> => {
+			async ({ params, query, status }) => {
 				const result = await paginatedOrderHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -133,10 +124,10 @@ export const orderRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({ workspaceId: workspaceIdSchema }),
@@ -152,7 +143,7 @@ export const orderRoutes = (
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/orders/:orderId",
-			async ({ params, set }): Promise<ApiResponse<OrderDetailsReadModel>> => {
+			async ({ params, status }) => {
 				const result = await getOrderDetailsHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -163,10 +154,10 @@ export const orderRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", { ...result.value });
 			},
 			{
 				params: t.Object({
@@ -184,7 +175,7 @@ export const orderRoutes = (
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/orders/:orderId/status",
-			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, body, status }) => {
 				const result = await changeOrderStatusHandler({
 					command: {
 						orderId: params.orderId,
@@ -194,10 +185,10 @@ export const orderRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set);
+				return status("OK");
 			},
 			{
 				params: t.Object({
@@ -220,7 +211,7 @@ export const orderRoutes = (
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/orders/:orderId/document",
-			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, body, status }) => {
 				const result = await generateOrderDocumentHandler({
 					command: {
 						orderId: params.orderId,
@@ -234,10 +225,10 @@ export const orderRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set, 201);
+				return status("Created");
 			},
 			{
 				params: t.Object({
@@ -260,10 +251,7 @@ export const orderRoutes = (
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/orders/:orderId/document",
-			async ({
-				params,
-				set,
-			}): Promise<ApiResponse<{ signedDownloadUrl: string }>> => {
+			async ({ params, status }) => {
 				const result = await GetOrderDocumentHandler({
 					query: { orderId: params.orderId },
 					storageService: deps.storageService,
@@ -271,10 +259,10 @@ export const orderRoutes = (
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({

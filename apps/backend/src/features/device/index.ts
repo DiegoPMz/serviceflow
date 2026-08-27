@@ -1,8 +1,5 @@
-import type { ApiResponse } from "@serviceflow/backend/shared/http/api-response";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
-import { respond } from "@serviceflow/backend/shared/http/respond";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
-import type { Pagination } from "@serviceflow/backend/shared/pagination";
 import {
 	deviceIdSchema,
 	listDeviceComponentsQuerySchema,
@@ -16,8 +13,6 @@ import {
 	WORKSPACE_ROLES,
 	WORKSPACE_ROLES_ARRAY,
 } from "../workspace/common/workspace-member.model";
-import type { DeviceReadModel } from "./common/device.read-model";
-import type { DeviceComponentReadModel } from "./common/device-component.read-model";
 import type { DeviceRepository } from "./common/device-repository";
 import { paginatedDeviceComponentsHandler } from "./get-paginated-device-components";
 import { paginatedDeviceHandler } from "./paginated-devices";
@@ -37,7 +32,7 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/devices",
-			async ({ params, body, set }): Promise<ApiResponse<undefined>> => {
+			async ({ params, body, status }) => {
 				const result = await registerDeviceHandler({
 					command: {
 						workspaceId: params.workspaceId,
@@ -51,10 +46,10 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(undefined, set, 201);
+				return status("Created", { deviceId: result.value });
 			},
 			{
 				params: t.Object({
@@ -76,11 +71,7 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/devices",
-			async ({
-				params,
-				query,
-				set,
-			}): Promise<ApiResponse<Pagination<DeviceReadModel>>> => {
+			async ({ params, query, status }) => {
 				const result = await paginatedDeviceHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -97,10 +88,10 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({
@@ -118,11 +109,7 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/devices/:deviceId/components",
-			async ({
-				params,
-				query,
-				set,
-			}): Promise<ApiResponse<Pagination<DeviceComponentReadModel>>> => {
+			async ({ params, query, status }) => {
 				const result = await paginatedDeviceComponentsHandler({
 					query: {
 						workspaceId: params.workspaceId,
@@ -139,10 +126,10 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 				});
 
 				if (result.isFailure) {
-					return respond.failure(result.error, set);
+					return status(result.error.statusCode, { ...result.error });
 				}
 
-				return respond.success(result.value, set);
+				return status("OK", result.value);
 			},
 			{
 				params: t.Object({

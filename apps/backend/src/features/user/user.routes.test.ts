@@ -79,8 +79,7 @@ describe("User HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data).toEqual({
+			expect(body).toEqual({
 				id: user.id,
 				email: user.email,
 				name: user.name,
@@ -102,8 +101,8 @@ describe("User HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(UserErrors.USER_NOT_FOUND.statusCode);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
-			expect(body.error.code).toBe(UserErrors.USER_NOT_FOUND.code);
+			expect(body.code).toBe(UserErrors.USER_NOT_FOUND.code);
+			expect(body.statusCode).toBe(UserErrors.USER_NOT_FOUND.statusCode);
 		});
 
 		test("should propagate the authenticated userId to the repository", async () => {
@@ -178,8 +177,7 @@ describe("User HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data).toEqual(pagination);
+			expect(body).toEqual(pagination);
 		});
 
 		test("should return 404 when the user is not a member of the workspace", async () => {
@@ -204,8 +202,7 @@ describe("User HTTP Routes - Unit Tests", () => {
 			);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
-			expect(body.error.code).toBe(workspaceMemberErrors.NOT_A_MEMBER.code);
+			expect(body.code).toBe(workspaceMemberErrors.NOT_A_MEMBER.code);
 		});
 
 		test("should return 403 when the user lacks the required roles", async () => {

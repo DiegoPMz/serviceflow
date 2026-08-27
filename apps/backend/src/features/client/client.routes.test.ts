@@ -8,6 +8,7 @@ import {
 	WORKSPACE_ROLES,
 	type WorkspaceMember,
 } from "../workspace/common/workspace-member.model";
+import { ClientErrors } from "./common/client.errors";
 import { type ClientDependencies, clientRoutes } from "./index";
 
 const mockUserId = "01H8X5Y9Z0123456789ABCDEF1";
@@ -145,7 +146,8 @@ describe("Client HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(409);
 
 			const body = await response.json();
-			expect(body.success).toBe(false);
+			expect(body.code).toBe(ClientErrors.CLIENT_ALREADY_EXISTS.code);
+			expect(body.statusCode).toBe(409);
 		});
 
 		test("should return 201 Created when the client is successfully registered", async () => {
@@ -165,7 +167,7 @@ describe("Client HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(201);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
+			expect(body).toHaveProperty("clientId");
 		});
 	});
 
@@ -236,8 +238,7 @@ describe("Client HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(200);
 
 			const body = await response.json();
-			expect(body.success).toBe(true);
-			expect(body.data).toEqual({
+			expect(body).toEqual({
 				items: [],
 				cursor: null,
 				hasNextPage: false,

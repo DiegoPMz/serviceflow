@@ -4,7 +4,6 @@ import { workspaceIdSchema } from "@serviceflow/schemas";
 import Elysia, { t } from "elysia";
 import { AuthErrors } from "../auth/auth.errors";
 import type { AuthPlugin } from "./auth-plugin";
-import { respond } from "./respond";
 
 export const workspaceAuthPlugin = (
 	auth: AuthPlugin,
@@ -24,10 +23,9 @@ export const workspaceAuthPlugin = (
 			}) => ({
 				beforeHandle: async ({ auth, params, status }) => {
 					if (!auth) {
-						return status(
-							AuthErrors.UNAUTHENTICATED_USER.statusCode,
-							respond.failure(AuthErrors.UNAUTHENTICATED_USER),
-						);
+						return status(AuthErrors.UNAUTHENTICATED_USER.statusCode, {
+							...AuthErrors.UNAUTHENTICATED_USER,
+						});
 					}
 
 					if (enabled) {
@@ -38,10 +36,9 @@ export const workspaceAuthPlugin = (
 						});
 
 						if (authResult.isFailure) {
-							return status(
-								authResult.error.statusCode,
-								respond.failure(authResult.error),
-							);
+							return status(authResult.error.statusCode, {
+								...authResult.error,
+							});
 						}
 					}
 				},

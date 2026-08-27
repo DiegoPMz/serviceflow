@@ -1,4 +1,4 @@
-import { Created, Result } from "@serviceflow/backend/shared/result";
+import { Result } from "@serviceflow/backend/shared/result";
 import { DeviceErrors } from "./common/device.errors";
 import { type ComponentType, Device } from "./common/device.model";
 import type { DeviceRepository } from "./common/device-repository";
@@ -52,5 +52,5 @@ export const registerDeviceHandler = async (props: RegisterDeviceProps) => {
 	}
 
 	await repository.transaction(async (txRepo) => await txRepo.save(device));
-	return Created.toResult();
+	return Result.success(device.id);
 };

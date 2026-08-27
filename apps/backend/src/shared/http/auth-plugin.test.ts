@@ -6,6 +6,7 @@ import { userSyncServiceImp } from "@serviceflow/backend/features/user/user-sync
 import { Elysia } from "elysia";
 import { ulid } from "ulidx";
 import { clerkTokenVerifier } from "../auth";
+import { AuthErrors } from "../auth/auth.errors";
 import { createClerkIdentityProvider } from "../auth/clerk-identity-provider";
 import { clerkConfig } from "../config";
 import { users } from "../database";
@@ -130,6 +131,12 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		);
 
 		expect(response.status).toBe(401);
+
+		const body = await response.json();
+		expect(body).toMatchObject({
+			code: AuthErrors.MISSING_HEADER.code,
+			statusCode: 401,
+		});
 	});
 
 	test("should return 401 Unauthorized when the provided token has an invalid signature", async () => {
@@ -148,6 +155,12 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		);
 
 		expect(response.status).toBe(401);
+
+		const body = await response.json();
+		expect(body).toMatchObject({
+			code: AuthErrors.UNAUTHENTICATED_USER.code,
+			statusCode: 401,
+		});
 	});
 
 	test("should return 401 when the JWT token has expired (exp claim)", async () => {
@@ -167,6 +180,12 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		);
 
 		expect(response.status).toBe(401);
+
+		const body = await response.json();
+		expect(body).toMatchObject({
+			code: AuthErrors.UNAUTHENTICATED_USER.code,
+			statusCode: 401,
+		});
 	});
 
 	test("should return 401 when required claims (sub or sid) are missing from token payload", async () => {
@@ -183,6 +202,12 @@ describe("Auth-Plugin integration/E2E Tests", () => {
 		);
 
 		expect(response.status).toBe(401);
+
+		const body = await response.json();
+		expect(body).toMatchObject({
+			code: AuthErrors.UNAUTHENTICATED_USER.code,
+			statusCode: 401,
+		});
 	});
 });
 

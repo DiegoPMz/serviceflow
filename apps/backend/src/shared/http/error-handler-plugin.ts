@@ -1,18 +1,17 @@
 import Elysia from "elysia";
-import type { ApiErrorResponse } from "./api-response";
+import { ErrorDetails, ErrorDetailsException } from "../result";
 
 export const errorPlugin = new Elysia({
 	name: "error-handler",
 }).onError({ as: "global" }, ({ code, error, status }) => {
-	const timestamp = new Date().toISOString();
-
 	if (code === "VALIDATION") {
 		const details = error.all.reduce(
 			(acc, err) => {
 				const field = err.path.slice(1).replace(/\//g, ".") || "root";
 
-				const customError = (err.schema as { error?: string | Function })
-					?.error;
+				const customError = (
+					err.schema as { error?: string | ((err: unknown) => string) }
+				)?.error;
 
 				const message =
 					typeof customError === "string"
@@ -27,40 +26,35 @@ export const errorPlugin = new Elysia({
 			{} as Record<string, string>,
 		);
 
-		const payload: ApiErrorResponse = {
-			success: false,
-			error: {
-				code: "VALIDATION_ERROR",
-				message: "Los datos enviados en la solicitud no son válidos",
+		return status(400, {
+			...new ErrorDetails(
+				"VALIDATION_ERROR",
+				"Los datos enviados en la solicitud no son válidos",
+				400,
 				details,
-				timestamp,
-			},
-		};
-
-		return status(400, payload);
+			),
+		});
 	}
 
 	if (code === "NOT_FOUND") {
-		const payload: ApiErrorResponse = {
-			success: false,
-			error: {
-				code: "ENDPOINT_NOT_FOUND",
-				message: "El endpoint solicitado no existe",
-				timestamp,
-			},
-		};
-
-		return status(404, payload);
+		return status(404, {
+			...new ErrorDetails(
+				"ENDPOINT_NOT_FOUND",
+				"El endpoint solicitado no existe",
+				404,
+			),
+		});
 	}
 
-	const payload: ApiErrorResponse = {
-		success: false,
-		error: {
-			code: "INTERNAL_SERVER_ERROR",
-			message: "Ocurrió un error inesperado en el servidor",
-			timestamp,
-		},
-	};
+	if (error instanceof ErrorDetailsException) {
+		console.log(error);
+	}
 
-	return status(500, payload);
+	return status(500, {
+		...new ErrorDetails(
+			"INTERNAL_SERVER_ERROR",
+			"Ocurrió un error inesperado en el servidor",
+			500,
+		),
+	});
 });
