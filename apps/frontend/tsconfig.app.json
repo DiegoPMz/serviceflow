@@ -7,7 +7,11 @@
 		"emitDeclarationOnly": true,
 		"lib": ["ESNext", "DOM"],
 		"types": ["vite/client"],
-		"erasableSyntaxOnly": true
+		"erasableSyntaxOnly": false,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		}
 	},
 	"include": ["src"]
 }
