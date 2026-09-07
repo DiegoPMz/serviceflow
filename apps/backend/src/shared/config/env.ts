@@ -31,6 +31,7 @@ export const resendConfig = {
 };
 
 export const appConfig = {
+	appPort: raw.APP_PORT,
 	url: raw.FRONTEND_URL,
 	invitationCallbackPath: raw.FRONTEND_INVITATION_CALLBACK_PATH,
 };

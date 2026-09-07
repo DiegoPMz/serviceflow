@@ -40,6 +40,18 @@
 			"indentStyle": "space"
 		}
 	},
+	"html": {
+		"formatter": {
+			"enabled": true,
+			"indentStyle": "space"
+		},
+		"linter": {
+			"enabled": true
+		},
+		"assist": {
+			"enabled": true
+		}
+	},
 	"assist": {
 		"enabled": true,
 		"actions": {

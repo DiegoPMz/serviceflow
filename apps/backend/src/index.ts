@@ -144,8 +144,10 @@ export const app = new Elysia()
 	);
 
 // biome-ignore lint/style/noNonNullAssertion: <>
-serverInstance = app.listen(3000).server!;
+serverInstance = app.listen(appConfig.appPort).server!;
 
 export type App = typeof app;
 
-console.log(`🦊 Elysia esta corriendo en http://localhost:3000`);
+console.log(
+	`🦊 Elysia esta corriendo en http://localhost:${appConfig.appPort}`,
+);

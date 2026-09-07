@@ -1,6 +1,7 @@
 import { type Static, Type } from "@sinclair/typebox";
 
 export const envSchema = Type.Object({
+	APP_PORT: Type.Number(),
 	TURSO_CONNECTION_URL: Type.String({ minLength: 1 }),
 	TURSO_AUTH_TOKEN: Type.String({ minLength: 1 }),
 	R2_ENDPOINT: Type.String({ minLength: 1 }),
