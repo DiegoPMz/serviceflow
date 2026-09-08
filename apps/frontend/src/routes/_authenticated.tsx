@@ -11,13 +11,5 @@ export const Route = createFileRoute("/_authenticated")({
 			});
 		}
 	},
-	component: AuthenticatedLayout,
+	component: () => <Outlet />,
 });
-
-function AuthenticatedLayout() {
-	return (
-		<main>
-			<Outlet />
-		</main>
-	);
-}
