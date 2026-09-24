@@ -99,7 +99,7 @@ export const createClerkIdentityProvider = (
 			let response: Response;
 
 			try {
-				response = await fetch(`${baseUrl}/users/${externalId}`, {
+				response = await fetch(`${baseUrl}/users/${externalId}/metadata`, {
 					method: "PATCH",
 					headers: defaultHeaders,
 					body: JSON.stringify({
