@@ -3,11 +3,11 @@ import type {
 	SortDirection,
 } from "@serviceflow/backend/shared/pagination";
 import type {
+	PaginatedWorkspacesDto,
 	WorkspaceCursor,
 	WorkspaceOrderBy,
 } from "../paginated-workspaces";
 import type { Workspace } from "./workspace.model";
-import type { WorkspaceReadModel } from "./workspace.read-model";
 
 export interface WorkspaceRepository {
 	save: (model: Workspace) => Promise<void>;
@@ -20,5 +20,5 @@ export interface WorkspaceRepository {
 		direction: SortDirection;
 		search?: string;
 		userId: string;
-	}): Promise<Pagination<WorkspaceReadModel>>;
+	}): Promise<Pagination<PaginatedWorkspacesDto>>;
 }

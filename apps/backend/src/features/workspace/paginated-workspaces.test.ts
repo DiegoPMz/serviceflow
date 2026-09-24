@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { clients } from "@serviceflow/backend/shared/database/schema";
 import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import {
 	addMember,
@@ -524,6 +525,105 @@ describe("Paginated-Workspaces Integration Tests", () => {
 			].sort();
 			const expectedIds = [ws1Id, ws2Id, ws3Id].sort();
 			expect(allIds).toEqual(expectedIds);
+		});
+	});
+
+	// ── F. DTO Structure ──────────────────────────────────────────────
+
+	test("Should return PaginatedWorkspacesDto with all required fields", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const wsId = await seedWorkspace(tx, { name: "Test Workspace" });
+			await addMember(tx, { userId, workspaceId: wsId });
+
+			await tx.insert(clients).values({
+				id: "00000000000000000000000001",
+				workspaceId: wsId,
+				name: "Client 1",
+				phoneNumber: "123456789",
+				email: "client1@test.com",
+				location: "Test Location",
+			});
+			await tx.insert(clients).values({
+				id: "00000000000000000000000002",
+				workspaceId: wsId,
+				name: "Client 2",
+				phoneNumber: "987654321",
+				email: "client2@test.com",
+				location: "Test Location 2",
+			});
+
+			const result = await getPaginatedWorkspaces({
+				query: {
+					userId,
+					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isSuccess).toBe(true);
+			expect(result.value.items).toHaveLength(1);
+
+			const workspace = first(result.value.items);
+			expect(workspace.id).toBe(wsId);
+			expect(workspace.name).toBe("Test Workspace");
+			expect(
+				workspace.logo === null || typeof workspace.logo === "string",
+			).toBe(true);
+			expect(workspace.logo).toBeNull();
+			expect(typeof workspace.updatedAt).toBe("string");
+			expect(new Date(workspace.updatedAt).toISOString()).toBe(
+				workspace.updatedAt,
+			);
+			expect(typeof workspace.totalUsers).toBe("number");
+			expect(workspace.totalUsers).toBe(1);
+			expect(typeof workspace.totalClientes).toBe("number");
+			expect(workspace.totalClientes).toBe(2);
+		});
+	});
+
+	test("Should return totalUsers count for multiple members", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+			const userId2 = await seedUser(tx);
+			const userId3 = await seedUser(tx);
+
+			const wsId = await seedWorkspace(tx, { name: "Multi Member Workspace" });
+			await addMember(tx, { userId, workspaceId: wsId });
+			await addMember(tx, { userId: userId2, workspaceId: wsId });
+			await addMember(tx, { userId: userId3, workspaceId: wsId });
+
+			const result = await getPaginatedWorkspaces({
+				query: {
+					userId,
+					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isSuccess).toBe(true);
+			expect(first(result.value.items).totalUsers).toBe(3);
+		});
+	});
+
+	test("Should return totalClientes count as 0 when no clients exist", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const wsId = await seedWorkspace(tx, { name: "No Clients Workspace" });
+			await addMember(tx, { userId, workspaceId: wsId });
+
+			const result = await getPaginatedWorkspaces({
+				query: {
+					userId,
+					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isSuccess).toBe(true);
+			expect(first(result.value.items).totalClientes).toBe(0);
 		});
 	});
 });

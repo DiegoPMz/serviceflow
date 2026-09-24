@@ -5,7 +5,6 @@ import {
 	type SortDirection,
 } from "@serviceflow/backend/shared/pagination";
 import { Result } from "@serviceflow/backend/shared/result";
-import type { WorkspaceReadModel } from "./common/workspace.read-model";
 import type { WorkspaceRepository } from "./common/workspace-repository";
 
 export type WorkspaceOrderBy = "updatedAt" | "name" | "id";
@@ -25,6 +24,15 @@ interface GetPaginatedWorkspacesQuery {
 	readonly userId: string;
 }
 
+export interface PaginatedWorkspacesDto {
+	id: string;
+	logo: string | null;
+	name: string;
+	totalUsers: number;
+	totalClientes: number;
+	updatedAt: string;
+}
+
 interface PaginatedWorkspaceProps {
 	query: GetPaginatedWorkspacesQuery;
 	repository: WorkspaceRepository;
@@ -34,7 +42,7 @@ export const getPaginatedWorkspaces = async ({
 	query,
 	repository,
 }: PaginatedWorkspaceProps): Promise<
-	Result<Pagination<WorkspaceReadModel>>
+	Result<Pagination<PaginatedWorkspacesDto>>
 > => {
 	const { paginationRequest: pagination, userId } = query;
 

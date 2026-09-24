@@ -1,4 +1,5 @@
 import {
+	clients,
 	type DatabaseClient,
 	type DatabaseType,
 	workspaceMembers,
@@ -9,9 +10,21 @@ import {
 	type Pagination,
 	type SortDirection,
 } from "@serviceflow/backend/shared/pagination";
-import { and, asc, desc, eq, gt, like, lt, or, type SQL } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gt,
+	like,
+	lt,
+	or,
+	type SQL,
+} from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import type {
+	PaginatedWorkspacesDto,
 	WorkspaceCursor,
 	WorkspaceOrderBy,
 } from "../paginated-workspaces";
@@ -113,7 +126,7 @@ export const workspaceDrizzleRepository = (
 		direction: SortDirection;
 		search?: string;
 		userId: string;
-	}): Promise<Pagination<WorkspaceReadModel>> => {
+	}): Promise<Pagination<PaginatedWorkspacesDto>> => {
 		const orderByMapper: Record<WorkspaceOrderBy, SQLiteColumn> = {
 			name: workspaces.name,
 			id: workspaces.id,
@@ -137,12 +150,32 @@ export const workspaceDrizzleRepository = (
 
 		const sortCondition = buildSortConditions();
 
+		const totalUsersSubquery = db
+			.select({
+				workspaceId: workspaceMembers.workspaceId,
+				totalUsers: count(workspaceMembers.userId).as("totalUsers"),
+			})
+			.from(workspaceMembers)
+			.groupBy(workspaceMembers.workspaceId)
+			.as("sub_users");
+
+		const totalClientesSubquery = db
+			.select({
+				workspaceId: clients.workspaceId,
+				totalClientes: count(clients.id).as("totalClientes"),
+			})
+			.from(clients)
+			.groupBy(clients.workspaceId)
+			.as("sub_clients");
+
 		const workspacesDb = await db
 			.select({
 				id: workspaces.id,
 				name: workspaces.name,
-				createdAt: workspaces.createdAt,
+				logo: workspaces.companyLogoKey,
 				updatedAt: workspaces.updatedAt,
+				totalUsers: totalUsersSubquery.totalUsers,
+				totalClientes: totalClientesSubquery.totalClientes,
 			})
 			.from(workspaces)
 			.innerJoin(
@@ -152,13 +185,28 @@ export const workspaceDrizzleRepository = (
 					eq(workspaceMembers.userId, userId),
 				),
 			)
+			.leftJoin(
+				totalUsersSubquery,
+				eq(totalUsersSubquery.workspaceId, workspaces.id),
+			)
+			.leftJoin(
+				totalClientesSubquery,
+				eq(totalClientesSubquery.workspaceId, workspaces.id),
+			)
 			.where(and(searchCondition, sortCondition))
 			.orderBy(...buildOrderBy())
 			.limit(limit + 1);
 
 		const hasNextPage = workspacesDb.length > limit;
-		const items = workspacesDb.slice(0, limit);
-		const lastItem = items.at(-1);
+		const items = workspacesDb.slice(0, limit).map((item) => ({
+			id: item.id,
+			name: item.name,
+			logo: item.logo ?? null,
+			updatedAt: item.updatedAt.toISOString(),
+			totalUsers: Number(item.totalUsers ?? 0),
+			totalClientes: Number(item.totalClientes ?? 0),
+		}));
+		const lastItem = workspacesDb.at(limit - 1);
 
 		let nextCursor: string | null = null;
 

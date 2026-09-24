@@ -149,7 +149,7 @@ describe("createClerkIdentityProvider Unit Tests", () => {
 			await provider.updatePublicMetadata("user_123", metadata);
 
 			expect(fetchSpy).toHaveBeenCalledWith(
-				"https://api.clerk.com/v1/users/user_123",
+				"https://api.clerk.com/v1/users/user_123/metadata",
 				{
 					method: "PATCH",
 					headers: {
