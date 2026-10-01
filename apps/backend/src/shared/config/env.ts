@@ -15,7 +15,8 @@ export const r2Config = {
 } as const;
 
 export const r2StorageConfig = {
-	bucketName: raw.R2_BUCKET_NAME,
+	publicBucketName: raw.R2_PUBLIC_BUCKET_NAME,
+	privateBucketName: raw.R2_PRIVATE_BUCKET_NAME,
 	publicDomain: raw.R2_PUBLIC_DOMAIN,
 } as const;
 

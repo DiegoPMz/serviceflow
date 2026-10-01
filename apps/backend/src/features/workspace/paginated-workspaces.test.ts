@@ -2,12 +2,20 @@ import { describe, expect, test } from "bun:test";
 import { clients } from "@serviceflow/backend/shared/database/schema";
 import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import {
-	addMember,
-	seedWorkspace,
+  addMember,
+  seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { workspaceDrizzleRepository } from "./common/workspace-drizzle-repository";
 import { getPaginatedWorkspaces } from "./paginated-workspaces";
+
+const publicAssetStorageStub: PublicAssetStorage = {
+	getPublicUrl: (key) => `https://cdn.tecnofix.test/${key}`,
+	getFileBase64: async () => "",
+	fileExists: async () => false,
+	createUploadPresignedUrl: async () => "",
+};
 
 function first<T>(arr: T[]): T {
 	expect(arr.length).toBeGreaterThan(0);
@@ -31,8 +39,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						direction: "asc",
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isFailure).toBe(true);
 			expect(result.error.code).toBe("PAGINATION_CURSOR_INVALID");
@@ -64,8 +73,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						direction: "asc",
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isFailure).toBe(true);
 			expect(result.error.code).toBe("PAGINATION_CURSOR_INVALID");
@@ -83,8 +93,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items).toHaveLength(0);
@@ -107,8 +118,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items).toHaveLength(1);
@@ -131,15 +143,17 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId: userId1,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 			const result2 = await getPaginatedWorkspaces({
 				query: {
 					userId: userId2,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result1.value.items).toHaveLength(1);
 			expect(first(result1.value.items).name).toBe("User1 Workspace");
@@ -164,8 +178,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items.map((w) => w.name)).toEqual([
@@ -190,8 +205,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "desc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items.map((w) => w.name)).toEqual([
@@ -235,8 +251,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						direction: "asc",
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items.map((w) => w.name)).toEqual([
@@ -274,8 +291,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						direction: "desc",
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items.map((w) => w.name)).toEqual([
@@ -310,8 +328,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "id", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items.map((w) => w.id)).toEqual([
@@ -343,8 +362,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						search: "Repair",
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items).toHaveLength(1);
@@ -369,8 +389,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						search: "NoExiste",
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items).toHaveLength(0);
@@ -394,8 +415,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items).toHaveLength(2);
@@ -420,8 +442,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(page1.isSuccess).toBe(true);
 			expect(page1.value.hasNextPage).toBe(true);
@@ -436,8 +459,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						cursor: page1.value.cursor ?? undefined,
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(page2.isSuccess).toBe(true);
 			expect(page2.value.items).toHaveLength(1);
@@ -461,8 +485,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 5, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items).toHaveLength(2);
@@ -496,8 +521,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 2, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(page1.isSuccess).toBe(true);
 			expect(page1.value.items).toHaveLength(2);
@@ -512,8 +538,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 						cursor: page1.value.cursor ?? undefined,
 					},
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(page2.isSuccess).toBe(true);
 			expect(page2.value.items).toHaveLength(1);
@@ -559,8 +586,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.items).toHaveLength(1);
@@ -583,6 +611,32 @@ describe("Paginated-Workspaces Integration Tests", () => {
 		});
 	});
 
+	test("Should transform logo via publicAssetStorage when workspace has logo", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const wsId = await seedWorkspace(tx, {
+				name: "Logo Workspace",
+				companyLogoKey: "logos/test.png",
+			});
+			await addMember(tx, { userId, workspaceId: wsId });
+
+			const result = await getPaginatedWorkspaces({
+				query: {
+					userId,
+					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
+				},
+				repository: workspaceDrizzleRepository(tx),
+				publicAssetStorage: publicAssetStorageStub,
+			});
+
+			expect(result.isSuccess).toBe(true);
+			expect(first(result.value.items).logo).toBe(
+				"https://cdn.tecnofix.test/logos/test.png",
+			);
+		});
+	});
+
 	test("Should return totalUsers count for multiple members", async () => {
 		await runTestInTransaction(async (tx) => {
 			const userId = await seedUser(tx);
@@ -599,8 +653,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(first(result.value.items).totalUsers).toBe(3);
@@ -619,8 +674,9 @@ describe("Paginated-Workspaces Integration Tests", () => {
 					userId,
 					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
 				},
-				repository: workspaceDrizzleRepository(tx),
-			});
+			repository: workspaceDrizzleRepository(tx),
+			publicAssetStorage: publicAssetStorageStub,
+		});
 
 			expect(result.isSuccess).toBe(true);
 			expect(first(result.value.items).totalClientes).toBe(0);

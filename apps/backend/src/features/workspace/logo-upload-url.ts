@@ -1,5 +1,5 @@
 import { storageKeys } from "@serviceflow/backend/shared/object-storage/storage-keys";
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import { Result } from "@serviceflow/backend/shared/result";
 import { workspaceErrors } from "./common/workspace.errors";
 import type { WorkspaceRepository } from "./common/workspace-repository";
@@ -15,7 +15,8 @@ export const LogoUploadUrlHandler = async (
 		mimeType: "image/jpeg" | "image/png";
 		fileExtension: "png" | "jpeg" | "jpg";
 	},
-	storageService: StorageService,
+
+	publicAssetStorage: PublicAssetStorage,
 	workspaceRepository: WorkspaceRepository,
 ): Promise<Result<LogoUploadUrlDto>> => {
 	const { workspaceId, mimeType, fileExtension } = query;
@@ -30,7 +31,7 @@ export const LogoUploadUrlHandler = async (
 		fileExtension,
 	);
 
-	const presignedUrl = await storageService.createUploadPresignedUrl({
+	const presignedUrl = await publicAssetStorage.createUploadPresignedUrl({
 		key: workspaceLogoKey,
 		contentType: mimeType,
 	});

@@ -23,18 +23,17 @@ import { createDrizzleWorkspacesUnitOfWork } from "./features/workspace/common/w
 import { createClerkIdentityProvider } from "./shared/auth/clerk-identity-provider";
 import { clerkTokenVerifier } from "./shared/auth/clerk-token-verifier";
 import {
-	appConfig,
-	clerkConfig,
-	r2StorageConfig,
-	resendConfig,
+    appConfig,
+    clerkConfig,
+    r2StorageConfig,
+    resendConfig,
 } from "./shared/config";
 import { db } from "./shared/database/client";
 import { createAuthPlugin } from "./shared/http/auth-plugin";
 import { errorPlugin } from "./shared/http/error-handler-plugin";
-import {
-	cloudflareR2StorageService,
-	s3Client,
-} from "./shared/object-storage/cloudflare-r2-storage-service";
+import { createR2PrivateDocumentStorage } from "./shared/object-storage/cloudflare-r2-private-document-storage";
+import { createR2PublicAssetStorage } from "./shared/object-storage/cloudflare-r2-public-asset-storage";
+import { s3Client } from "./shared/object-storage/s3-client";
 import { BunWebSocketAdapter } from "./shared/realtime/bun-websocket";
 import { realtimeRouter } from "./shared/realtime/realtime.routes";
 
@@ -61,9 +60,13 @@ const workspaceAuthorization = workspaceAuthorizationFactory({
 	membersRepository: memberRepository,
 });
 
-const storageService = cloudflareR2StorageService(s3Client, {
-	bucketName: r2StorageConfig.bucketName,
+const publicAssetStorage = createR2PublicAssetStorage(s3Client, {
+	bucketName: r2StorageConfig.publicBucketName,
 	publicDomain: r2StorageConfig.publicDomain,
+});
+
+const privateDocumentStorage = createR2PrivateDocumentStorage(s3Client, {
+	bucketName: r2StorageConfig.privateBucketName,
 });
 
 const mailService = createResendMailService({
@@ -102,7 +105,7 @@ export const app = new Elysia()
 	)
 	.use(
 		workspaceRoutes(auth, {
-			storageService,
+			publicAssetStorage,
 			mailService,
 			workspaceRepository,
 			workspaceInvitationRepository,
@@ -136,7 +139,8 @@ export const app = new Elysia()
 				workspaceRepository,
 				userRepository,
 				pdfGenerator: PdfMakeOrderPdfGenerator,
-				storageService,
+				publicAssetStorage,
+				privateDocumentStorage,
 				workspaceAuthorization,
 			},
 			realtimePublisher,

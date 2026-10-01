@@ -1,6 +1,9 @@
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type {
+	PrivateDocumentStorage,
+	PublicAssetStorage,
+} from "@serviceflow/backend/shared/object-storage/storage-service";
 import type { RealtimePublisher } from "@serviceflow/backend/shared/realtime/realtime-publisher";
 import {
 	changeOrderStatusBodySchema,
@@ -37,7 +40,8 @@ export interface OrderDependencies {
 	workspaceRepository: WorkspaceRepository;
 	userRepository: UserRepository;
 	pdfGenerator: PdfGenerator;
-	storageService: StorageService;
+	publicAssetStorage: PublicAssetStorage;
+	privateDocumentStorage: PrivateDocumentStorage;
 	workspaceAuthorization: WorkspaceAuthorization;
 }
 
@@ -221,7 +225,8 @@ export const orderRoutes = (
 					orderRepository: deps.orderRepository,
 					workspaceRepository: deps.workspaceRepository,
 					pdfGenerator: deps.pdfGenerator,
-					storageService: deps.storageService,
+					publicAssetStorage: deps.publicAssetStorage,
+					privateDocumentStorage: deps.privateDocumentStorage,
 				});
 
 				if (result.isFailure) {
@@ -254,7 +259,7 @@ export const orderRoutes = (
 			async ({ params, status }) => {
 				const result = await GetOrderDocumentHandler({
 					query: { orderId: params.orderId },
-					storageService: deps.storageService,
+					privateDocumentStorage: deps.privateDocumentStorage,
 					orderRepository: deps.orderRepository,
 				});
 

@@ -4,7 +4,7 @@ import type {
 } from "@serviceflow/backend/shared/database";
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import {
 	confirmLogoUploadBodySchema,
 	createWorkspaceBodySchema,
@@ -45,7 +45,8 @@ import { removeWorkspaceMemberHandler } from "./remove-workspace-member";
 import { updateWorkspaceMemberRoleHandler } from "./update-workspace-member-role";
 
 export interface WorkspaceDependencies {
-	storageService: StorageService;
+	publicAssetStorage: PublicAssetStorage;
+
 	mailService: MailService;
 	workspaceRepository: WorkspaceRepository;
 	workspaceInvitationRepository: WorkspaceInvitationRepository;
@@ -113,6 +114,7 @@ export const workspaceRoutes = (
 							search: query.search,
 						},
 					},
+					publicAssetStorage: deps.publicAssetStorage,
 					repository: deps.workspaceRepository,
 				});
 
@@ -236,7 +238,7 @@ export const workspaceRoutes = (
 						mimeType: body.mimeType,
 						fileExtension: body.fileExtension,
 					},
-					deps.storageService,
+					deps.publicAssetStorage,
 					deps.workspaceRepository,
 				);
 
@@ -269,7 +271,7 @@ export const workspaceRoutes = (
 						fileKey: body.fileKey,
 					},
 					workspaceRepository: deps.workspaceRepository,
-					storageService: deps.storageService,
+					publicAssetStorage: deps.publicAssetStorage,
 				});
 
 				if (result.isFailure) {

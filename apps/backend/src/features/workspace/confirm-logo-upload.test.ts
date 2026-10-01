@@ -19,7 +19,7 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { storageKeys } from "@serviceflow/backend/shared/object-storage/storage-keys";
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import {
 	BUCKET_TEST_NAME,
 	getTestStorageService,
@@ -48,15 +48,15 @@ async function uploadTestFile(
 }
 
 describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
-	let storageService: StorageService;
+	let publicAssetStorage: PublicAssetStorage;
 	let s3ClientTest: S3Client;
 
 	beforeAll(
 		async () => {
-			const { storageService: testStorageService, s3Client } =
+			const { publicAssetStorage: testPublicAssetStorage, s3Client } =
 				await getTestStorageService();
 
-			storageService = testStorageService;
+			publicAssetStorage = testPublicAssetStorage;
 			s3ClientTest = s3Client;
 		},
 
@@ -102,7 +102,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const result = await confirmLogoUploadHandler({
 				command: { workspaceId, fileKey },
 				workspaceRepository: workspaceDrizzleRepository(tx),
-				storageService,
+				publicAssetStorage,
 			});
 
 			expect(result.isSuccess).toBeTrue();
@@ -120,7 +120,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const result = await confirmLogoUploadHandler({
 				command: { workspaceId, fileKey },
 				workspaceRepository: workspaceDrizzleRepository(tx),
-				storageService,
+				publicAssetStorage,
 			});
 
 			expect(result.isFailure).toBeTrue();
@@ -136,7 +136,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const result = await confirmLogoUploadHandler({
 				command: { workspaceId: "non-existent-id", fileKey },
 				workspaceRepository: workspaceDrizzleRepository(tx),
-				storageService,
+				publicAssetStorage,
 			});
 
 			expect(result.isFailure).toBeTrue();
@@ -156,7 +156,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			await confirmLogoUploadHandler({
 				command: { workspaceId, fileKey },
 				workspaceRepository: workspaceDrizzleRepository(tx),
-				storageService,
+				publicAssetStorage,
 			});
 
 			const [workspace] = await tx
@@ -185,7 +185,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			await confirmLogoUploadHandler({
 				command: { workspaceId, fileKey },
 				workspaceRepository: workspaceDrizzleRepository(tx),
-				storageService,
+				publicAssetStorage,
 			});
 
 			const [after] = await tx
@@ -211,7 +211,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 
 			const uploadUrlResult = await LogoUploadUrlHandler(
 				{ workspaceId, mimeType: "image/jpeg", fileExtension: "jpg" },
-				storageService,
+				publicAssetStorage,
 				repository,
 			);
 
@@ -230,7 +230,7 @@ describe("Workspace-ConfirmLogoUpload Integration Tests", () => {
 			const confirmResult = await confirmLogoUploadHandler({
 				command: { workspaceId, fileKey: workspaceKey },
 				workspaceRepository: repository,
-				storageService,
+				publicAssetStorage,
 			});
 
 			expect(confirmResult.isSuccess).toBeTrue();

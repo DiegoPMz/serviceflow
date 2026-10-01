@@ -1,8 +1,9 @@
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import {
-	Cursor,
-	type Pagination,
-	type PaginationCursor,
-	type SortDirection,
+    Cursor,
+    type Pagination,
+    type PaginationCursor,
+    type SortDirection,
 } from "@serviceflow/backend/shared/pagination";
 import { Result } from "@serviceflow/backend/shared/result";
 import type { WorkspaceRepository } from "./common/workspace-repository";
@@ -36,11 +37,13 @@ export interface PaginatedWorkspacesDto {
 interface PaginatedWorkspaceProps {
 	query: GetPaginatedWorkspacesQuery;
 	repository: WorkspaceRepository;
+	publicAssetStorage: PublicAssetStorage;
 }
 
 export const getPaginatedWorkspaces = async ({
 	query,
 	repository,
+	publicAssetStorage,
 }: PaginatedWorkspaceProps): Promise<
 	Result<Pagination<PaginatedWorkspacesDto>>
 > => {
@@ -61,5 +64,12 @@ export const getPaginatedWorkspaces = async ({
 		userId,
 	});
 
-	return Result.success(workspaces);
+	return Result.success({
+		cursor: workspaces.cursor,
+		hasNextPage: workspaces.hasNextPage,
+		items: workspaces.items.map((w) => ({
+			...w,
+			logo: w.logo !== null ? publicAssetStorage.getPublicUrl(w.logo) : null,
+		})),
+	});
 };

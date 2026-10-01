@@ -1,32 +1,35 @@
 import {
-	afterAll,
-	afterEach,
-	beforeAll,
-	describe,
-	expect,
-	test,
+    afterAll,
+    afterEach,
+    beforeAll,
+    describe,
+    expect,
+    test,
 } from "bun:test";
 import {
-	DeleteObjectsCommand,
-	GetObjectCommand,
-	ListObjectsV2Command,
-	type S3Client,
+    DeleteObjectsCommand,
+    GetObjectCommand,
+    ListObjectsV2Command,
+    type S3Client,
 } from "@aws-sdk/client-s3";
 import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.seeds";
 import { seedDevice } from "@serviceflow/backend/shared/database/seeds/device.seeds";
 import { seedOrder } from "@serviceflow/backend/shared/database/seeds/order.seeds";
 import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import {
-	addMember,
-	seedWorkspace,
+    addMember,
+    seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { storageKeys } from "@serviceflow/backend/shared/object-storage/storage-keys";
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type {
+    PrivateDocumentStorage,
+    PublicAssetStorage,
+} from "@serviceflow/backend/shared/object-storage/storage-service";
 import {
-	BUCKET_TEST_NAME,
-	getTestStorageService,
-	runTestInTransaction,
-	stopTestContainer,
+    BUCKET_TEST_NAME,
+    getTestStorageService,
+    runTestInTransaction,
+    stopTestContainer,
 } from "@serviceflow/backend/shared/tests";
 import { workspaceDrizzleRepository } from "../workspace/common/workspace-drizzle-repository";
 import { OrderErrors } from "./common/order.errors";
@@ -35,7 +38,8 @@ import { PdfMakeOrderPdfGenerator } from "./common/pdfMake-pdf-generator";
 import { generateOrderDocumentHandler } from "./generate-order-document";
 
 describe("GenerateOrderDocument Integration Tests", () => {
-	let storageService: StorageService;
+	let privateDocumentStorage: PrivateDocumentStorage;
+	let publicAssetStorage: PublicAssetStorage;
 	let s3ClientTest: S3Client;
 
 	const ONE_PIXEL_PNG =
@@ -43,10 +47,14 @@ describe("GenerateOrderDocument Integration Tests", () => {
 
 	beforeAll(
 		async () => {
-			const { storageService: testStorageService, s3Client } =
-				await getTestStorageService();
+			const {
+				privateDocumentStorage: testPrivateDocumentStorage,
+				publicAssetStorage: testPublicAssetStorage,
+				s3Client,
+			} = await getTestStorageService();
 
-			storageService = testStorageService;
+			privateDocumentStorage = testPrivateDocumentStorage;
+			publicAssetStorage = testPublicAssetStorage;
 			s3ClientTest = s3Client;
 		},
 		{ timeout: 20000 },
@@ -107,7 +115,8 @@ describe("GenerateOrderDocument Integration Tests", () => {
 				orderRepository: OrderDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				pdfGenerator: PdfMakeOrderPdfGenerator,
-				storageService,
+				publicAssetStorage,
+				privateDocumentStorage,
 			});
 
 			expect(result.isSuccess).toBeTrue();
@@ -145,7 +154,8 @@ describe("GenerateOrderDocument Integration Tests", () => {
 				orderRepository: OrderDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				pdfGenerator: PdfMakeOrderPdfGenerator,
-				storageService,
+				publicAssetStorage,
+				privateDocumentStorage,
 			});
 
 			expect(result.isFailure).toBeTrue();
@@ -181,7 +191,8 @@ describe("GenerateOrderDocument Integration Tests", () => {
 				orderRepository: OrderDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				pdfGenerator: PdfMakeOrderPdfGenerator,
-				storageService,
+				publicAssetStorage,
+				privateDocumentStorage,
 			});
 
 			expect(result.isFailure).toBeTrue();

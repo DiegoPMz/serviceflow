@@ -7,8 +7,8 @@ import { workspaceInvitationErrors } from "./common/workspace-invitation.errors"
 import { WorkspaceInvitation } from "./common/workspace-invitation.model";
 import { workspaceMemberErrors } from "./common/workspace-member.errors";
 import {
-	WORKSPACE_ROLES,
-	WorkspaceMember,
+    WORKSPACE_ROLES,
+    WorkspaceMember,
 } from "./common/workspace-member.model";
 import { type WorkspaceDependencies, workspaceRoutes } from "./index";
 
@@ -30,7 +30,7 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 		mock.restore();
 
 		mockDeps = {
-			storageService: {} as any,
+			publicAssetStorage: {} as any,
 			mailService: {} as any,
 			workspaceRepository: {
 				save: mock(() => Promise.resolve()),
@@ -83,7 +83,7 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 				workspaceName: "Acme Software HQ",
 				companyDetails: {
 					name: "Acme Corporation LLC",
-					phone: "+15551234567",
+					phone: "5512345679",
 					email: "contact@acme.com",
 					address: "123 Innovation Way, Suite 100, San Francisco, CA",
 				},

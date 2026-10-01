@@ -1,4 +1,4 @@
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type { PrivateDocumentStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import { Result } from "@serviceflow/backend/shared/result";
 import { OrderErrors } from "./common/order.errors";
 import type { OrderRepository } from "./common/order-repository";
@@ -9,12 +9,12 @@ interface GetOrderDocumentQuery {
 
 interface GetOrderDocumentProps {
 	query: GetOrderDocumentQuery;
-	storageService: StorageService;
+	privateDocumentStorage: PrivateDocumentStorage;
 	orderRepository: OrderRepository;
 }
 
 export const GetOrderDocumentHandler = async ({
-	storageService,
+	privateDocumentStorage,
 	orderRepository,
 	query,
 }: GetOrderDocumentProps): Promise<Result<{ signedDownloadUrl: string }>> => {
@@ -28,11 +28,12 @@ export const GetOrderDocumentHandler = async ({
 		return Result.failure(OrderErrors.ORDER_DOCUMENT_NOT_GENERATED);
 	}
 
-	const signedDownloadUrl = await storageService.createSignedDownloadUrl({
-		key: order.documentKey,
-		expiresIn: 60 * 5,
-		fileName: order.folio,
-	});
+	const signedDownloadUrl =
+		await privateDocumentStorage.createSignedDownloadUrl({
+			key: order.documentKey,
+			expiresIn: 60 * 5,
+			fileName: order.folio,
+		});
 
 	return Result.success({ signedDownloadUrl });
 };

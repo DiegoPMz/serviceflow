@@ -1,5 +1,8 @@
 import { storageKeys } from "@serviceflow/backend/shared/object-storage/storage-keys";
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type {
+	PrivateDocumentStorage,
+	PublicAssetStorage,
+} from "@serviceflow/backend/shared/object-storage/storage-service";
 import { Created, Result } from "@serviceflow/backend/shared/result";
 import { workspaceErrors } from "../workspace/common/workspace.errors";
 import type { WorkspaceRepository } from "../workspace/common/workspace-repository";
@@ -18,7 +21,8 @@ interface GenerateOrderDocumentProps {
 	orderRepository: OrderRepository;
 	workspaceRepository: WorkspaceRepository;
 	pdfGenerator: PdfGenerator;
-	storageService: StorageService;
+	publicAssetStorage: PublicAssetStorage;
+	privateDocumentStorage: PrivateDocumentStorage;
 }
 
 export const generateOrderDocumentHandler = async ({
@@ -26,7 +30,8 @@ export const generateOrderDocumentHandler = async ({
 	orderRepository,
 	workspaceRepository,
 	pdfGenerator,
-	storageService,
+	publicAssetStorage,
+	privateDocumentStorage,
 }: GenerateOrderDocumentProps): Promise<Result<Created>> => {
 	const order = await orderRepository.getById(command.orderId);
 
@@ -47,7 +52,9 @@ export const generateOrderDocumentHandler = async ({
 	let logoBase64: string | undefined;
 
 	if (workspace.company.logoKey) {
-		logoBase64 = await storageService.getFileBase64(workspace.company.logoKey);
+		logoBase64 = await publicAssetStorage.getFileBase64(
+			workspace.company.logoKey,
+		);
 	}
 
 	const pdfBuffer = await pdfGenerator.generate(order, workspace.company, {
@@ -61,15 +68,11 @@ export const generateOrderDocumentHandler = async ({
 		order.id,
 	);
 
-	const uploadPdfResult = await storageService.upload({
+	await privateDocumentStorage.upload({
 		key: orderDocumentKey,
 		body: pdfBuffer,
 		contentType: "application/pdf",
 	});
-
-	if (uploadPdfResult.isFailure) {
-		return Result.failure(uploadPdfResult.error);
-	}
 
 	const attachKeyResult = order.attachDocumentKey(orderDocumentKey);
 

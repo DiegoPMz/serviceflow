@@ -1,4 +1,4 @@
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import { Result, Updated } from "@serviceflow/backend/shared/result";
 import { workspaceErrors } from "./common/workspace.errors";
 import type { WorkspaceRepository } from "./common/workspace-repository";
@@ -11,15 +11,15 @@ export interface ConfirmLogoUploadCommand {
 interface ConfirmLogoUploadHandlerProps {
 	command: ConfirmLogoUploadCommand;
 	workspaceRepository: WorkspaceRepository;
-	storageService: StorageService;
+	publicAssetStorage: PublicAssetStorage;
 }
 
 export const confirmLogoUploadHandler = async ({
 	command,
 	workspaceRepository,
-	storageService,
+	publicAssetStorage,
 }: ConfirmLogoUploadHandlerProps): Promise<Result<Updated>> => {
-	const logoExists = await storageService.fileExists(command.fileKey);
+	const logoExists = await publicAssetStorage.fileExists(command.fileKey);
 
 	if (!logoExists) {
 		return Result.failure(workspaceErrors.LOGO_FILE_NOT_FOUND);

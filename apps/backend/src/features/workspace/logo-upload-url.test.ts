@@ -16,7 +16,7 @@ import {
 	addMember,
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
-import type { StorageService } from "@serviceflow/backend/shared/object-storage/storage-service";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import {
 	BUCKET_TEST_NAME,
 	getTestStorageService,
@@ -30,15 +30,15 @@ import { LogoUploadUrlHandler } from "./logo-upload-url";
 const STORAGE_KEY_REGEX = /^workspaces\/[^/]+\/logo-\d+\.(jpg|png)$/;
 
 describe("Workspace-LogoUploadUrl Integration Tests", () => {
-	let storageService: StorageService;
+	let publicAssetStorage: PublicAssetStorage;
 	let s3ClientTest: S3Client;
 
 	beforeAll(
 		async () => {
-			const { storageService: testStorageService, s3Client } =
+			const { publicAssetStorage: testPublicAssetStorage, s3Client } =
 				await getTestStorageService();
 
-			storageService = testStorageService;
+			publicAssetStorage = testPublicAssetStorage;
 			s3ClientTest = s3Client;
 		},
 
@@ -84,7 +84,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 					mimeType: "image/jpeg",
 					fileExtension: "jpg",
 				},
-				storageService,
+				publicAssetStorage,
 				workspaceDrizzleRepository(tx),
 			);
 
@@ -109,7 +109,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 					mimeType: "image/png",
 					fileExtension: "png",
 				},
-				storageService,
+				publicAssetStorage,
 				workspaceDrizzleRepository(tx),
 			);
 
@@ -131,7 +131,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 					mimeType: "image/jpeg",
 					fileExtension: "jpg",
 				},
-				storageService,
+				publicAssetStorage,
 				workspaceDrizzleRepository(tx),
 			);
 
@@ -157,7 +157,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 						mimeType: "image/jpeg",
 						fileExtension: "jpg",
 					},
-					storageService,
+					publicAssetStorage,
 					repository,
 				),
 				LogoUploadUrlHandler(
@@ -166,7 +166,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 						mimeType: "image/jpeg",
 						fileExtension: "jpg",
 					},
-					storageService,
+					publicAssetStorage,
 					repository,
 				),
 			]);
@@ -190,12 +190,12 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 			const [resultWithDot, resultWithoutDot] = await Promise.all([
 				LogoUploadUrlHandler(
 					{ workspaceId, mimeType: "image/jpeg", fileExtension: "jpg" },
-					storageService,
+					publicAssetStorage,
 					repository,
 				),
 				LogoUploadUrlHandler(
 					{ workspaceId, mimeType: "image/jpeg", fileExtension: "jpg" },
-					storageService,
+					publicAssetStorage,
 					repository,
 				),
 			]);
@@ -215,7 +215,7 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 
 			const result = await LogoUploadUrlHandler(
 				{ workspaceId, mimeType: "image/jpeg", fileExtension: "jpg" },
-				storageService,
+				publicAssetStorage,
 				workspaceDrizzleRepository(tx),
 			);
 
@@ -231,7 +231,9 @@ describe("Workspace-LogoUploadUrl Integration Tests", () => {
 
 			expect(uploadResponse.ok).toBeTrue();
 
-			const exists = await storageService.fileExists(result.value.workspaceKey);
+			const exists = await publicAssetStorage.fileExists(
+				result.value.workspaceKey,
+			);
 			expect(exists).toBeTrue();
 		});
 	});

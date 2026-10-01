@@ -115,9 +115,11 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			pdfGenerator: {
 				generate: mock(() => Promise.resolve(new Uint8Array([1, 2, 3]))),
 			} as any,
-			storageService: {
-				upload: mock(() => Promise.resolve(Result.success("key"))),
+			publicAssetStorage: {
 				getFileBase64: mock(() => Promise.resolve("")),
+			} as any,
+			privateDocumentStorage: {
+				upload: mock(() => Promise.resolve(Result.success("key"))),
 				createSignedDownloadUrl: mock(() =>
 					Promise.resolve("https://cdn.example.com/doc.pdf"),
 				),
@@ -129,7 +131,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 	});
 
 	const createTestApp = () =>
-		new Elysia().use(orderRoutes(mockAuthPlugin as any, mockDeps));
+		new Elysia().use(orderRoutes(mockAuthPlugin as any, mockDeps, {} as any));
 
 	// =========================================================================
 	// 1. POST /v1/workspaces/:workspaceId/orders
