@@ -1,7 +1,6 @@
-import { SignIn } from "@clerk/react";
-import { shadcn } from "@clerk/ui/themes";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import * as v from "valibot";
+import { LoginPage } from "@/features/auth/pages/login-page";
 
 const loginSearchSchema = v.object({
 	redirect: v.optional(v.string()),
@@ -14,15 +13,5 @@ export const Route = createFileRoute("/login")({
 			throw redirect({ to: search.redirect ?? "/" });
 		}
 	},
-	component: LoginComponent,
+	component: LoginPage,
 });
-
-function LoginComponent() {
-	const { redirect: redirectUrl } = Route.useSearch();
-
-	return (
-		<div className="flex min-h-screen items-center justify-center">
-			<SignIn appearance={shadcn} fallbackRedirectUrl={redirectUrl || "/"} />
-		</div>
-	);
-}
