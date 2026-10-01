@@ -1,17 +1,36 @@
 {
-	"extends": "../../tsconfig.json",
 	"compilerOptions": {
 		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-		"composite": true,
-		"noEmit": false,
-		"emitDeclarationOnly": true,
-		"lib": ["ESNext", "DOM"],
+
+		"target": "ESNext",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+
 		"types": ["vite/client", "vite-plugin-pwa/react"],
-		"erasableSyntaxOnly": false,
+
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
+		"moduleDetection": "force",
+
+		"noEmit": true,
+
+		"jsx": "react-jsx",
+
+		"strict": true,
+		"skipLibCheck": true,
+
+		"noUncheckedIndexedAccess": true,
+		"noFallthroughCasesInSwitch": true,
+
+		// Frontend aliases
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@serviceflow/backend/*": ["../backend/src/*"]
 		}
 	},
+
 	"include": ["src"]
 }
