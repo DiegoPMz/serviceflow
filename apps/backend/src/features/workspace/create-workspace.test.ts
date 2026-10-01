@@ -14,7 +14,7 @@ import { createWorkspace } from "./create-workspace";
 
 const companyDetails = {
 	name: "Test Company",
-	phone: "+1234567890",
+	phone: "5512345678",
 	email: "company@test.com",
 	address: "123 Test Street",
 };
@@ -65,7 +65,11 @@ describe("Workspace-Create Integration Tests", () => {
 			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Owner Test", companyDetails },
+				command: {
+					userId,
+					workspaceName: "Owner Test",
+					companyDetails,
+				},
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -93,14 +97,18 @@ describe("Workspace-Create Integration Tests", () => {
 			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "UUID Test", companyDetails },
+				command: {
+					userId,
+					workspaceName: "ULID Test",
+					companyDetails,
+				},
 				repository: workspaceDrizzleRepository(tx),
 			});
 
 			const [workspace] = await tx
 				.select()
 				.from(workspaces)
-				.where(eq(workspaces.name, "UUID Test"));
+				.where(eq(workspaces.name, "ULID Test"));
 
 			expect(isValid(workspace?.id as string)).toBe(true);
 		});
@@ -111,7 +119,11 @@ describe("Workspace-Create Integration Tests", () => {
 			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Timestamp Test", companyDetails },
+				command: {
+					userId,
+					workspaceName: "Timestamp Test",
+					companyDetails,
+				},
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -125,12 +137,16 @@ describe("Workspace-Create Integration Tests", () => {
 		});
 	});
 
-	test("Should generate a prefix with 4-6 uppercase letters when not provided", async () => {
+	test("Should generate a prefix with exactly 4 uppercase letters when not provided", async () => {
 		await runTestInTransaction(async (tx) => {
 			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Prefix Test", companyDetails },
+				command: {
+					userId,
+					workspaceName: "Prefix Test",
+					companyDetails,
+				},
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -141,6 +157,7 @@ describe("Workspace-Create Integration Tests", () => {
 
 			expect(workspace).toBeDefined();
 			expect(workspace?.prefix).toBeDefined();
+			expect(workspace?.prefix.length).toBe(4);
 			expect(PREFIX_REGEX.test(workspace?.prefix as string)).toBe(true);
 		});
 	});
@@ -167,7 +184,9 @@ describe("Workspace-Create Integration Tests", () => {
 					.where(eq(workspaces.name, `Prefix Test ${i}`));
 
 				expect(workspace).toBeDefined();
+				expect(workspace?.prefix.length).toBe(4);
 				expect(PREFIX_REGEX.test(workspace?.prefix as string)).toBe(true);
+
 				prefixes.add(workspace?.prefix ?? "");
 			}
 
@@ -180,7 +199,11 @@ describe("Workspace-Create Integration Tests", () => {
 			const userId = await seedUser(tx);
 
 			await createWorkspace({
-				command: { userId, workspaceName: "Order Count Test", companyDetails },
+				command: {
+					userId,
+					workspaceName: "Order Count Test",
+					companyDetails,
+				},
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -199,7 +222,11 @@ describe("Workspace-Create Integration Tests", () => {
 			const userId = await seedUser(tx);
 
 			const result = await createWorkspace({
-				command: { userId, workspaceName: "", companyDetails },
+				command: {
+					userId,
+					workspaceName: "",
+					companyDetails,
+				},
 				repository: workspaceDrizzleRepository(tx),
 			});
 
@@ -238,7 +265,10 @@ describe("Workspace-Create Integration Tests", () => {
 				command: {
 					userId,
 					workspaceName: "Empty Company",
-					companyDetails: { ...companyDetails, name: "" },
+					companyDetails: {
+						...companyDetails,
+						name: "",
+					},
 				},
 				repository: workspaceDrizzleRepository(tx),
 			});
@@ -258,7 +288,56 @@ describe("Workspace-Create Integration Tests", () => {
 				command: {
 					userId,
 					workspaceName: "Invalid Phone",
-					companyDetails: { ...companyDetails, phone: "invalid" },
+					companyDetails: {
+						...companyDetails,
+						phone: "invalid",
+					},
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_COMPANY_PHONE_INVALID.code,
+			);
+		});
+	});
+
+	test("Should fail if company phone has fewer than 10 digits", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: {
+					userId,
+					workspaceName: "Short Phone",
+					companyDetails: {
+						...companyDetails,
+						phone: "551234567",
+					},
+				},
+				repository: workspaceDrizzleRepository(tx),
+			});
+
+			expect(result.isFailure).toBeTrue();
+			expect(result.error.code).toBe(
+				workspaceErrors.WORKSPACE_COMPANY_PHONE_INVALID.code,
+			);
+		});
+	});
+
+	test("Should fail if company phone has more than 10 digits", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
+			const result = await createWorkspace({
+				command: {
+					userId,
+					workspaceName: "Long Phone",
+					companyDetails: {
+						...companyDetails,
+						phone: "55123456789",
+					},
 				},
 				repository: workspaceDrizzleRepository(tx),
 			});
@@ -278,7 +357,10 @@ describe("Workspace-Create Integration Tests", () => {
 				command: {
 					userId,
 					workspaceName: "Invalid Email",
-					companyDetails: { ...companyDetails, email: "invalid" },
+					companyDetails: {
+						...companyDetails,
+						email: "invalid",
+					},
 				},
 				repository: workspaceDrizzleRepository(tx),
 			});
@@ -298,7 +380,10 @@ describe("Workspace-Create Integration Tests", () => {
 				command: {
 					userId,
 					workspaceName: "Empty Address",
-					companyDetails: { ...companyDetails, address: "" },
+					companyDetails: {
+						...companyDetails,
+						address: "",
+					},
 				},
 				repository: workspaceDrizzleRepository(tx),
 			});

@@ -8,8 +8,8 @@ export interface CreateWorkspaceData {
 	workspaceCompany: WorkspaceCompany;
 }
 
-export const PHONE_REGEX: RegExp = /^\+[1-9]\d{1,14}$/;
-export const PREFIX_REGEX: RegExp = /^[A-Z]{4,6}$/;
+export const PHONE_REGEX: RegExp = /^[1-9]\d{9}$/;
+export const PREFIX_REGEX: RegExp = /^[A-Z]{4}$/;
 export const EMAIL_REGEX: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export class Workspace {
@@ -93,10 +93,12 @@ export class Workspace {
 	}
 
 	private static generatePrefix(): string {
-		const length = 4 + Math.floor(Math.random() * 3);
+		const length = 4;
 		const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		const randomValues = crypto.getRandomValues(new Uint8Array(length));
+
 		let result = "";
+
 		for (let i = 0; i < length; i++) {
 			result += chars[randomValues[i]! % chars.length];
 		}

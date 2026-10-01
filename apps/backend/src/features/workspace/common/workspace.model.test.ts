@@ -117,9 +117,9 @@ describe("Workspace.create", () => {
 		expect(result.value.name).toBe("Workspace 12345");
 	});
 
-	test("Should generate a valid UUID", () => {
+	test("Should generate a valid ULID", () => {
 		const result = Workspace.create({
-			name: "UUID Test",
+			name: "ULID Test",
 			ownerId: "owner-id",
 			workspaceCompany: validCompany(),
 		});
@@ -147,22 +147,52 @@ describe("Workspace.create", () => {
 					ownerId: "owner-id",
 					workspaceCompany: validCompany(),
 				});
+
 				expect(result.isSuccess).toBe(true);
 				expect(PREFIX_REGEX.test(result.value.prefix)).toBe(true);
 			}
 		});
 
+		test("Should generate prefixes with a maximum length of 4", () => {
+			for (let i = 0; i < 100; i++) {
+				const result = Workspace.create({
+					name: `Test ${i}`,
+					ownerId: "owner-id",
+					workspaceCompany: validCompany(),
+				});
+
+				expect(result.isSuccess).toBe(true);
+				expect(result.value.prefix.length).toBeLessThanOrEqual(4);
+			}
+		});
+
+		test("Should generate prefixes with exactly 4 characters", () => {
+			for (let i = 0; i < 100; i++) {
+				const result = Workspace.create({
+					name: `Test ${i}`,
+					ownerId: "owner-id",
+					workspaceCompany: validCompany(),
+				});
+
+				expect(result.isSuccess).toBe(true);
+				expect(result.value.prefix.length).toBe(4);
+			}
+		});
+
 		test("Should generate different prefixes on multiple calls", () => {
 			const prefixes = new Set<string>();
+
 			for (let i = 0; i < 50; i++) {
 				const result = Workspace.create({
 					name: `Test ${i}`,
 					ownerId: "owner-id",
 					workspaceCompany: validCompany(),
 				});
+
 				expect(result.isSuccess).toBe(true);
 				prefixes.add(result.value.prefix);
 			}
+
 			expect(prefixes.size).toBeGreaterThan(1);
 		});
 	});
@@ -171,7 +201,7 @@ describe("Workspace.create", () => {
 describe("WorkspaceCompany.create", () => {
 	const validCompanyData = {
 		name: "Mi Empresa",
-		phone: "+521234567890",
+		phone: "5512345678",
 		email: "contacto@empresa.com",
 		address: "Calle Principal 123",
 	};
@@ -181,7 +211,7 @@ describe("WorkspaceCompany.create", () => {
 
 		expect(result.isSuccess).toBe(true);
 		expect(result.value.name).toBe("Mi Empresa");
-		expect(result.value.phone).toBe("+521234567890");
+		expect(result.value.phone).toBe("5512345678");
 		expect(result.value.email).toBe("contacto@empresa.com");
 		expect(result.value.address).toBe("Calle Principal 123");
 		expect(result.value.logoKey).toBeNull();
@@ -189,15 +219,16 @@ describe("WorkspaceCompany.create", () => {
 
 	test("Should trim whitespace from all fields", () => {
 		const result = WorkspaceCompany.create({
+			...validCompanyData,
 			name: "  Mi Empresa  ",
-			phone: "  +521234567890  ",
+			phone: "  5512345678  ",
 			email: "  contacto@empresa.com  ",
 			address: "  Calle Principal 123  ",
 		});
 
 		expect(result.isSuccess).toBe(true);
 		expect(result.value.name).toBe("Mi Empresa");
-		expect(result.value.phone).toBe("+521234567890");
+		expect(result.value.phone).toBe("5512345678");
 		expect(result.value.email).toBe("contacto@empresa.com");
 		expect(result.value.address).toBe("Calle Principal 123");
 	});
@@ -272,10 +303,20 @@ describe("WorkspaceCompany.create", () => {
 			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_REQUIRED");
 		});
 
-		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone has no + prefix", () => {
+		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone has fewer than 10 digits", () => {
 			const result = WorkspaceCompany.create({
 				...validCompanyData,
-				phone: "521234567890",
+				phone: "551234567",
+			});
+
+			expect(result.isFailure).toBe(true);
+			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_INVALID");
+		});
+
+		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone has more than 10 digits", () => {
+			const result = WorkspaceCompany.create({
+				...validCompanyData,
+				phone: "55123456789",
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -285,36 +326,32 @@ describe("WorkspaceCompany.create", () => {
 		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone starts with 0", () => {
 			const result = WorkspaceCompany.create({
 				...validCompanyData,
-				phone: "+0123456789",
+				phone: "0123456789",
 			});
 
 			expect(result.isFailure).toBe(true);
 			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_INVALID");
 		});
 
-		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone has more than 15 digits", () => {
+		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone contains non-numeric characters", () => {
 			const result = WorkspaceCompany.create({
 				...validCompanyData,
-				phone: "+1123456789012345",
+				phone: "55123456AB",
 			});
 
 			expect(result.isFailure).toBe(true);
 			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_INVALID");
 		});
 
-		test("Should succeed with valid international phone formats", () => {
-			const validPhones = [
-				"+1234567890",
-				"+521234567890",
-				"+112345678901234",
-				"+919876543210",
-			];
+		test("Should succeed with valid 10-digit phone numbers", () => {
+			const validPhones = ["5512345678", "8112345678", "9991234567"];
 
 			for (const phone of validPhones) {
 				const result = WorkspaceCompany.create({
 					...validCompanyData,
 					phone,
 				});
+
 				expect(result.isSuccess).toBe(true);
 				expect(result.value.phone).toBe(phone);
 			}
@@ -385,6 +422,7 @@ describe("WorkspaceCompany.create", () => {
 					...validCompanyData,
 					email,
 				});
+
 				expect(result.isSuccess).toBe(true);
 				expect(result.value.email).toBe(email);
 			}

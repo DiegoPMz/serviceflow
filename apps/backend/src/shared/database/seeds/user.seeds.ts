@@ -16,7 +16,7 @@ export const seedUser = async (
 		createdAt: now,
 		updatedAt: now,
 		lastName: "Perez",
-		phone: `+52155${Math.floor(10000000 + Math.random() * 90000000)}`,
+		phone: `52155${Math.floor(10000000 + Math.random() * 90000000)}`,
 		pictureUrl: null,
 		...overrides,
 	});

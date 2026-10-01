@@ -3,6 +3,7 @@ import WorkspaceInvitationEmail from "@serviceflow/backend/shared/emails/workspa
 import {
 	ErrorDetails,
 	ErrorDetailsException,
+	type StatusCode,
 } from "@serviceflow/backend/shared/result";
 import type { ErrorResponse, Resend } from "resend";
 import type {
@@ -65,7 +66,7 @@ function ResendErrorDetailsException(error: ErrorResponse) {
 		new ErrorDetails(
 			error.name ?? "ResendError",
 			error.message,
-			error.statusCode ?? 500,
+			(error.statusCode as StatusCode) ?? 500,
 		),
 		error,
 	);

@@ -1,4 +1,4 @@
-type StatusCode = 401 | 403 | 400 | 404 | 409 | 500 | 502;
+export type StatusCode = 401 | 403 | 400 | 404 | 409 | 500 | 502 | 422;
 
 export class ErrorDetails {
 	public readonly timestamp: string;
