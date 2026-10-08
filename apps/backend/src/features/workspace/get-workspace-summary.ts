@@ -1,12 +1,14 @@
 import {
 	type DatabaseClient,
 	type DatabaseType,
+	orders,
 	workspaceMembers,
 	workspaces,
 } from "@serviceflow/backend/shared/database";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import { Result } from "@serviceflow/backend/shared/result";
-import { and, eq } from "drizzle-orm";
-import { workspaceMemberErrors } from "./common/workspace-member.errors";
+import { and, count, eq } from "drizzle-orm";
+import { workspaceErrors } from "./common/workspace.errors";
 import type { WorkspaceRole } from "./common/workspace-member.model";
 
 interface GetWorkspaceSummaryQuery {
@@ -14,44 +16,34 @@ interface GetWorkspaceSummaryQuery {
 	workspaceId: string;
 }
 
-export interface WorkspaceSummaryReadModel {
+export interface WorkspaceSummaryDto {
 	readonly id: string;
 	readonly name: string;
-	readonly updatedAt: Date;
-	readonly company: {
-		readonly name: string;
-		readonly phone: string;
-		readonly email: string;
-		readonly address: string;
-		readonly logoKey: string | null;
-	};
+	readonly logoUrl: string | null;
 	readonly userRole: WorkspaceRole;
+	readonly orderCount: number;
 }
 
 export interface GetWorkspaceSummaryHandlerProps {
 	query: GetWorkspaceSummaryQuery;
 	db: DatabaseClient | DatabaseType;
+	publicAssetStorage: PublicAssetStorage;
 }
 
 export const getWorkspaceSummaryHandler = async ({
 	query,
 	db,
-}: GetWorkspaceSummaryHandlerProps): Promise<
-	Result<WorkspaceSummaryReadModel>
-> => {
+	publicAssetStorage,
+}: GetWorkspaceSummaryHandlerProps): Promise<Result<WorkspaceSummaryDto>> => {
 	const { userId, workspaceId } = query;
 
-	const row = await db
+	const workspace = await db
 		.select({
 			id: workspaces.id,
 			name: workspaces.name,
-			updatedAt: workspaces.updatedAt,
-			companyName: workspaces.companyName,
-			companyPhone: workspaces.companyPhone,
-			companyEmail: workspaces.companyEmail,
-			companyAddress: workspaces.companyAddress,
-			companyLogoKey: workspaces.companyLogoKey,
+			logoKey: workspaces.companyLogoKey,
 			userRole: workspaceMembers.role,
+			orderCount: count(orders.id),
 		})
 		.from(workspaces)
 		.innerJoin(
@@ -61,24 +53,29 @@ export const getWorkspaceSummaryHandler = async ({
 				eq(workspaceMembers.userId, userId),
 			),
 		)
+		.leftJoin(orders, eq(orders.workspaceId, workspaces.id))
 		.where(eq(workspaces.id, workspaceId))
+		.groupBy(
+			workspaces.id,
+			workspaces.name,
+			workspaces.companyLogoKey,
+			workspaceMembers.role,
+		)
 		.get();
 
-	if (!row) {
-		return Result.failure(workspaceMemberErrors.NOT_A_MEMBER);
+	if (!workspace) {
+		return Result.failure(workspaceErrors.WORKSPACE_NOT_FOUND);
 	}
 
-	return Result.success({
-		id: row.id,
-		name: row.name,
-		updatedAt: row.updatedAt,
-		company: {
-			name: row.companyName,
-			phone: row.companyPhone,
-			email: row.companyEmail,
-			address: row.companyAddress,
-			logoKey: row.companyLogoKey,
-		},
-		userRole: row.userRole,
-	});
+	const workspaceDto: WorkspaceSummaryDto = {
+		id: workspace.id,
+		name: workspace.name,
+		userRole: workspace.userRole,
+		logoUrl: workspace.logoKey
+			? publicAssetStorage.getPublicUrl(workspace.logoKey)
+			: null,
+		orderCount: workspace.orderCount,
+	};
+
+	return Result.success(workspaceDto);
 };

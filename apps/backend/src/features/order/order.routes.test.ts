@@ -662,7 +662,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 
 			const app = createTestApp();
 			const response = await app.handle(
-				new Request(listUrl, {
+				new Request(`${listUrl}?page=1&pageSize=20`, {
 					method: "GET",
 				}),
 			);
@@ -697,13 +697,19 @@ describe("Order HTTP Routes - Unit Tests", () => {
 					updatedAt: "2024-03-01T00:00:00.000Z",
 				},
 			];
-			mockDeps.orderRepository.getAllPaginated = mock(() =>
-				Promise.resolve({ items, cursor: null, hasNextPage: false }),
+			mockDeps.orderRepository.offsetPagination = mock(() =>
+				Promise.resolve({
+					items,
+					page: 1,
+					pageSize: 20,
+					totalItems: 1,
+					totalPages: 1,
+				}),
 			);
 
 			const app = createTestApp();
 			const response = await app.handle(
-				new Request(listUrl, {
+				new Request(`${listUrl}?page=1&pageSize=20`, {
 					method: "GET",
 				}),
 			);
@@ -712,13 +718,15 @@ describe("Order HTTP Routes - Unit Tests", () => {
 
 			const body = await response.json();
 			expect(body.items).toHaveLength(1);
-			expect(body.hasNextPage).toBe(false);
+			expect(body.page).toBe(1);
+			expect(body.pageSize).toBe(20);
+			expect(body.totalItems).toBe(1);
+			expect(body.totalPages).toBe(1);
 
-			expect(mockDeps.orderRepository.getAllPaginated).toHaveBeenCalledWith({
-				limit: 20,
-				cursor: undefined,
-				orderBy: "createdAt",
-				direction: "desc",
+			expect(mockDeps.orderRepository.offsetPagination).toHaveBeenCalledWith({
+				page: 1,
+				pageSize: 20,
+				direction: "asc",
 				search: undefined,
 				workspaceId: validWorkspaceId,
 				status: undefined,
@@ -726,14 +734,20 @@ describe("Order HTTP Routes - Unit Tests", () => {
 		});
 
 		test("should forward pagination params and status filter", async () => {
-			mockDeps.orderRepository.getAllPaginated = mock(() =>
-				Promise.resolve({ items: [], cursor: null, hasNextPage: false }),
+			mockDeps.orderRepository.offsetPagination = mock(() =>
+				Promise.resolve({
+					items: [],
+					page: 1,
+					pageSize: 5,
+					totalItems: 0,
+					totalPages: 0,
+				}),
 			);
 
 			const app = createTestApp();
 			const response = await app.handle(
 				new Request(
-					`${listUrl}?limit=5&orderBy=folio&direction=asc&search=TECFIX&status=entregada`,
+					`${listUrl}?page=1&pageSize=5&direction=asc&search=TECFIX&status=entregada`,
 					{
 						method: "GET",
 					},
@@ -742,10 +756,9 @@ describe("Order HTTP Routes - Unit Tests", () => {
 
 			expect(response.status).toBe(200);
 
-			expect(mockDeps.orderRepository.getAllPaginated).toHaveBeenCalledWith({
-				limit: 5,
-				cursor: undefined,
-				orderBy: "folio",
+			expect(mockDeps.orderRepository.offsetPagination).toHaveBeenCalledWith({
+				page: 1,
+				pageSize: 5,
 				direction: "asc",
 				search: "TECFIX",
 				workspaceId: validWorkspaceId,

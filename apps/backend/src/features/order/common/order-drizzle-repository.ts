@@ -5,21 +5,15 @@ import {
 	orders,
 	users,
 } from "@serviceflow/backend/shared/database";
-import {
-	Cursor,
-	type Pagination,
-	type SortDirection,
-} from "@serviceflow/backend/shared/pagination";
-import { and, asc, desc, eq, gt, like, lt, or, type SQL } from "drizzle-orm";
-import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
+import { and, asc, desc, eq, like, or } from "drizzle-orm";
 import type { ComponentType } from "../../device/common/device.model";
-import type { OrderCursor, OrderOrderBy } from "../paginated-orders";
 import { Order, type OrderStatus } from "./order.model";
-import type { OrderRepository } from "./order-repository";
-import {
-	OrderSummaryReadModel,
-	type OrderSummaryReadModelData,
-} from "./order-summary.read-model";
+import type {
+	OffsetPagination,
+	OrderPaginationParams,
+	OrderRepository,
+} from "./order-repository";
+import { OrderSummaryReadModel } from "./order-summary.read-model";
 
 export const OrderDrizzleRepository = (
 	db: DatabaseClient | DatabaseType,
@@ -130,65 +124,38 @@ export const OrderDrizzleRepository = (
 			.where(eq(orders.id, model.id));
 	},
 
-	getAllPaginated: async ({
-		limit,
-		cursor,
-		orderBy,
-		direction,
-		search,
-		workspaceId,
-		status,
-	}: {
-		limit: number;
-		cursor?: OrderCursor;
-		orderBy: OrderOrderBy;
-		direction: SortDirection;
-		search?: string;
-		workspaceId: string;
-		status?: OrderStatus;
-	}): Promise<Pagination<OrderSummaryReadModel>> => {
-		const orderByMapper: Record<OrderOrderBy, SQLiteColumn> = {
-			id: orders.id,
-			folio: orders.folio,
-			createdAt: orders.createdAt,
-			updatedAt: orders.updatedAt,
-			clientName: orders.clientNameSnapshot,
-			deviceBrand: orders.deviceBrandSnapshot,
-			status: orders.status,
-			userName: orders.userNameSnapshot,
-		};
-
-		const valueMapper: Record<
-			OrderOrderBy,
-			(order: OrderSummaryReadModelData) => string | number
-		> = {
-			id: (order) => order.id,
-			folio: (order) => order.folio,
-			createdAt: (order) => order.createdAt.getTime(),
-			updatedAt: (order) => order.updatedAt.getTime(),
-			clientName: (order) => order.clientNameSnapshot,
-			deviceBrand: (order) => order.deviceBrandSnapshot,
-			status: (order) => order.status,
-			userName: (order) => order.userNameSnapshot,
-		};
-
-		const dbField = orderByMapper[orderBy];
-
-		const searchCondition = search
+	offsetPagination: async (
+		params: OrderPaginationParams,
+	): Promise<OffsetPagination<OrderSummaryReadModel>> => {
+		const searchCondition = params.search
 			? or(
-					like(orders.folio, `%${search}%`),
-					like(orders.clientNameSnapshot, `%${search}%`),
-					like(orders.deviceBrandSnapshot, `%${search}%`),
-					like(orders.deviceModelSnapshot, `%${search}%`),
-					like(orders.clientPhoneSnapshot, `%${search}%`),
+					like(orders.folio, `%${params.search}%`),
+					like(orders.clientNameSnapshot, `%${params.search}%`),
+					like(orders.deviceBrandSnapshot, `%${params.search}%`),
+					like(orders.deviceModelSnapshot, `%${params.search}%`),
+					like(orders.clientPhoneSnapshot, `%${params.search}%`),
 				)
 			: undefined;
 
-		const statusCondition = status ? eq(orders.status, status) : undefined;
+		const statusCondition = params.status
+			? eq(orders.status, params.status)
+			: undefined;
 
-		const sortCondition = buildSortConditions();
+		const baseConditions = and(
+			eq(orders.workspaceId, params.workspaceId),
+			searchCondition,
+			statusCondition,
+		);
 
-		const ordersDb: OrderSummaryReadModelData[] = await db
+		const orderBy =
+			params.direction === "asc"
+				? [asc(orders.updatedAt), asc(orders.id)]
+				: [desc(orders.updatedAt), desc(orders.id)];
+
+		const count = await db.$count(orders, baseConditions);
+		const offset = (params.page - 1) * params.pageSize;
+
+		const ordersDb = await db
 			.select({
 				id: orders.id,
 				folio: orders.folio,
@@ -204,67 +171,20 @@ export const OrderDrizzleRepository = (
 			})
 			.from(orders)
 			.innerJoin(users, eq(orders.userId, users.id))
-			.where(
-				and(
-					eq(orders.workspaceId, workspaceId),
-					statusCondition,
-					searchCondition,
-					sortCondition,
-				),
-			)
-			.orderBy(...buildOrderBy())
-			.limit(limit + 1);
+			.where(baseConditions)
+			.orderBy(...orderBy)
+			.limit(params.pageSize)
+			.offset(offset);
 
-		const hasNextPage = ordersDb.length > limit;
-		const items = ordersDb.slice(0, limit);
-		const lastItem = items.at(-1);
-
-		let nextCursor: string | null = null;
-
-		if (hasNextPage && lastItem) {
-			nextCursor = Cursor.encode<OrderCursor>({
-				id: lastItem.id,
-				orderBy,
-				direction,
-				value: valueMapper[orderBy](lastItem),
-			});
-		}
+		const totalItems = Number(count);
+		const totalPages = Math.ceil(totalItems / params.pageSize);
 
 		return {
-			items: items.map((i) => OrderSummaryReadModel.create(i)),
-			cursor: nextCursor,
-			hasNextPage,
+			items: ordersDb.map((i) => OrderSummaryReadModel.create(i)),
+			page: params.page,
+			pageSize: params.pageSize,
+			totalItems,
+			totalPages,
 		};
-
-		function buildOrderBy(): SQL[] {
-			return direction === "desc"
-				? [desc(dbField), desc(orders.id)]
-				: [asc(dbField), asc(orders.id)];
-		}
-
-		function buildSortConditions(): SQL | undefined {
-			if (!cursor) return undefined;
-
-			const value = DATE_FIELDS.has(orderBy)
-				? new Date(cursor.value as number)
-				: cursor.value;
-
-			if (direction === "desc") {
-				return or(
-					lt(dbField, value),
-					and(eq(dbField, value), lt(orders.id, cursor.id)),
-				);
-			}
-
-			return or(
-				gt(dbField, value),
-				and(eq(dbField, value), gt(orders.id, cursor.id)),
-			);
-		}
 	},
 });
-
-const DATE_FIELDS: ReadonlySet<OrderOrderBy> = new Set([
-	"createdAt",
-	"updatedAt",
-]);

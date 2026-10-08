@@ -197,7 +197,7 @@ export const workspaceRoutes = (
 		)
 
 		// ---------------------------------------------------------------------
-		// 5. GET /v1/workspaces/:workspaceId - Detalles de Workspace
+		// 5. GET /v1/workspaces/:workspaceId - Resumen de Workspace
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId",
@@ -208,6 +208,7 @@ export const workspaceRoutes = (
 						workspaceId: params.workspaceId,
 					},
 					db: deps.db,
+					publicAssetStorage: deps.publicAssetStorage,
 				});
 
 				if (result.isFailure) {

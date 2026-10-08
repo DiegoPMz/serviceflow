@@ -5,29 +5,36 @@ import {
 	addMember,
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
+import type { PublicAssetStorage } from "@serviceflow/backend/shared/object-storage/storage-service";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { ulid } from "ulidx";
-import { workspaceMemberErrors } from "./common/workspace-member.errors";
+import { workspaceErrors } from "./common/workspace.errors";
 import { getWorkspaceSummaryHandler } from "./get-workspace-summary";
+
+const publicAssetStorageStub: PublicAssetStorage = {
+	getPublicUrl: (key) => `https://cdn.tecnofix.test/${key}`,
+	getFileBase64: async () => "",
+	fileExists: async () => false,
+	createUploadPresignedUrl: async () => "",
+};
 
 const buildHandler = (
 	tx: DatabaseClient,
 	query: { userId: string; workspaceId: string },
-) => getWorkspaceSummaryHandler({ query, db: tx });
+) =>
+	getWorkspaceSummaryHandler({
+		query,
+		db: tx,
+		publicAssetStorage: publicAssetStorageStub,
+	});
 
 describe("Get-Workspace-Summary Integration Tests", () => {
-	test("Should return the workspace summary with all company data", async () => {
+	test("Should return the workspace summary with logoUrl", async () => {
 		await runTestInTransaction(async (tx) => {
 			const userId = await seedUser(tx);
-			const updatedAt = new Date("2024-05-01T12:00:00.000Z");
 			const workspaceId = await seedWorkspace(tx, {
 				name: "Taller Central",
-				companyName: "TecnoFix S.A.",
-				companyPhone: "+5215512345678",
-				companyEmail: "contacto@tecnofix.com",
-				companyAddress: "Av. Insurgentes 1234",
 				companyLogoKey: "logos/tallercentral.png",
-				updatedAt,
 			});
 			await addMember(tx, { userId, workspaceId, role: "admin" });
 
@@ -37,20 +44,14 @@ describe("Get-Workspace-Summary Integration Tests", () => {
 			expect(result.value).toEqual({
 				id: workspaceId,
 				name: "Taller Central",
-				updatedAt,
-				company: {
-					name: "TecnoFix S.A.",
-					phone: "+5215512345678",
-					email: "contacto@tecnofix.com",
-					address: "Av. Insurgentes 1234",
-					logoKey: "logos/tallercentral.png",
-				},
+				logoUrl: "https://cdn.tecnofix.test/logos/tallercentral.png",
 				userRole: "admin",
+				orderCount: 0,
 			});
 		});
 	});
 
-	test("Should return companyLogoKey as null when the workspace has no logo", async () => {
+	test("Should return logoUrl as null when the workspace has no logo", async () => {
 		await runTestInTransaction(async (tx) => {
 			const userId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
@@ -59,7 +60,7 @@ describe("Get-Workspace-Summary Integration Tests", () => {
 			const result = await buildHandler(tx, { userId, workspaceId });
 
 			expect(result.isSuccess).toBe(true);
-			expect(result.value?.company.logoKey).toBeNull();
+			expect(result.value?.logoUrl).toBeNull();
 		});
 	});
 
@@ -78,7 +79,7 @@ describe("Get-Workspace-Summary Integration Tests", () => {
 		});
 	}
 
-	test("Should return NOT_A_MEMBER when the user is not a member", async () => {
+	test("Should return WORKSPACE_NOT_FOUND when the user is not a member", async () => {
 		await runTestInTransaction(async (tx) => {
 			const memberId = await seedUser(tx);
 			const otherUserId = await seedUser(tx);
@@ -91,18 +92,18 @@ describe("Get-Workspace-Summary Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe(workspaceMemberErrors.NOT_A_MEMBER.code);
+			expect(result.error.code).toBe(workspaceErrors.WORKSPACE_NOT_FOUND.code);
 		});
 	});
 
-	test("Should return NOT_A_MEMBER when the workspace does not exist", async () => {
+	test("Should return WORKSPACE_NOT_FOUND when the workspace does not exist", async () => {
 		await runTestInTransaction(async (tx) => {
 			const userId = await seedUser(tx);
 
 			const result = await buildHandler(tx, { userId, workspaceId: ulid() });
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe(workspaceMemberErrors.NOT_A_MEMBER.code);
+			expect(result.error.code).toBe(workspaceErrors.WORKSPACE_NOT_FOUND.code);
 		});
 	});
 });

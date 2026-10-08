@@ -115,12 +115,11 @@ export const orderRoutes = (
 				const result = await paginatedOrderHandler({
 					query: {
 						workspaceId: params.workspaceId,
-						status: query.status,
 						paginationRequest: {
-							limit: query.limit ?? 10,
-							cursor: query.cursor,
-							orderBy: query.orderBy ?? "createdAt",
-							direction: query.direction ?? "desc",
+							pageSize: query.pageSize,
+							page: query.page,
+							direction: query.direction ?? "asc",
+							status: query.status,
 							search: query.search,
 						},
 					},
