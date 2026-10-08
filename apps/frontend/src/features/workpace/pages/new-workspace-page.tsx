@@ -25,7 +25,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { EmailSchema, PhoneSchema } from "@/shared/schemas";
 
 export function NewWorkspacePage() {
-	const { eden } = useRouteContext({ from: "/_authenticated/ws/new" });
+	const { eden } = useRouteContext({ from: "/_authenticated" });
 	const navigate = useNavigate();
 
 	const createWorkspaceMutation = useCreateWorkspace();
@@ -42,7 +42,7 @@ export function NewWorkspacePage() {
 			});
 
 			navigate({
-				to: "/ws/$workspaceId/home",
+				to: "/workspace/$workspaceId",
 				params: {
 					workspaceId: workspace.workspaceId,
 				},

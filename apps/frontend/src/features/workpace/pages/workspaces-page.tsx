@@ -67,7 +67,7 @@ export function WorkspacesPage() {
 						{hasNextPage && (
 							<div className="pt-2 text-center">
 								<Button
-									variant="glass"
+									variant="outline"
 									size="sm"
 									disabled={isFetchingNextPage}
 									onClick={() => fetchNextPage()}
@@ -83,8 +83,11 @@ export function WorkspacesPage() {
 						<div className="pt-2">
 							<Separator className="my-4" />
 							<Link
-								to="/ws/new"
-								className="flex w-full items-center gap-2 rounded-xl border border-dashed border-border px-4 py-3.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								to="/workspace/crear"
+								className={cn(
+									buttonVariants({ size: "lg", variant: "secondary" }),
+									"flex w-full ",
+								)}
 							>
 								<Plus className="size-4" /> Crear espacio de trabajo
 							</Link>
@@ -144,8 +147,8 @@ function NoWorkspaces() {
 					funciones.
 				</p>
 				<Link
-					to="/ws/new"
-					className={cn(buttonVariants({ size: "lg", variant: "flow" }))}
+					to="/workspace/crear"
+					className={cn(buttonVariants({ size: "lg" }))}
 				>
 					<Plus className="size-4 " /> Crear espacio de trabajo
 				</Link>
@@ -160,7 +163,7 @@ function NoWorkspaces() {
 function WorkspaceItem({ ws }: { ws: PaginatedWorkspacesDto }) {
 	return (
 		<Link
-			to="/ws/$workspaceId/home"
+			to="/workspace/$workspaceId"
 			params={{ workspaceId: ws.id }}
 			className={cn(
 				buttonVariants({ size: "lg", variant: "outline" }),

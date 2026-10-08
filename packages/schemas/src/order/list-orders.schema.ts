@@ -1,25 +1,14 @@
 import { type Static, Type } from "@sinclair/typebox";
-import { paginationRequestSchema } from "../shared/pagination.schema";
 import { orderStatusFilterSchema } from "./order.primitives";
 
-export const listOrdersQuerySchema = Type.Composite([
-	paginationRequestSchema({
-		orderBy: [
-			"id",
-			"folio",
-			"createdAt",
-			"updatedAt",
-			"clientName",
-			"deviceBrand",
-			"status",
-			"userName",
-		] as const,
-		defaultLimit: 20,
-		defaultDirection: "desc",
-	}),
-	Type.Object({
-		status: Type.Optional(orderStatusFilterSchema),
-	}),
-]);
+export const listOrdersQuerySchema = Type.Object({
+	page: Type.Number({ minimum: 1 }),
+	pageSize: Type.Number({ minimum: 1, maximum: 30 }),
+	search: Type.Optional(Type.String({ maxLength: 500 })),
+	status: Type.Optional(orderStatusFilterSchema),
+	direction: Type.Optional(
+		Type.Union([Type.Literal("asc"), Type.Literal("desc")]),
+	),
+});
 
 export type ListOrdersQuery = Static<typeof listOrdersQuerySchema>;
