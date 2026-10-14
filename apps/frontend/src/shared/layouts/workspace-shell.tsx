@@ -1,6 +1,14 @@
 import { Link, useParams, useRouteContext } from "@tanstack/react-router";
 import { cn } from "cn";
-import { ChevronDown, Home, LogOut, Settings, Users } from "lucide-react";
+import {
+	Building2,
+	ChevronDown,
+	Home,
+	LogOut,
+	MoreHorizontal,
+	Settings,
+	Users,
+} from "lucide-react";
 import type { PropsWithChildren } from "react";
 import { useGetWorkspaceSummary } from "@/features/workpace/get-workspace-summary";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
@@ -47,137 +55,167 @@ export function WorkspaceShell({ children }: PropsWithChildren) {
 
 			<div className="mx-auto flex h-full max-w-360">
 				{/* Desktop sidebar */}
-				<aside className="hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-glass/60 px-4 py-5 backdrop-blur-xl lg:flex">
+				<aside className="hidden h-screen w-68 shrink-0 flex-col border-r border-sidebar-border bg-sidebar/50 px-5 py-6 text-sidebar-foreground lg:flex">
 					{/* Branding */}
-					<div className="flex items-center gap-2.5 px-2">
-						<Avatar className="size-9">
-							<AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">
+					<Link
+						to="/"
+						className="flex items-center gap-3 rounded-xl px-2"
+						aria-label="ServiceFlow - Inicio"
+					>
+						<div className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-foreground text-background shadow-sm">
+							<span className="font-display text-sm font-bold tracking-tight">
 								SF
-							</AvatarFallback>
-						</Avatar>
+							</span>
+						</div>
 
 						<div className="min-w-0">
-							<p className="truncate font-display text-sm font-semibold leading-none">
+							<p className="truncate font-display text-base font-semibold leading-none tracking-tight">
 								ServiceFlow
 							</p>
 
-							<p className="mt-1 font-mono text-[10px] uppercase text-muted-foreground">
-								Operación · MX
+							<p className="mt-1.5 truncate text-xs text-muted-foreground">
+								Gestión de servicios
 							</p>
 						</div>
-					</div>
+					</Link>
 
 					{/* Workspace selector */}
 					<button
 						type="button"
-						className="mt-6 flex w-full items-center gap-2.5 rounded-lg border border-border bg-foreground/3 px-3 py-2.5 text-left transition-colors hover:bg-foreground/6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						className="mt-8 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
 					>
-						<span className="size-1.5 shrink-0 rounded-full bg-success" />
-
-						<span className="min-w-0 flex-1 truncate text-sm font-semibold">
-							{workspace.name}
+						<span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sidebar-accent text-sidebar-accent-foreground">
+							<Building2 className="size-4 text-muted-foreground" />
 						</span>
 
-						<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+						<span className="min-w-0 flex-1">
+							<span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+								Workspace
+							</span>
+
+							<span className="mt-0.5 block truncate text-sm font-semibold">
+								{workspace.name}
+							</span>
+						</span>
+
+						<ChevronDown className="size-4 shrink-0 text-muted-foreground" />
 					</button>
 
 					{/* Main navigation */}
 					<nav
 						aria-label="Navegación principal"
-						className="mt-6 flex flex-col gap-1"
+						className="mt-8 flex flex-col gap-1.5"
 					>
+						<p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/75">
+							Principal
+						</p>
+
 						<Link
 							from="/workspace/$workspaceId"
 							to="/workspace/$workspaceId"
 							activeOptions={{ exact: true }}
-							className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
+							className={cn(
+								buttonVariants({ size: "lg", variant: "ghost" }),
+								"h-11 w-full  justify-start gap-3 rounded-xl px-3 font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+							)}
 							activeProps={{
 								className:
-									"bg-primary text-primary-foreground font-semibold hover:text-primary-foreground hover:bg-primary! ",
+									"bg-card text-card-foreground font-semibold shadow-sm shadow-card-foreground/5 ring-1 ring-sidebar-border hover:bg-card",
 							}}
 						>
-							<Home className="size-4" />
-							Inicio
+							<Home className="size-4.5" />
+							<span>Inicio</span>
 						</Link>
 
 						<Link
 							from="/workspace/$workspaceId"
 							to="/workspace/$workspaceId/clientes"
 							activeOptions={{ exact: true }}
-							className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
+							className={cn(
+								buttonVariants({ size: "lg", variant: "ghost" }),
+								"h-11 w-full justify-start gap-3 rounded-xl px-3 font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+							)}
 							activeProps={{
 								className:
-									"bg-primary text-primary-foreground font-semibold hover:text-primary-foreground hover:bg-primary! ",
+									"bg-card text-card-foreground font-semibold shadow-sm shadow-card-foreground/5 ring-1 ring-sidebar-border hover:bg-card",
 							}}
 						>
-							<Users className="size-4" />
-							Clientes
+							<Users className="size-4.5" />
+							<span>Clientes</span>
 						</Link>
+
+						{/* Management section */}
+						<p className="mb-2 mt-7 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/75">
+							Administración
+						</p>
 
 						<Link
 							from="/workspace/$workspaceId"
 							to="/workspace/$workspaceId/equipo"
 							activeOptions={{ exact: true }}
-							className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
+							className={cn(
+								buttonVariants({ size: "lg", variant: "ghost" }),
+								"h-11 w-full justify-start gap-3 rounded-xl px-3 font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+							)}
 							activeProps={{
 								className:
-									"bg-primary text-primary-foreground font-semibold hover:text-primary-foreground hover:bg-primary! ",
+									"bg-card text-card-foreground font-semibold shadow-sm shadow-card-foreground/5 ring-1 ring-sidebar-border hover:bg-card",
 							}}
 						>
-							<Users className="size-4" />
-							Equipo
+							<Users className="size-4.5" />
+							<span>Equipo</span>
 						</Link>
 
 						<Link
 							from="/workspace/$workspaceId"
 							to="/workspace/$workspaceId/configuracion"
 							activeOptions={{ exact: true }}
-							className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
+							className={cn(
+								buttonVariants({ size: "lg", variant: "ghost" }),
+								"h-11 w-full justify-start gap-3 rounded-xl px-3 font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+							)}
 							activeProps={{
 								className:
-									"bg-primary text-primary-foreground font-semibold hover:text-primary-foreground hover:bg-primary! ",
+									"bg-card text-card-foreground font-semibold shadow-sm shadow-card-foreground/5 ring-1 ring-sidebar-border hover:bg-card",
 							}}
 						>
-							<Settings className="size-4" />
-							Configuración
+							<Settings className="size-4.5" />
+							<span>Configuración</span>
 						</Link>
 					</nav>
 
 					{/* Current user */}
-
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							render={
 								<Button
 									type="button"
-									variant="outline"
-									className="mt-auto flex w-full h-fit py-2 items-center gap-2.5"
-								>
-									<Avatar className="size-8">
-										<AvatarFallback className="text-xs font-semibold">
-											LD
-										</AvatarFallback>
-									</Avatar>
-
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-xs font-semibold">
-											Luisa Delgado
-										</p>
-
-										<p className="truncate text-[11px] text-muted-foreground">
-											Administración
-										</p>
-									</div>
-
-									<ChevronDown className="size-3.5 text-muted-foreground" />
-								</Button>
+									variant="ghost"
+									className="mt-auto flex h-auto w-full items-center justify-start gap-3 rounded-xl border border-transparent px-2.5 py-3 text-left shadow-none transition-colors hover:bg-foreground/5"
+								/>
 							}
-						/>
+						>
+							<Avatar className="size-10 shrink-0">
+								<AvatarFallback className="bg-foreground text-sm font-semibold text-background">
+									LD
+								</AvatarFallback>
+							</Avatar>
 
-						<DropdownMenuContent side="top" align="center" className="w-56">
+							<div className="min-w-0 flex-1">
+								<p className="truncate text-sm font-semibold">Luisa Delgado</p>
+
+								<p className="mt-0.5 truncate text-xs text-muted-foreground">
+									Administración
+								</p>
+							</div>
+
+							<MoreHorizontal className="size-4 shrink-0 text-muted-foreground" />
+						</DropdownMenuTrigger>
+
+						<DropdownMenuContent side="top" align="start" className="w-60">
 							<DropdownMenuGroup>
 								<DropdownMenuLabel>
-									<div className="flex flex-col gap-0.5">
+									<div className="flex flex-col gap-1">
 										<span>Luisa Delgado</span>
 										<span className="font-normal text-muted-foreground">
 											Administración
@@ -241,9 +279,15 @@ export function WorkspaceShell({ children }: PropsWithChildren) {
 			</div>
 
 			{/* Mobile bottom navigation */}
+
 			<nav
 				aria-label="Navegación móvil"
-				className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-border bg-background/85 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+				className={cn(
+					"fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-1",
+					"border-t border-sidebar-border bg-sidebar px-3 pt-2",
+					"pb-[calc(env(safe-area-inset-bottom)+0.5rem)]",
+					"lg:hidden",
+				)}
 			>
 				<MobileNavLink route="inicio">
 					<Home className="size-5" />

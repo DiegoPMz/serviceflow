@@ -1,14 +1,9 @@
+import type { PropsWithChildren } from "react";
 import { Skeleton } from "../components/ui/skeleton";
 
-interface WorkspaceShellSkeletonProps {
-	children?: React.ReactNode;
-}
-
-export function WorkspaceShellSkeleton({
-	children,
-}: WorkspaceShellSkeletonProps) {
+export function WorkspaceShellSkeleton({ children }: PropsWithChildren) {
 	return (
-		<div className="relative max-h-screen overflow-hidden  bg-background font-body text-foreground antialiased">
+		<div className="relative h-screen overflow-hidden bg-background font-body text-foreground antialiased">
 			{/* Ambient background */}
 			<div
 				className="pointer-events-none absolute -left-28 -top-28 size-110 rounded-full bg-primary/15 blur-3xl"
@@ -27,32 +22,80 @@ export function WorkspaceShellSkeleton({
 
 			<div className="mx-auto flex h-full max-w-360">
 				{/* Desktop sidebar */}
-				<aside className="hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-glass/60 px-4 py-5 backdrop-blur-xl lg:flex">
+				<aside className="hidden h-screen w-68 shrink-0 flex-col border-r border-sidebar-border bg-sidebar/50 px-5 py-6 text-sidebar-foreground lg:flex">
 					{/* Branding */}
-					<div className="flex items-center gap-2.5 px-2">
-						<Skeleton className="size-9 shrink-0 rounded-full" />
+					<div className="flex items-center gap-3 rounded-xl px-2">
+						<Skeleton className="size-10 shrink-0 rounded-[14px]" />
 
-						<div className="min-w-0 space-y-1.5">
-							<Skeleton className="h-3.5 w-24" />
-							<Skeleton className="h-2.5 w-20" />
+						<div className="min-w-0 flex-1 space-y-1.5">
+							<Skeleton className="h-4 w-24" />
+							<Skeleton className="h-3 w-28" />
 						</div>
 					</div>
 
 					{/* Workspace selector */}
-					<Skeleton className="mt-6 h-11 w-full rounded-lg" />
+					<div className="mt-8 flex w-full items-center gap-3 rounded-xl px-3 py-2.5">
+						<Skeleton className="size-9 shrink-0 rounded-xl" />
+
+						<div className="min-w-0 flex-1 space-y-1.5">
+							<Skeleton className="h-2.5 w-16" />
+							<Skeleton className="h-3.5 w-32 max-w-full" />
+						</div>
+
+						<Skeleton className="size-4 shrink-0 rounded-sm" />
+					</div>
 
 					{/* Main navigation */}
 					<nav
-						aria-label="Navegación principal"
-						className="mt-6 flex flex-col gap-1"
+						aria-label="Cargando navegación principal"
+						className="mt-8 flex flex-col gap-1.5"
 					>
-						<Skeleton className="h-10 w-full rounded-lg" />
-						<Skeleton className="h-10 w-full rounded-lg" />
-						<Skeleton className="h-10 w-full rounded-lg" />
+						{/* Principal */}
+						<div className="mb-2 px-3">
+							<Skeleton className="h-2.5 w-14" />
+						</div>
+
+						{/* Inicio: active navigation item */}
+						<div className="flex h-11 items-center gap-3 rounded-xl px-3  ">
+							<Skeleton className="size-4.5 shrink-0 rounded-sm" />
+							<Skeleton className="h-3 w-12" />
+						</div>
+
+						{/* Clientes */}
+						<div className="flex h-11 items-center gap-3 rounded-xl px-3">
+							<Skeleton className="size-4.5 shrink-0 rounded-sm" />
+							<Skeleton className="h-3 w-14" />
+						</div>
+
+						{/* Administración */}
+						<div className="mb-2 mt-7 px-3">
+							<Skeleton className="h-2.5 w-24" />
+						</div>
+
+						{/* Equipo */}
+						<div className="flex h-11 items-center gap-3 rounded-xl px-3">
+							<Skeleton className="size-4.5 shrink-0 rounded-sm" />
+							<Skeleton className="h-3 w-12" />
+						</div>
+
+						{/* Configuración */}
+						<div className="flex h-11 items-center gap-3 rounded-xl px-3">
+							<Skeleton className="size-4.5 shrink-0 rounded-sm" />
+							<Skeleton className="h-3 w-24" />
+						</div>
 					</nav>
 
 					{/* Current user */}
-					<Skeleton className="mt-auto h-12 w-full rounded-lg" />
+					<div className="mt-auto flex w-full items-center gap-3 rounded-xl px-2.5 py-3">
+						<Skeleton className="size-10 shrink-0 rounded-full" />
+
+						<div className="min-w-0 flex-1 space-y-1.5">
+							<Skeleton className="h-3 w-28 max-w-full" />
+							<Skeleton className="h-2.5 w-24 max-w-full" />
+						</div>
+
+						<Skeleton className="size-4 shrink-0 rounded-sm" />
+					</div>
 				</aside>
 
 				{/* Main content */}
@@ -62,13 +105,18 @@ export function WorkspaceShellSkeleton({
 						{/* Mobile / tablet */}
 						<div className="flex min-w-0 flex-1 items-center gap-2 lg:hidden">
 							<Skeleton className="size-8 shrink-0 rounded-full" />
-							<Skeleton className="h-8 w-32 rounded-lg" />
+
+							<div className="flex h-8 min-w-0 max-w-64 items-center gap-2 rounded-xl px-2">
+								<Skeleton className="size-1.5 shrink-0 rounded-full" />
+								<Skeleton className="h-3 w-28 max-w-full" />
+								<Skeleton className="size-3.5 shrink-0 rounded-sm" />
+							</div>
 						</div>
 
 						{/* Desktop spacer */}
 						<div className="hidden flex-1 lg:block" />
 
-						{/* Global actions */}
+						{/* Theme toggle */}
 						<div className="flex shrink-0 items-center gap-1">
 							<Skeleton className="size-8 rounded-lg" />
 						</div>
@@ -81,12 +129,26 @@ export function WorkspaceShellSkeleton({
 
 			{/* Mobile bottom navigation */}
 			<nav
-				aria-label="Navegación móvil"
-				className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-border bg-background/85 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+				aria-label="Cargando navegación móvil"
+				className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-1 border-t border-sidebar-border bg-sidebar px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] lg:hidden"
 			>
-				<Skeleton className="mx-auto my-2.5 h-9 w-14 rounded-lg" />
-				<Skeleton className="mx-auto my-2.5 h-9 w-14 rounded-lg" />
-				<Skeleton className="mx-auto my-2.5 h-9 w-14 rounded-lg" />
+				{/* Inicio: active navigation item */}
+				<div className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl bg-card/50 ">
+					<Skeleton className="size-5 rounded-sm" />
+					<Skeleton className="h-2 w-7" />
+				</div>
+
+				{/* Clientes */}
+				<div className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl bg-card/50 ">
+					<Skeleton className="size-5 rounded-sm" />
+					<Skeleton className="h-2 w-9" />
+				</div>
+
+				{/* Cuenta */}
+				<div className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl bg-card/50 ">
+					<Skeleton className="size-6 rounded-full" />
+					<Skeleton className="h-2 w-7" />
+				</div>
 			</nav>
 		</div>
 	);

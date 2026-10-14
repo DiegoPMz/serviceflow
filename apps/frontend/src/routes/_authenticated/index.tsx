@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { WorkspacesError } from "@/features/workpace/pages/workspaces-error";
-import { WorkspacesLoading } from "@/features/workpace/pages/workspaces-loading";
-import { WorkspacesPage } from "@/features/workpace/pages/workspaces-page";
 import { paginatedWorkspacesInfiniteQueryOptions } from "@/features/workpace/paginated-workspaces";
+import { WorkspacesError } from "@/shared/pages/select-workpace/workspaces-error";
+import { WorkspacesLoading } from "@/shared/pages/select-workpace/workspaces-loading";
+import { WorkspacesPage } from "@/shared/pages/select-workpace/workspaces-page";
 
 export const Route = createFileRoute("/_authenticated/")({
 	loader: async ({ context }) => {
