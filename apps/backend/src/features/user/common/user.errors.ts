@@ -1,57 +1,59 @@
 import { ErrorDetails } from "@serviceflow/backend/shared/result";
+import { USER_ERROR_CODES } from "@serviceflow/error-codes";
+
 export const UserErrors = {
 	USER_EXTERNAL_ID_REQUIRED: new ErrorDetails(
-		"USER_EXTERNAL_ID_REQUIRED",
+		USER_ERROR_CODES.EXTERNAL_ID_REQUIRED,
 		"El ID externo del usuario es requerido.",
 		400,
 	),
 	USER_EMAIL_REQUIRED: new ErrorDetails(
-		"USER_EMAIL_REQUIRED",
+		USER_ERROR_CODES.EMAIL_REQUIRED,
 		"El email del usuario es requerido.",
 		400,
 	),
 	USER_EMAIL_INVALID: new ErrorDetails(
-		"USER_EMAIL_INVALID",
+		USER_ERROR_CODES.EMAIL_INVALID,
 		"El email del usuario no tiene un formato válido.",
 		400,
 	),
 	USER_EMAIL_TOO_LONG: new ErrorDetails(
-		"USER_EMAIL_TOO_LONG",
+		USER_ERROR_CODES.EMAIL_TOO_LONG,
 		"El email del usuario no puede exceder 200 caracteres.",
 		400,
 	),
 	USER_NAME_REQUIRED: new ErrorDetails(
-		"USER_NAME_REQUIRED",
+		USER_ERROR_CODES.NAME_REQUIRED,
 		"El nombre del usuario es requerido.",
 		400,
 	),
 	USER_NAME_TOO_LONG: new ErrorDetails(
-		"USER_NAME_TOO_LONG",
+		USER_ERROR_CODES.NAME_TOO_LONG,
 		"El nombre del usuario no puede exceder 100 caracteres.",
 		400,
 	),
 	USER_LAST_NAME_EMPTY: new ErrorDetails(
-		"USER_LAST_NAME_EMPTY",
+		USER_ERROR_CODES.LAST_NAME_EMPTY,
 		"El apellido del usuario no puede estar vacío.",
 		400,
 	),
 	USER_LAST_NAME_TOO_LONG: new ErrorDetails(
-		"USER_LAST_NAME_TOO_LONG",
+		USER_ERROR_CODES.LAST_NAME_TOO_LONG,
 		"El apellido del usuario no puede exceder 100 caracteres.",
 		400,
 	),
 	USER_PHONE_INVALID: new ErrorDetails(
-		"USER_PHONE_INVALID",
+		USER_ERROR_CODES.PHONE_INVALID,
 		"El teléfono del usuario debe tener formato E.164 (ej. +5215551234567).",
 		400,
 	),
 	USER_PHONE_TOO_LONG: new ErrorDetails(
-		"USER_PHONE_TOO_LONG",
+		USER_ERROR_CODES.PHONE_TOO_LONG,
 		"El teléfono del usuario no puede exceder 20 caracteres.",
 		400,
 	),
 	USER_NOT_FOUND: new ErrorDetails(
-		"USER_NOT_FOUND",
+		USER_ERROR_CODES.NOT_FOUND,
 		"El usuario especificado no fue encontrado.",
 		404,
 	),

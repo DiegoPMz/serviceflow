@@ -8,6 +8,7 @@ import {
 	seedWorkspaceInvitation,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { USER_ERROR_CODES } from "@serviceflow/error-codes";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid/non-secure";
 import { ulid } from "ulidx";
@@ -75,7 +76,7 @@ describe("Reject-Workspace-Invitation Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("USER_NOT_FOUND");
+			expect(result.error.code).toBe(USER_ERROR_CODES.NOT_FOUND);
 
 			const stillThere = await countInvitations(tx, invitation.token);
 			expect(stillThere.length).toBe(1);

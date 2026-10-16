@@ -13,6 +13,7 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
 import { ulid } from "ulidx";
 import type { ComponentType } from "../device/common/device.model";
 import { userDrizzleRepository } from "../user/common/user-drizzle-repository";
@@ -375,7 +376,7 @@ describe("Get-Order-Details Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ORDER_NOT_FOUND");
+			expect(result.error.code).toBe(ORDER_ERROR_CODES.NOT_FOUND);
 		});
 	});
 
@@ -392,7 +393,7 @@ describe("Get-Order-Details Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ORDER_NOT_FOUND");
+			expect(result.error.code).toBe(ORDER_ERROR_CODES.NOT_FOUND);
 		});
 	});
 });

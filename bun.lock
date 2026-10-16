@@ -18,6 +18,7 @@
         "@elysia/openapi": "1.4.15",
         "@libsql/client": "0.17.4",
         "@react-email/components": "1.0.12",
+        "@serviceflow/error-codes": "catalog:",
         "@serviceflow/schemas": "catalog:",
         "@sinclair/typebox": "0.34.49",
         "drizzle-orm": "0.45.2",
@@ -52,6 +53,7 @@
         "@clerk/ui": "1.31.0",
         "@elysia/eden": "1.4.10",
         "@fontsource-variable/geist": "5.3.0",
+        "@serviceflow/error-codes": "catalog:",
         "@tailwindcss/vite": "4.3.3",
         "@tanstack/react-devtools": "0.10.12",
         "@tanstack/react-form": "1.33.5",
@@ -90,6 +92,15 @@
         "workbox-window": "7.4.1",
       },
     },
+    "packages/error-codes": {
+      "name": "@serviceflow/error-codes",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@biomejs/biome": "catalog:",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/schemas": {
       "name": "@serviceflow/schemas",
       "version": "1.0.0",
@@ -104,6 +115,7 @@
   },
   "catalog": {
     "@biomejs/biome": "2.5.1",
+    "@serviceflow/error-codes": "workspace:*",
     "@serviceflow/schemas": "workspace:*",
     "@types/bun": "1.4.2",
     "elysia": "1.4.29",
@@ -821,6 +833,8 @@
     "@selderee/plugin-htmlparser2": ["@selderee/plugin-htmlparser2@0.11.0", "", { "dependencies": { "domhandler": "^5.0.3", "selderee": "^0.11.0" } }, "sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ=="],
 
     "@serviceflow/backend": ["@serviceflow/backend@workspace:apps/backend"],
+
+    "@serviceflow/error-codes": ["@serviceflow/error-codes@workspace:packages/error-codes"],
 
     "@serviceflow/frontend": ["@serviceflow/frontend@workspace:apps/frontend"],
 

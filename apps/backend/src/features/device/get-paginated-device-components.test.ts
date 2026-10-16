@@ -6,6 +6,7 @@ import { seedDevice } from "@serviceflow/backend/shared/database/seeds/device.se
 import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { PaginationErrors } from "@serviceflow/backend/shared/pagination";
 import { first, runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { DEVICE_ERROR_CODES } from "@serviceflow/error-codes";
 import { ulid } from "ulidx";
 import type { ComponentType } from "./common/device.model";
 import { deviceDrizzleRepository } from "./common/device-drizzle-repository";
@@ -60,7 +61,7 @@ describe("Paginated-Device-Components Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_NOT_FOUND");
+			expect(result.error.code).toBe(DEVICE_ERROR_CODES.NOT_FOUND);
 		});
 	});
 
@@ -89,7 +90,7 @@ describe("Paginated-Device-Components Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_NOT_FOUND");
+			expect(result.error.code).toBe(DEVICE_ERROR_CODES.NOT_FOUND);
 		});
 	});
 

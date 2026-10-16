@@ -11,7 +11,8 @@
 			"@biomejs/biome": "2.5.1",
 			"@types/bun": "1.4.2",
 			"elysia": "1.4.29",
-			"@serviceflow/schemas": "workspace:*"
+			"@serviceflow/schemas": "workspace:*",
+			"@serviceflow/error-codes": "workspace:*"
 		}
 	},
 	"devDependencies": {

@@ -7,6 +7,7 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { WORKSPACE_ERROR_CODES } from "@serviceflow/error-codes";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import { workspaceMemberDrizzleRepository } from "./common/workspace-drizzle-member-repository";
@@ -112,7 +113,7 @@ describe("Remove-Workspace-Member Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("NOT_A_MEMBER");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NOT_A_MEMBER);
 		});
 	});
 
@@ -128,7 +129,7 @@ describe("Remove-Workspace-Member Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("NOT_A_MEMBER");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NOT_A_MEMBER);
 		});
 	});
 
@@ -147,7 +148,7 @@ describe("Remove-Workspace-Member Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("CANNOT_REMOVE_OWNER");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.CANNOT_REMOVE_OWNER);
 			expect(await isMember(tx, workspaceId, ownerId)).toBe(true);
 		});
 	});
@@ -165,7 +166,7 @@ describe("Remove-Workspace-Member Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("CANNOT_REMOVE_SELF");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.CANNOT_REMOVE_SELF);
 			expect(await isMember(tx, workspaceId, requesterId)).toBe(true);
 		});
 	});
@@ -185,7 +186,9 @@ describe("Remove-Workspace-Member Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ONLY_OWNER_CAN_REMOVE_ADMIN");
+			expect(result.error.code).toBe(
+				WORKSPACE_ERROR_CODES.ONLY_OWNER_CAN_REMOVE_ADMIN,
+			);
 			expect(await isMember(tx, workspaceId, targetUserId)).toBe(true);
 		});
 	});

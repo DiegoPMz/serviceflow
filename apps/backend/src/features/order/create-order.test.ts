@@ -14,6 +14,7 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import { ClientErrors } from "../client/common/client.errors";
@@ -449,7 +450,9 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ORDER_ISSUE_OBSERVATION_REQUIRED");
+			expect(result.error.code).toBe(
+				ORDER_ERROR_CODES.ISSUE_OBSERVATION_REQUIRED,
+			);
 
 			const storedOrders = await tx.select().from(orders);
 			expect(storedOrders.length).toBe(0);
@@ -485,7 +488,9 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ORDER_ISSUE_OBSERVATION_TOO_LONG");
+			expect(result.error.code).toBe(
+				ORDER_ERROR_CODES.ISSUE_OBSERVATION_TOO_LONG,
+			);
 		});
 	});
 
@@ -517,7 +522,9 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE");
+			expect(result.error.code).toBe(
+				ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE,
+			);
 
 			const storedOrders = await tx.select().from(orders);
 			expect(storedOrders.length).toBe(0);
@@ -552,7 +559,9 @@ describe("Create-Order Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("FOLIO_WORKSPACE_PREFIX_REQUIRED");
+			expect(result.error.code).toBe(
+				ORDER_ERROR_CODES.FOLIO_WORKSPACE_PREFIX_REQUIRED,
+			);
 
 			const storedOrders = await tx.select().from(orders);
 			expect(storedOrders.length).toBe(0);

@@ -1,127 +1,129 @@
 import { ErrorDetails } from "@serviceflow/backend/shared/result";
+import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
+
 export const OrderErrors = {
 	// --- Entity: Order ---
 	ORDER_CLIENT_ID_REQUIRED: new ErrorDetails(
-		"ORDER_CLIENT_ID_REQUIRED",
+		ORDER_ERROR_CODES.CLIENT_ID_REQUIRED,
 		"El ID del cliente es requerido.",
 		400,
 	),
 	ORDER_DEVICE_MODEL_REQUIRED: new ErrorDetails(
-		"ORDER_DEVICE_MODEL_REQUIRED",
+		ORDER_ERROR_CODES.DEVICE_MODEL_REQUIRED,
 		"El modelo del dispositivo es requerido.",
 		400,
 	),
 	ORDER_DEVICE_BRAND_REQUIRED: new ErrorDetails(
-		"ORDER_DEVICE_BRAND_REQUIRED",
+		ORDER_ERROR_CODES.DEVICE_BRAND_REQUIRED,
 		"La marca del dispositivo es requerida.",
 		400,
 	),
 	ORDER_DEVICE_SERIAL_REQUIRED: new ErrorDetails(
-		"ORDER_DEVICE_SERIAL_REQUIRED",
+		ORDER_ERROR_CODES.DEVICE_SERIAL_REQUIRED,
 		"El número de serie del dispositivo es requerido.",
 		400,
 	),
 	ORDER_ISSUE_OBSERVATION_REQUIRED: new ErrorDetails(
-		"ORDER_ISSUE_OBSERVATION_REQUIRED",
+		ORDER_ERROR_CODES.ISSUE_OBSERVATION_REQUIRED,
 		"La observación del problema es requerida.",
 		400,
 	),
 	ORDER_ISSUE_OBSERVATION_TOO_LONG: new ErrorDetails(
-		"ORDER_ISSUE_OBSERVATION_TOO_LONG",
+		ORDER_ERROR_CODES.ISSUE_OBSERVATION_TOO_LONG,
 		"La observación del problema no puede exceder 1000 caracteres.",
 		400,
 	),
 	ORDER_WORKSPACE_ID_REQUIRED: new ErrorDetails(
-		"ORDER_WORKSPACE_ID_REQUIRED",
+		ORDER_ERROR_CODES.WORKSPACE_ID_REQUIRED,
 		"El ID del workspace es requerido.",
 		400,
 	),
 	ORDER_USER_ID_REQUIRED: new ErrorDetails(
-		"ORDER_USER_ID_REQUIRED",
+		ORDER_ERROR_CODES.USER_ID_REQUIRED,
 		"El ID del usuario es requerido.",
 		400,
 	),
 	ORDER_FOLIO_INVALID: new ErrorDetails(
-		"ORDER_FOLIO_INVALID",
+		ORDER_ERROR_CODES.FOLIO_INVALID,
 		"El folio proporcionado es inválido.",
 		400,
 	),
 
 	// --- Entity: Folio ---
 	FOLIO_WORKSPACE_ORDER_COUNT_NAN: new ErrorDetails(
-		"FOLIO_WORKSPACE_ORDER_COUNT_NAN",
+		ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NAN,
 		"El contador de órdenes del workspace no es un número válido.",
 		400,
 	),
 	FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE: new ErrorDetails(
-		"FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE",
+		ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE,
 		"El contador de órdenes del workspace no puede ser negativo.",
 		400,
 	),
 	FOLIO_WORKSPACE_PREFIX_REQUIRED: new ErrorDetails(
-		"FOLIO_WORKSPACE_PREFIX_REQUIRED",
+		ORDER_ERROR_CODES.FOLIO_WORKSPACE_PREFIX_REQUIRED,
 		"El prefijo del workspace es requerido para generar el folio.",
 		400,
 	),
 
 	// --- Entity: OrderComponent ---
 	ORDER_COMPONENT_DEVICE_COMPONENT_ID_REQUIRED: new ErrorDetails(
-		"ORDER_COMPONENT_DEVICE_COMPONENT_ID_REQUIRED",
+		ORDER_ERROR_CODES.COMPONENT_DEVICE_COMPONENT_ID_REQUIRED,
 		"El ID del componente del dispositivo es requerido.",
 		400,
 	),
 	ORDER_COMPONENT_NAME_REQUIRED: new ErrorDetails(
-		"ORDER_COMPONENT_NAME_REQUIRED",
+		ORDER_ERROR_CODES.COMPONENT_NAME_REQUIRED,
 		"El nombre del componente es requerido.",
 		400,
 	),
 	ORDER_COMPONENT_QUANTITY_INVALID: new ErrorDetails(
-		"ORDER_COMPONENT_QUANTITY_INVALID",
+		ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID,
 		"La cantidad del componente debe ser un entero mayor a cero.",
 		400,
 	),
 
 	//--- Entity: User ---
 	ORDER_USER_NAME_SNAPSHOT_REQUIRED: new ErrorDetails(
-		"ORDER_USER_NAME_SNAPSHOT_REQUIRED",
+		ORDER_ERROR_CODES.USER_NAME_SNAPSHOT_REQUIRED,
 		"El nombre del usuario al momento de crear la orden es requerido.",
 		400,
 	),
 
 	ORDER_NOT_FOUND: new ErrorDetails(
-		"ORDER_NOT_FOUND",
+		ORDER_ERROR_CODES.NOT_FOUND,
 		"La orden especificada no fue encontrada.",
 		404,
 	),
 	ORDER_DOCUMENT_ALREADY_EXISTS: new ErrorDetails(
-		"ORDER_DOCUMENT_ALREADY_EXISTS",
+		ORDER_ERROR_CODES.DOCUMENT_ALREADY_EXISTS,
 		"El documento de la orden ya existe.",
 		409,
 	),
 	ORDER_DOCUMENT_NOT_GENERATED: new ErrorDetails(
-		"ORDER_DOCUMENT_NOT_GENERATED",
+		ORDER_ERROR_CODES.DOCUMENT_NOT_GENERATED,
 		"El documento de la orden aún no ha sido generado.",
 		404,
 	),
 
 	// --- Entity: OrderStatus ---
 	ORDER_ALREADY_DELIVERED: new ErrorDetails(
-		"ORDER_ALREADY_DELIVERED",
+		ORDER_ERROR_CODES.ALREADY_DELIVERED,
 		"La orden ya fue entregada.",
 		400,
 	),
 	ORDER_ALREADY_CANCELED: new ErrorDetails(
-		"ORDER_ALREADY_CANCELED",
+		ORDER_ERROR_CODES.ALREADY_CANCELED,
 		"La orden ya fue cancelada.",
 		400,
 	),
 	ORDER_CANNOT_DELIVER_CANCELED: new ErrorDetails(
-		"ORDER_CANNOT_DELIVER_CANCELED",
+		ORDER_ERROR_CODES.CANNOT_DELIVER_CANCELED,
 		"No se puede entregar una orden cancelada.",
 		422,
 	),
 	ORDER_CANNOT_CANCEL_DELIVERED: new ErrorDetails(
-		"ORDER_CANNOT_CANCEL_DELIVERED",
+		ORDER_ERROR_CODES.CANNOT_CANCEL_DELIVERED,
 		"No se puede cancelar una orden entregada.",
 		422,
 	),

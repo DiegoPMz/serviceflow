@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { WORKSPACE_ERROR_CODES } from "@serviceflow/error-codes";
 import { PREFIX_REGEX, Workspace, WorkspaceCompany } from "./workspace.model";
 
 const ULID_REGEX = /^[0-9A-Z]{26}$/;
@@ -36,7 +37,7 @@ describe("Workspace.create", () => {
 		});
 
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("WORKSPACE_NAME_REQUIRED");
+		expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NAME_REQUIRED);
 	});
 
 	test("Should return WORKSPACE_NAME_REQUIRED when name is whitespace only", () => {
@@ -47,7 +48,7 @@ describe("Workspace.create", () => {
 		});
 
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("WORKSPACE_NAME_REQUIRED");
+		expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NAME_REQUIRED);
 	});
 
 	test("Should return WORKSPACE_NAME_TOO_LONG when name exceeds 250 chars", () => {
@@ -58,7 +59,7 @@ describe("Workspace.create", () => {
 		});
 
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("WORKSPACE_NAME_TOO_LONG");
+		expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NAME_TOO_LONG);
 	});
 
 	test("Should succeed when name is exactly 250 chars", () => {
@@ -248,7 +249,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_NAME_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_NAME_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_NAME_REQUIRED when name is whitespace only", () => {
@@ -258,7 +259,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_NAME_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_NAME_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_NAME_TOO_LONG when name exceeds 250 chars", () => {
@@ -268,7 +269,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_NAME_TOO_LONG");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_NAME_TOO_LONG);
 		});
 
 		test("Should succeed when name is exactly 250 chars", () => {
@@ -290,7 +291,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_PHONE_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_PHONE_REQUIRED when phone is whitespace only", () => {
@@ -300,7 +301,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_PHONE_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone has fewer than 10 digits", () => {
@@ -310,7 +311,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_INVALID");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_PHONE_INVALID);
 		});
 
 		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone has more than 10 digits", () => {
@@ -320,7 +321,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_INVALID");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_PHONE_INVALID);
 		});
 
 		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone starts with 0", () => {
@@ -330,7 +331,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_INVALID");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_PHONE_INVALID);
 		});
 
 		test("Should return WORKSPACE_COMPANY_PHONE_INVALID when phone contains non-numeric characters", () => {
@@ -340,7 +341,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_PHONE_INVALID");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_PHONE_INVALID);
 		});
 
 		test("Should succeed with valid 10-digit phone numbers", () => {
@@ -366,7 +367,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_EMAIL_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_EMAIL_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_EMAIL_REQUIRED when email is whitespace only", () => {
@@ -376,7 +377,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_EMAIL_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_EMAIL_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_EMAIL_INVALID when email has no @", () => {
@@ -386,7 +387,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_EMAIL_INVALID");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_EMAIL_INVALID);
 		});
 
 		test("Should return WORKSPACE_COMPANY_EMAIL_INVALID when email has no domain", () => {
@@ -396,7 +397,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_EMAIL_INVALID");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_EMAIL_INVALID);
 		});
 
 		test("Should return WORKSPACE_COMPANY_EMAIL_INVALID when email has spaces", () => {
@@ -406,7 +407,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_EMAIL_INVALID");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_EMAIL_INVALID);
 		});
 
 		test("Should succeed with valid email formats", () => {
@@ -437,7 +438,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_ADDRESS_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_ADDRESS_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_ADDRESS_REQUIRED when address is whitespace only", () => {
@@ -447,7 +448,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_ADDRESS_REQUIRED");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_ADDRESS_REQUIRED);
 		});
 
 		test("Should return WORKSPACE_COMPANY_ADDRESS_TOO_LONG when address exceeds 255 chars", () => {
@@ -457,7 +458,7 @@ describe("WorkspaceCompany.create", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_COMPANY_ADDRESS_TOO_LONG");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.COMPANY_ADDRESS_TOO_LONG);
 		});
 
 		test("Should succeed when address is exactly 255 chars", () => {

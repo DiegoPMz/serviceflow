@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { clients } from "@serviceflow/backend/shared/database";
 import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { CLIENT_ERROR_CODES } from "@serviceflow/error-codes";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import { clientDrizzleRepository } from "./common/client-drizzle-repository";
@@ -60,7 +61,7 @@ describe("Register-Client Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("CLIENT_ALREADY_EXISTS");
+			expect(result.error.code).toBe(CLIENT_ERROR_CODES.ALREADY_EXISTS);
 
 			const rows = await tx
 				.select()
@@ -89,7 +90,7 @@ describe("Register-Client Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("CLIENT_ALREADY_EXISTS");
+			expect(result.error.code).toBe(CLIENT_ERROR_CODES.ALREADY_EXISTS);
 
 			const rows = await tx.select().from(clients);
 			expect(rows.length).toBe(1);

@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Result } from "@serviceflow/backend/shared/result";
+import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
 import Elysia from "elysia";
 import { ClientErrors } from "../client/common/client.errors";
 import { workspaceMemberErrors } from "../workspace/common/workspace-member.errors";
@@ -410,7 +411,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(422);
 
 			const body = await response.json();
-			expect(body.code).toBe("ORDER_CANNOT_DELIVER_CANCELED");
+			expect(body.code).toBe(ORDER_ERROR_CODES.CANNOT_DELIVER_CANCELED);
 			expect(mockDeps.orderRepository.updateStatus).not.toHaveBeenCalled();
 		});
 
@@ -830,7 +831,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			expect(response.status).toBe(404);
 
 			const body = await response.json();
-			expect(body.code).toBe("ORDER_NOT_FOUND");
+			expect(body.code).toBe(ORDER_ERROR_CODES.NOT_FOUND);
 			expect(body.statusCode).toBe(404);
 		});
 

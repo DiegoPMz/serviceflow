@@ -6,6 +6,7 @@ import {
 import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.seeds";
 import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { DEVICE_ERROR_CODES } from "@serviceflow/error-codes";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import type { ComponentType } from "./common/device.model";
@@ -87,7 +88,7 @@ describe("Register-Device Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_ALREADY_EXISTS");
+			expect(result.error.code).toBe(DEVICE_ERROR_CODES.ALREADY_EXISTS);
 
 			const rows = await tx
 				.select()
@@ -108,7 +109,7 @@ describe("Register-Device Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_BRAND_REQUIRED");
+			expect(result.error.code).toBe(DEVICE_ERROR_CODES.BRAND_REQUIRED);
 
 			const rows = await tx.select().from(devices);
 			expect(rows.length).toBe(0);
@@ -134,7 +135,9 @@ describe("Register-Device Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("DEVICE_COMPONENT_NAME_REQUIRED");
+			expect(result.error.code).toBe(
+				DEVICE_ERROR_CODES.COMPONENT_NAME_REQUIRED,
+			);
 
 			const rows = await tx.select().from(devices);
 			expect(rows.length).toBe(0);

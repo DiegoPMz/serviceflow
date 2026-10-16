@@ -9,6 +9,7 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
 import { eq } from "drizzle-orm";
 import { changeOrderStatusHandler } from "./change-order-status";
 import { OrderDrizzleRepository } from "./common/order-drizzle-repository";
@@ -90,7 +91,7 @@ describe("Change-Order-Status Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ORDER_NOT_FOUND");
+			expect(result.error.code).toBe(ORDER_ERROR_CODES.NOT_FOUND);
 		});
 	});
 
@@ -120,7 +121,7 @@ describe("Change-Order-Status Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("ORDER_ALREADY_DELIVERED");
+			expect(result.error.code).toBe(ORDER_ERROR_CODES.ALREADY_DELIVERED);
 
 			const [row] = await tx
 				.select()

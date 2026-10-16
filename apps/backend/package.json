@@ -17,6 +17,7 @@
 		"@elysia/openapi": "1.4.15",
 		"@libsql/client": "0.17.4",
 		"@react-email/components": "1.0.12",
+		"@serviceflow/error-codes": "catalog:",
 		"@serviceflow/schemas": "catalog:",
 		"@sinclair/typebox": "0.34.49",
 		"drizzle-orm": "0.45.2",

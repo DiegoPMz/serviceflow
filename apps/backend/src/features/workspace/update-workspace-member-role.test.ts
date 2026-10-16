@@ -7,6 +7,7 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { WORKSPACE_ERROR_CODES } from "@serviceflow/error-codes";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import { workspaceMemberDrizzleRepository } from "./common/workspace-drizzle-member-repository";
@@ -79,7 +80,7 @@ describe("Update-Workspace-Member-Role Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("NOT_A_MEMBER");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NOT_A_MEMBER);
 		});
 	});
 
@@ -96,7 +97,9 @@ describe("Update-Workspace-Member-Role Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("CANNOT_CHANGE_OWNER_ROLE");
+			expect(result.error.code).toBe(
+				WORKSPACE_ERROR_CODES.CANNOT_CHANGE_OWNER_ROLE,
+			);
 			expect(await getMemberRole(tx, workspaceId, ownerId)).toBe("owner");
 		});
 	});
@@ -118,7 +121,9 @@ describe("Update-Workspace-Member-Role Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("CANNOT_ASSIGN_OWNER_ROLE");
+			expect(result.error.code).toBe(
+				WORKSPACE_ERROR_CODES.CANNOT_ASSIGN_OWNER_ROLE,
+			);
 			expect(await getMemberRole(tx, workspaceId, targetUserId)).toBe("viewer");
 		});
 	});
@@ -179,7 +184,7 @@ describe("Update-Workspace-Member-Role Integration Tests", () => {
 			});
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("NOT_A_MEMBER");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NOT_A_MEMBER);
 		});
 	});
 });

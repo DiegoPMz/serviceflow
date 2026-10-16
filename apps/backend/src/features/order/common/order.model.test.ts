@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
 import { Folio, Order } from "./order.model";
 
 const ULID_REGEX = /^[0-9A-Z]{26}$/;
@@ -52,7 +53,7 @@ describe("Folio.create", () => {
 			workspacePrefix: "TEST",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("FOLIO_WORKSPACE_ORDER_COUNT_NAN");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NAN);
 	});
 
 	test("Should return FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE when count is negative", () => {
@@ -61,7 +62,7 @@ describe("Folio.create", () => {
 			workspacePrefix: "TEST",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE);
 	});
 
 	test("Should return FOLIO_WORKSPACE_PREFIX_REQUIRED when prefix is empty", () => {
@@ -70,7 +71,7 @@ describe("Folio.create", () => {
 			workspacePrefix: "",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("FOLIO_WORKSPACE_PREFIX_REQUIRED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_WORKSPACE_PREFIX_REQUIRED);
 	});
 });
 
@@ -104,19 +105,19 @@ describe("Order.create", () => {
 	test("Should return ORDER_CLIENT_ID_REQUIRED for empty clientId", () => {
 		const result = Order.create(validOrderData({ clientId: "" }));
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_CLIENT_ID_REQUIRED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.CLIENT_ID_REQUIRED);
 	});
 
 	test("Should return ORDER_CLIENT_ID_REQUIRED for whitespace-only clientId", () => {
 		const result = Order.create(validOrderData({ clientId: "   " }));
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_CLIENT_ID_REQUIRED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.CLIENT_ID_REQUIRED);
 	});
 
 	test("Should return ORDER_ISSUE_OBSERVATION_REQUIRED for empty observations", () => {
 		const result = Order.create(validOrderData({ observations: "" }));
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_ISSUE_OBSERVATION_REQUIRED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.ISSUE_OBSERVATION_REQUIRED);
 	});
 
 	test("Should return ORDER_ISSUE_OBSERVATION_TOO_LONG when observations exceed 1000 chars", () => {
@@ -124,7 +125,7 @@ describe("Order.create", () => {
 			validOrderData({ observations: "x".repeat(1001) }),
 		);
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_ISSUE_OBSERVATION_TOO_LONG");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.ISSUE_OBSERVATION_TOO_LONG);
 	});
 
 	test("Should succeed when observations are exactly 1000 chars", () => {
@@ -137,13 +138,13 @@ describe("Order.create", () => {
 	test("Should return ORDER_WORKSPACE_ID_REQUIRED for empty workspaceId", () => {
 		const result = Order.create(validOrderData({ workspaceId: "" }));
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_WORKSPACE_ID_REQUIRED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.WORKSPACE_ID_REQUIRED);
 	});
 
 	test("Should return ORDER_USER_ID_REQUIRED for empty userId", () => {
 		const result = Order.create(validOrderData({ userId: "" }));
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_USER_ID_REQUIRED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.USER_ID_REQUIRED);
 	});
 
 	test("Should return ORDER_FOLIO_INVALID when folio is not a Folio instance", () => {
@@ -151,7 +152,7 @@ describe("Order.create", () => {
 			validOrderData({ folio: { value: "TEST1" } as never }),
 		);
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_FOLIO_INVALID");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_INVALID);
 	});
 
 	test("Should return ORDER_FOLIO_INVALID when folio value is empty", () => {
@@ -162,7 +163,7 @@ describe("Order.create", () => {
 		expect(emptyFolio.isFailure).toBe(true);
 		const result = Order.create(validOrderData({ folio: emptyFolio.value }));
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_FOLIO_INVALID");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_INVALID);
 	});
 });
 
@@ -216,7 +217,7 @@ describe("Order.addComponent", () => {
 		});
 		expect(result.isFailure).toBe(true);
 		expect(result.error.code).toBe(
-			"ORDER_COMPONENT_DEVICE_COMPONENT_ID_REQUIRED",
+			ORDER_ERROR_CODES.COMPONENT_DEVICE_COMPONENT_ID_REQUIRED,
 		);
 	});
 
@@ -229,7 +230,7 @@ describe("Order.addComponent", () => {
 			type: "supply",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_COMPONENT_NAME_REQUIRED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.COMPONENT_NAME_REQUIRED);
 	});
 
 	test("Should return ORDER_COMPONENT_QUANTITY_INVALID for zero quantity", () => {
@@ -241,7 +242,7 @@ describe("Order.addComponent", () => {
 			type: "supply",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_COMPONENT_QUANTITY_INVALID");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID);
 	});
 
 	test("Should return ORDER_COMPONENT_QUANTITY_INVALID for negative quantity", () => {
@@ -253,7 +254,7 @@ describe("Order.addComponent", () => {
 			type: "supply",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_COMPONENT_QUANTITY_INVALID");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID);
 	});
 
 	test("Should return ORDER_COMPONENT_QUANTITY_INVALID for non-integer quantity", () => {
@@ -265,7 +266,7 @@ describe("Order.addComponent", () => {
 			type: "supply",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_COMPONENT_QUANTITY_INVALID");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID);
 	});
 
 	test("Should return a cloned array from orderComponents that does not leak mutations", () => {
@@ -333,7 +334,7 @@ describe("Order lifecycle status", () => {
 		const result = order.deliver();
 
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_ALREADY_DELIVERED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.ALREADY_DELIVERED);
 	});
 
 	test("Should return ORDER_ALREADY_CANCELED when cancelling a cancelled order", () => {
@@ -343,7 +344,7 @@ describe("Order lifecycle status", () => {
 		const result = order.cancel();
 
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_ALREADY_CANCELED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.ALREADY_CANCELED);
 	});
 
 	test("Should return ORDER_CANNOT_DELIVER_CANCELED when delivering a cancelled order", () => {
@@ -353,7 +354,7 @@ describe("Order lifecycle status", () => {
 		const result = order.deliver();
 
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_CANNOT_DELIVER_CANCELED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.CANNOT_DELIVER_CANCELED);
 	});
 
 	test("Should return ORDER_CANNOT_CANCEL_DELIVERED when cancelling a delivered order", () => {
@@ -363,7 +364,7 @@ describe("Order lifecycle status", () => {
 		const result = order.cancel();
 
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe("ORDER_CANNOT_CANCEL_DELIVERED");
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.CANNOT_CANCEL_DELIVERED);
 	});
 
 	test("Should keep status unchanged and not bump updatedAt on a failed transition", () => {

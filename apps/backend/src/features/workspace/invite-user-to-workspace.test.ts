@@ -7,6 +7,10 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import {
+	USER_ERROR_CODES,
+	WORKSPACE_ERROR_CODES,
+} from "@serviceflow/error-codes";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { ulid } from "ulidx";
@@ -177,7 +181,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			);
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("USER_ALREADY_MEMBER");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.USER_ALREADY_MEMBER);
 
 			const rows = await tx
 				.select()
@@ -201,7 +205,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			);
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_NOT_FOUND");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NOT_FOUND);
 
 			const rows = await tx
 				.select()
@@ -226,7 +230,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			);
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("USER_NOT_FOUND");
+			expect(result.error.code).toBe(USER_ERROR_CODES.NOT_FOUND);
 
 			const rows = await tx
 				.select()
@@ -256,7 +260,9 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			);
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("INVITATION_INVALID_ROLE");
+			expect(result.error.code).toBe(
+				WORKSPACE_ERROR_CODES.INVITATION_INVALID_ROLE,
+			);
 
 			const rows = await tx
 				.select()
@@ -281,7 +287,9 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			);
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("INVITATION_INVALID_EMAIL");
+			expect(result.error.code).toBe(
+				WORKSPACE_ERROR_CODES.INVITATION_INVALID_EMAIL,
+			);
 			expect(sent.length).toBe(0);
 		});
 	});
@@ -300,7 +308,7 @@ describe("Invite-User-To-Workspace Integration Tests", () => {
 			);
 
 			expect(result.isFailure).toBe(true);
-			expect(result.error.code).toBe("WORKSPACE_NOT_FOUND");
+			expect(result.error.code).toBe(WORKSPACE_ERROR_CODES.NOT_FOUND);
 
 			const rows = await tx
 				.select()
