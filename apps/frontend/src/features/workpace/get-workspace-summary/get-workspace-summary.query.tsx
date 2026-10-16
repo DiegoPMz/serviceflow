@@ -1,5 +1,6 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import type { Eden } from "@/shared/http/client";
+import { normalizeEdenError } from "@/shared/lib/normalize-eden-error";
 
 interface Props {
 	workspaceId: string;
@@ -13,10 +14,7 @@ export function getWorkspaceSummaryQueryOptions(eden: Eden, props: Props) {
 				.workspaces({ workspaceId: props.workspaceId })
 				.get();
 
-			if (error) {
-				throw error;
-			}
-
+			if (error) normalizeEdenError(error);
 			return data;
 		},
 		staleTime: "static",

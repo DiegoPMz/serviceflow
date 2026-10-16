@@ -8,9 +8,7 @@ interface CreateEdenProps {
 	getToken: () => Promise<string | null>;
 }
 
-export const createEden = ({
-	getToken,
-}: CreateEdenProps): Eden =>
+export const createEden = ({ getToken }: CreateEdenProps): Eden =>
 	treaty<Server>(apiConfig.url, {
 		onRequest: async (_, options) => {
 			options.headers = options.headers || {};

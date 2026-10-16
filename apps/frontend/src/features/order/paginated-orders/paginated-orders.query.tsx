@@ -5,6 +5,7 @@ import {
 	useQuery,
 } from "@tanstack/react-query";
 import type { Eden } from "@/shared/http/client";
+import { normalizeEdenError } from "@/shared/lib/normalize-eden-error";
 import type { PaginatedOrders } from "./paginated-orders.types";
 
 export function getPaginatedOrdersQueryOptions(
@@ -34,14 +35,12 @@ export function getPaginatedOrdersQueryOptions(
 					},
 				});
 
-			if (error) {
-				throw error;
-			}
-
+			if (error) normalizeEdenError(error);
 			return data;
 		},
 		placeholderData: keepPreviousData,
-		staleTime: "static",
+		staleTime: 20 * 60 * 1000,
+		gcTime: 30 * 60 * 1000,
 	});
 }
 

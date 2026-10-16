@@ -3,6 +3,7 @@ import {
 	useSuspenseInfiniteQuery,
 } from "@tanstack/react-query";
 import type { Eden } from "@/shared/http/client";
+import { normalizeEdenError } from "@/shared/lib/normalize-eden-error";
 
 interface Props {
 	limit?: number;
@@ -26,7 +27,7 @@ export const paginatedWorkspacesInfiniteQueryOptions = ({
 			{ limit, orderBy, direction, search },
 		],
 		queryFn: async ({ pageParam }) => {
-			const response = await eden.v1.workspaces.get({
+			const { data, error } = await eden.v1.workspaces.get({
 				query: {
 					limit,
 					cursor: pageParam,
@@ -36,11 +37,8 @@ export const paginatedWorkspacesInfiniteQueryOptions = ({
 				},
 			});
 
-			if (response.error) {
-				throw new Error(response.error.value.message);
-			}
-
-			return response.data;
+			if (error) normalizeEdenError(error);
+			return data;
 		},
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) =>
