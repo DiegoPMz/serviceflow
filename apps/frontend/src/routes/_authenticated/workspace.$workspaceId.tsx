@@ -1,8 +1,10 @@
+import { WORKSPACE_ERROR_CODES } from "@serviceflow/error-codes";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { getWorkspaceSummaryQueryOptions } from "@/features/workpace/get-workspace-summary";
 import { WorkspaceShell } from "@/shared/layouts/workspace-shell";
 import { WorkspaceShellSkeleton } from "@/shared/layouts/workspace-shell-skeleton";
+import { ApiError } from "@/shared/lib/api-error";
 
 export const Route = createFileRoute("/_authenticated/workspace/$workspaceId")({
 	loader: async ({ context, params }) => {
@@ -14,21 +16,23 @@ export const Route = createFileRoute("/_authenticated/workspace/$workspaceId")({
 	},
 
 	onError: (error: unknown) => {
-		// 		if (error instanceof AppErrorDetails && error.status < 500) {
-		// 			console.log("error ruta layout");
-		//
-		// 			toast.error("No pudimos acceder a este workspace.", {
-		// 				description:
-		// 					"Es posible que haya sido eliminado o que ya no tengas acceso. Te llevaremos al selector de workspaces.",
-		// 			});
-		// 			throw redirect({ to: "/" });
-		// 		}
+		if (!(error instanceof ApiError)) {
+			return;
+		}
 
-		toast.error("No pudimos acceder a este workspace.", {
-			description:
-				"Es posible que haya sido eliminado o que ya no tengas acceso. Te llevaremos al selector de workspaces.",
-		});
-		throw redirect({ to: "/" });
+		const redirectCodes = new Set<string>([
+			WORKSPACE_ERROR_CODES.NOT_FOUND,
+			WORKSPACE_ERROR_CODES.NOT_A_MEMBER,
+		]);
+
+		if (redirectCodes.has(error.code)) {
+			toast.error("No pudimos acceder a este workspace.", {
+				description:
+					"Es posible que haya sido eliminado o que ya no tengas acceso. Te llevaremos al selector de workspaces.",
+			});
+
+			throw redirect({ to: "/" });
+		}
 	},
 	component: RouteComponent,
 	pendingComponent: WorkspaceShellSkeleton,
