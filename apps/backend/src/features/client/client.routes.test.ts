@@ -45,6 +45,23 @@ describe("Client HTTP Routes - Unit Tests", () => {
 					Promise.resolve({ items: [], cursor: null, hasNextPage: false }),
 				),
 			} as any,
+			userRepository: {
+				getById: mock(() =>
+					Promise.resolve({
+						id: mockUserId,
+						name: "Juan",
+						lastName: "Pérez",
+					}),
+				),
+			} as any,
+			unitOfWork: {
+				transaction: mock((fn: (repos: any) => Promise<unknown>) =>
+					fn({
+						clients: mockDeps.clientRepository,
+						activities: { save: mock(() => Promise.resolve()) },
+					}),
+				),
+			} as any,
 			workspaceAuthorization: {
 				excecute: mock(() => Promise.resolve(Result.success(true))),
 			} as any,

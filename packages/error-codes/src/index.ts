@@ -1,3 +1,4 @@
+export { ACTIVITY_ERROR_CODES } from "./activity";
 export { CLIENT_ERROR_CODES } from "./client";
 export { DEVICE_ERROR_CODES } from "./device";
 export { ORDER_ERROR_CODES } from "./order";

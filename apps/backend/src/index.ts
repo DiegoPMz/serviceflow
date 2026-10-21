@@ -3,12 +3,17 @@ import openapi from "@elysia/openapi";
 import Elysia from "elysia";
 import type { Server } from "elysia/universal";
 import { Resend } from "resend";
+import { activityRoutes } from "./features/activity";
+import { activityDrizzleRepository } from "./features/activity/common/activity-drizzle-repository";
 import { clientRoutes } from "./features/client";
 import { clientDrizzleRepository } from "./features/client/common/client-drizzle-repository";
+import { createDrizzleClientsUnitOfWork } from "./features/client/common/clients-drizzle.unit-of-work";
 import { deviceRoutes } from "./features/device";
 import { deviceDrizzleRepository } from "./features/device/common/device-drizzle-repository";
+import { createDrizzleDevicesUnitOfWork } from "./features/device/common/devices-drizzle.unit-of-work";
 import { orderRoutes } from "./features/order";
 import { OrderDrizzleRepository } from "./features/order/common/order-drizzle-repository";
+import { createDrizzleOrdersUnitOfWork } from "./features/order/common/orders-drizzle.unit-of-work";
 import { PdfMakeOrderPdfGenerator } from "./features/order/common/pdfMake-pdf-generator";
 import { userRoutes } from "./features/user";
 import { userDrizzleRepository } from "./features/user/common/user-drizzle-repository";
@@ -23,10 +28,10 @@ import { createDrizzleWorkspacesUnitOfWork } from "./features/workspace/common/w
 import { createClerkIdentityProvider } from "./shared/auth/clerk-identity-provider";
 import { clerkTokenVerifier } from "./shared/auth/clerk-token-verifier";
 import {
-    appConfig,
-    clerkConfig,
-    r2StorageConfig,
-    resendConfig,
+	appConfig,
+	clerkConfig,
+	r2StorageConfig,
+	resendConfig,
 } from "./shared/config";
 import { db } from "./shared/database/client";
 import { createAuthPlugin } from "./shared/http/auth-plugin";
@@ -55,6 +60,10 @@ const orderRepository = OrderDrizzleRepository(db);
 const workspaceRepository = workspaceDrizzleRepository(db);
 const memberRepository = workspaceMemberDrizzleRepository(db);
 const workspaceInvitationRepository = workspaceInvitationDrizzleRepository(db);
+const activityRepository = activityDrizzleRepository(db);
+const ordersUnitOfWork = createDrizzleOrdersUnitOfWork(db);
+const clientsUnitOfWork = createDrizzleClientsUnitOfWork(db);
+const devicesUnitOfWork = createDrizzleDevicesUnitOfWork(db);
 const unitOfWork = createDrizzleWorkspacesUnitOfWork(db);
 const workspaceAuthorization = workspaceAuthorizationFactory({
 	membersRepository: memberRepository,
@@ -120,12 +129,22 @@ export const app = new Elysia()
 	.use(
 		clientRoutes(auth, {
 			clientRepository,
+			userRepository,
+			unitOfWork: clientsUnitOfWork,
 			workspaceAuthorization,
 		}),
 	)
 	.use(
 		deviceRoutes(auth, {
 			deviceRepository,
+			userRepository,
+			unitOfWork: devicesUnitOfWork,
+			workspaceAuthorization,
+		}),
+	)
+	.use(
+		activityRoutes(auth, {
+			activityRepository,
 			workspaceAuthorization,
 		}),
 	)
@@ -138,6 +157,7 @@ export const app = new Elysia()
 				deviceRepository,
 				workspaceRepository,
 				userRepository,
+				unitOfWork: ordersUnitOfWork,
 				pdfGenerator: PdfMakeOrderPdfGenerator,
 				publicAssetStorage,
 				privateDocumentStorage,

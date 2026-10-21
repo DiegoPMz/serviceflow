@@ -49,8 +49,22 @@ describe("Device HTTP Routes - Unit Tests", () => {
 				getDeviceComponentsPaginated: mock(() =>
 					Promise.resolve({ items: [], cursor: null, hasNextPage: false }),
 				),
-				transaction: mock((fn: (repo: any) => Promise<unknown>) =>
-					fn(mockDeps.deviceRepository),
+			} as any,
+			userRepository: {
+				getById: mock(() =>
+					Promise.resolve({
+						id: mockUserId,
+						name: "Juan",
+						lastName: "Pérez",
+					}),
+				),
+			} as any,
+			unitOfWork: {
+				transaction: mock((fn: (repos: any) => Promise<unknown>) =>
+					fn({
+						devices: mockDeps.deviceRepository,
+						activities: { save: mock(() => Promise.resolve()) },
+					}),
 				),
 			} as any,
 			workspaceAuthorization: {

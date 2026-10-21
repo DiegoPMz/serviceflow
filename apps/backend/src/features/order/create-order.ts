@@ -1,4 +1,5 @@
 import { Result } from "@serviceflow/backend/shared/result";
+import { WorkspaceActivity } from "../activity/common/activity.model";
 import { ClientErrors } from "../client/common/client.errors";
 import type { ClientRepository } from "../client/common/client-repository";
 import { DeviceErrors } from "../device/common/device.errors";
@@ -9,7 +10,7 @@ import type { UserRepository } from "../user/common/user-repository";
 import { workspaceErrors } from "../workspace/common/workspace.errors";
 import type { WorkspaceRepository } from "../workspace/common/workspace-repository";
 import { Folio, Order } from "./common/order.model";
-import type { OrderRepository } from "./common/order-repository";
+import type { OrdersUnitOfWork } from "./common/orders.unit-of-work";
 
 export interface CreateOrderCommand {
 	workspaceId: string;
@@ -27,11 +28,11 @@ export interface CreateOrderCommand {
 
 interface CreateOrderHandlerProps {
 	command: CreateOrderCommand;
-	orderRepository: OrderRepository;
 	clientRepository: ClientRepository;
 	deviceRepository: DeviceRepository;
 	workspaceRepository: WorkspaceRepository;
 	userRepository: UserRepository;
+	unitOfWork: OrdersUnitOfWork;
 }
 
 export const createOrderHandler = async ({
@@ -39,8 +40,8 @@ export const createOrderHandler = async ({
 	clientRepository,
 	deviceRepository,
 	workspaceRepository,
-	orderRepository,
 	userRepository,
+	unitOfWork,
 }: CreateOrderHandlerProps): Promise<Result<string>> => {
 	const [client, device, workspace, user] = await Promise.all([
 		clientRepository.getByIds(command.clientId, command.workspaceId),
@@ -127,10 +128,27 @@ export const createOrderHandler = async ({
 		}
 	}
 
-	await orderRepository.save(order);
+	const activityResult = WorkspaceActivity.orderCreated({
+		workspaceId: order.workspaceId,
+		actor: {
+			userId: user.id,
+			name: `${user.name} ${user.lastName ?? ""}`.trim(),
+		},
+		orderId: order.id,
+		folio: order.folio,
+	});
 
-	workspace.increaseCount();
-	await workspaceRepository.update(workspace);
+	if (activityResult.isFailure) {
+		return Result.failure(activityResult.error);
+	}
+
+	await unitOfWork.transaction(async ({ orders, workspaces, activities }) => {
+		workspace.increaseCount();
+
+		await orders.save(order);
+		await workspaces.update(workspace);
+		await activities.save(activityResult.value);
+	});
 
 	return Result.success(order.id);
 };

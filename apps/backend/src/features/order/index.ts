@@ -25,6 +25,7 @@ import {
 import type { WorkspaceRepository } from "../workspace/common/workspace-repository";
 import { changeOrderStatusHandler } from "./change-order-status";
 import type { OrderRepository } from "./common/order-repository";
+import type { OrdersUnitOfWork } from "./common/orders.unit-of-work";
 import type { PdfGenerator } from "./common/pdf-generator";
 import { createOrderHandler } from "./create-order";
 import { generateOrderDocumentHandler } from "./generate-order-document";
@@ -39,6 +40,7 @@ export interface OrderDependencies {
 	deviceRepository: DeviceRepository;
 	workspaceRepository: WorkspaceRepository;
 	userRepository: UserRepository;
+	unitOfWork: OrdersUnitOfWork;
 	pdfGenerator: PdfGenerator;
 	publicAssetStorage: PublicAssetStorage;
 	privateDocumentStorage: PrivateDocumentStorage;
@@ -69,11 +71,11 @@ export const orderRoutes = (
 						components: body.components,
 						observations: body.observations,
 					},
-					orderRepository: deps.orderRepository,
 					clientRepository: deps.clientRepository,
 					deviceRepository: deps.deviceRepository,
 					workspaceRepository: deps.workspaceRepository,
 					userRepository: deps.userRepository,
+					unitOfWork: deps.unitOfWork,
 				});
 
 				if (result.isFailure) {
@@ -178,13 +180,17 @@ export const orderRoutes = (
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/orders/:orderId/status",
-			async ({ params, body, status }) => {
+			async ({ params, body, auth, status }) => {
 				const result = await changeOrderStatusHandler({
 					command: {
+						workspaceId: params.workspaceId,
+						userId: auth.userId,
 						orderId: params.orderId,
 						status: body.status,
 					},
 					orderRepository: deps.orderRepository,
+					userRepository: deps.userRepository,
+					unitOfWork: deps.unitOfWork,
 				});
 
 				if (result.isFailure) {

@@ -1,5 +1,6 @@
 export * from "./client";
 export * from "./helpers";
+export * from "./schema/activity";
 export * from "./schema/client";
 export * from "./schema/device";
 export * from "./schema/order";

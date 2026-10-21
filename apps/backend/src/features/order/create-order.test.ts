@@ -5,6 +5,7 @@ import {
 	devices,
 	orderComponents,
 	orders,
+	workspaceActivities,
 	workspaces,
 } from "@serviceflow/backend/shared/database";
 import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.seeds";
@@ -15,7 +16,7 @@ import {
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ulid } from "ulidx";
 import { ClientErrors } from "../client/common/client.errors";
 import { clientDrizzleRepository } from "../client/common/client-drizzle-repository";
@@ -25,7 +26,7 @@ import { deviceDrizzleRepository } from "../device/common/device-drizzle-reposit
 import { userDrizzleRepository } from "../user/common/user-drizzle-repository";
 import { workspaceDrizzleRepository } from "../workspace/common/workspace-drizzle-repository";
 import { OrderErrors } from "./common/order.errors";
-import { OrderDrizzleRepository } from "./common/order-drizzle-repository";
+import { createDrizzleOrdersUnitOfWork } from "./common/orders-drizzle.unit-of-work";
 import { type CreateOrderCommand, createOrderHandler } from "./create-order";
 
 const seedDeviceWithComponents = async (
@@ -104,11 +105,11 @@ describe("Create-Order Integration Tests", () => {
 					deviceId,
 					componentIds,
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -138,6 +139,23 @@ describe("Create-Order Integration Tests", () => {
 				.from(workspaces)
 				.where(eq(workspaces.id, workspaceId));
 			expect(workspace?.orderCount).toBe(1);
+
+			const [activity] = await tx
+				.select()
+				.from(workspaceActivities)
+				.where(
+					and(
+						eq(workspaceActivities.workspaceId, workspaceId),
+						eq(workspaceActivities.type, "ORDER_CREATED"),
+					),
+				);
+
+			expect(activity).toBeDefined();
+			expect(activity?.entityId).toBe(order?.id as string);
+			expect(activity?.entityLabel).toBe(order?.folio as string);
+			expect(activity?.actorUserId).toBe(userId);
+			expect(activity?.actorNameSnapshot).toBe("Test User Perez");
+			expect(activity?.metadata).toBeNull();
 		});
 	});
 
@@ -155,11 +173,11 @@ describe("Create-Order Integration Tests", () => {
 
 			const result = await createOrderHandler({
 				command: validCommand(workspaceId, userId, clientId, deviceId, []),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isSuccess).toBe(true);
@@ -199,11 +217,11 @@ describe("Create-Order Integration Tests", () => {
 					deviceId,
 					componentIds,
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 			expect(first.isSuccess).toBe(true);
 			expect(first.value).toBeString();
@@ -216,11 +234,11 @@ describe("Create-Order Integration Tests", () => {
 					deviceId,
 					componentIds,
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 			expect(second.isSuccess).toBe(true);
 			expect(second.value).toBeString();
@@ -258,11 +276,11 @@ describe("Create-Order Integration Tests", () => {
 					deviceId,
 					componentIds,
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -282,11 +300,11 @@ describe("Create-Order Integration Tests", () => {
 
 			const result = await createOrderHandler({
 				command: validCommand(workspaceId, userId, clientId, ulid(), []),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -318,11 +336,11 @@ describe("Create-Order Integration Tests", () => {
 				command: validCommand(workspaceId, userId, clientId, deviceId, [
 					otherDevice.componentIds[0] as string,
 				]),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -361,11 +379,11 @@ describe("Create-Order Integration Tests", () => {
 				command: validCommand(workspaceId, userId, clientId, deviceId, [
 					nonExistendComponentId,
 				]),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -398,11 +416,11 @@ describe("Create-Order Integration Tests", () => {
 						components: componentIds.map((id) => ({ id, quantity: 0 })),
 					},
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -442,11 +460,11 @@ describe("Create-Order Integration Tests", () => {
 					componentIds,
 					{ observations: "" },
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -480,11 +498,11 @@ describe("Create-Order Integration Tests", () => {
 					componentIds,
 					{ observations: "x".repeat(1001) },
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -514,11 +532,11 @@ describe("Create-Order Integration Tests", () => {
 					deviceId,
 					componentIds,
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);
@@ -551,11 +569,11 @@ describe("Create-Order Integration Tests", () => {
 					deviceId,
 					componentIds,
 				),
-				orderRepository: OrderDrizzleRepository(tx),
 				clientRepository: clientDrizzleRepository(tx),
 				deviceRepository: deviceDrizzleRepository(tx),
 				workspaceRepository: workspaceDrizzleRepository(tx),
 				userRepository: userDrizzleRepository(tx),
+				unitOfWork: createDrizzleOrdersUnitOfWork(tx),
 			});
 
 			expect(result.isFailure).toBe(true);

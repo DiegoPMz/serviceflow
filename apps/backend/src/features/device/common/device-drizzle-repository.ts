@@ -338,15 +338,6 @@ export const deviceDrizzleRepository = (
 			);
 		}
 	},
-
-	transaction: async <R>(
-		fn: (txRepo: DeviceRepository) => Promise<R>,
-	): Promise<R> => {
-		return await db.transaction(async (tx) => {
-			const txRepo = deviceDrizzleRepository(tx);
-			return await fn(txRepo);
-		});
-	},
 });
 
 const DATE_FIELDS: ReadonlySet<DeviceComponentOrderBy> = new Set(["createdAt"]);

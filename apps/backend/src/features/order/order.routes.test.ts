@@ -109,9 +109,22 @@ describe("Order HTTP Routes - Unit Tests", () => {
 			} as any,
 			userRepository: {
 				getById: mock(() =>
-					Promise.resolve({ name: "Juan", lastName: "Pérez" }),
+					Promise.resolve({
+						id: mockUserId,
+						name: "Juan",
+						lastName: "Pérez",
+					}),
 				),
 				getPictureUrlById: mock(() => Promise.resolve(null)),
+			} as any,
+			unitOfWork: {
+				transaction: mock((fn: (repos: any) => Promise<unknown>) =>
+					fn({
+						orders: mockDeps.orderRepository,
+						workspaces: mockDeps.workspaceRepository,
+						activities: { save: mock(() => Promise.resolve()) },
+					}),
+				),
 			} as any,
 			pdfGenerator: {
 				generate: mock(() => Promise.resolve(new Uint8Array([1, 2, 3]))),

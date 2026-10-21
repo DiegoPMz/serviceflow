@@ -8,34 +8,40 @@ import {
 	workspaceIdSchema,
 } from "@serviceflow/schemas";
 import Elysia, { t } from "elysia";
+import type { UserRepository } from "../user/common/user-repository";
 import type { WorkspaceAuthorization } from "../workspace/common/workspace-authorization";
 import {
 	WORKSPACE_ROLES,
 	WORKSPACE_ROLES_ARRAY,
 } from "../workspace/common/workspace-member.model";
 import type { DeviceRepository } from "./common/device-repository";
+import type { DevicesUnitOfWork } from "./common/devices.unit-of-work";
 import { paginatedDeviceComponentsHandler } from "./get-paginated-device-components";
 import { paginatedDeviceHandler } from "./paginated-devices";
 import { registerDeviceHandler } from "./register-device";
 
 export interface DeviceDependencies {
 	deviceRepository: DeviceRepository;
+	userRepository: UserRepository;
+	unitOfWork: DevicesUnitOfWork;
 	workspaceAuthorization: WorkspaceAuthorization;
 }
 
 export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 	new Elysia({ prefix: "/v1/workspaces" })
 		.use(workspaceAuthPlugin(auth, deps.workspaceAuthorization))
+		.guard({ auth: true })
 
 		// ---------------------------------------------------------------------
 		// 1. POST /v1/workspaces/:workspaceId/devices - Registrar un Dispositivo
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/devices",
-			async ({ params, body, status }) => {
+			async ({ params, body, auth, status }) => {
 				const result = await registerDeviceHandler({
 					command: {
 						workspaceId: params.workspaceId,
+						userId: auth.userId,
 						clientId: body.clientId,
 						serialNumber: body.serialNumber,
 						brand: body.brand,
@@ -43,6 +49,8 @@ export const deviceRoutes = (auth: AuthPlugin, deps: DeviceDependencies) =>
 						components: body.components,
 					},
 					repository: deps.deviceRepository,
+					userRepository: deps.userRepository,
+					unitOfWork: deps.unitOfWork,
 				});
 
 				if (result.isFailure) {

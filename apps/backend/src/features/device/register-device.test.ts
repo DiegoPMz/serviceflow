@@ -1,24 +1,34 @@
 import { describe, expect, test } from "bun:test";
 import {
+	type DatabaseClient,
 	deviceComponents,
 	devices,
+	workspaceActivities,
 } from "@serviceflow/backend/shared/database";
 import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.seeds";
+import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { DEVICE_ERROR_CODES } from "@serviceflow/error-codes";
 import { eq } from "drizzle-orm";
 import { ulid } from "ulidx";
+import { userDrizzleRepository } from "../user/common/user-drizzle-repository";
 import type { ComponentType } from "./common/device.model";
 import { deviceDrizzleRepository } from "./common/device-drizzle-repository";
-import { registerDeviceHandler } from "./register-device";
+import { createDrizzleDevicesUnitOfWork } from "./common/devices-drizzle.unit-of-work";
+import {
+	type RegisterDeviceCommand,
+	registerDeviceHandler,
+} from "./register-device";
 
 const validCommand = (
 	workspaceId: string,
+	userId: string,
 	clientId: string,
-	overrides: Record<string, unknown> = {},
-) => ({
+	overrides: Partial<RegisterDeviceCommand> = {},
+): RegisterDeviceCommand => ({
 	workspaceId,
+	userId,
 	clientId,
 	serialNumber: `SN-${ulid()}`,
 	brand: "Samsung",
@@ -29,17 +39,29 @@ const validCommand = (
 	...overrides,
 });
 
+const registerDevice = (tx: DatabaseClient, command: RegisterDeviceCommand) =>
+	registerDeviceHandler({
+		command,
+		repository: deviceDrizzleRepository(tx),
+		userRepository: userDrizzleRepository(tx),
+		unitOfWork: createDrizzleDevicesUnitOfWork(tx),
+	});
+
+const getWorkspaceActivities = (tx: DatabaseClient, workspaceId: string) =>
+	tx
+		.select()
+		.from(workspaceActivities)
+		.where(eq(workspaceActivities.workspaceId, workspaceId));
+
 describe("Register-Device Integration Tests", () => {
 	test("Should register a device with a component and persist both", async () => {
 		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
-			const command = validCommand(workspaceId, clientId);
+			const command = validCommand(workspaceId, userId, clientId);
 
-			const result = await registerDeviceHandler({
-				command,
-				repository: deviceDrizzleRepository(tx),
-			});
+			const result = await registerDevice(tx, command);
 
 			expect(result.isSuccess).toBe(true);
 
@@ -68,24 +90,55 @@ describe("Register-Device Integration Tests", () => {
 		});
 	});
 
-	test("Should return DEVICE_ALREADY_EXISTS when serial is already registered in the workspace", async () => {
+	test("Should record DEVICE_REGISTERED and CONSUMABLE_REGISTERED activities for a device with consumables", async () => {
 		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
-			const command = validCommand(workspaceId, clientId);
+			const command = validCommand(workspaceId, userId, clientId);
 
-			await registerDeviceHandler({
-				command,
-				repository: deviceDrizzleRepository(tx),
-			});
+			const result = await registerDevice(tx, command);
 
-			const result = await registerDeviceHandler({
-				command: {
-					...validCommand(workspaceId, clientId),
+			expect(result.isSuccess).toBe(true);
+
+			const activities = await getWorkspaceActivities(tx, workspaceId);
+
+			expect(activities.length).toBe(2);
+
+			const deviceActivity = activities.find(
+				(activity) => activity.type === "DEVICE_REGISTERED",
+			);
+			const consumablesActivity = activities.find(
+				(activity) => activity.type === "CONSUMABLE_REGISTERED",
+			);
+
+			expect(deviceActivity?.entityId).toBe(result.value as string);
+			expect(deviceActivity?.entityLabel).toBe("Samsung Galaxy S21");
+			expect(deviceActivity?.actorUserId).toBe(userId);
+			expect(deviceActivity?.actorNameSnapshot).toBe("Test User Perez");
+			expect(deviceActivity?.metadata).toBeNull();
+
+			expect(consumablesActivity?.entityId).toBe(result.value as string);
+			expect(consumablesActivity?.entityLabel).toBe("Samsung Galaxy S21");
+			expect(consumablesActivity?.metadata).toEqual({ count: 1 });
+		});
+	});
+
+	test("Should return DEVICE_ALREADY_EXISTS when serial is already registered in the workspace", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+			const workspaceId = await seedWorkspace(tx);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
+			const command = validCommand(workspaceId, userId, clientId);
+
+			await registerDevice(tx, command);
+
+			const result = await registerDevice(
+				tx,
+				validCommand(workspaceId, userId, clientId, {
 					serialNumber: command.serialNumber,
-				},
-				repository: deviceDrizzleRepository(tx),
-			});
+				}),
+			);
 
 			expect(result.isFailure).toBe(true);
 			expect(result.error.code).toBe(DEVICE_ERROR_CODES.ALREADY_EXISTS);
@@ -95,34 +148,43 @@ describe("Register-Device Integration Tests", () => {
 				.from(devices)
 				.where(eq(devices.serialNumber, command.serialNumber));
 			expect(rows.length).toBe(1);
+
+			const activities = await getWorkspaceActivities(tx, workspaceId);
+			expect(activities.length).toBe(2);
 		});
 	});
 
 	test("Should return DEVICE_BRAND_REQUIRED when brand is empty", async () => {
 		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
-			const result = await registerDeviceHandler({
-				command: validCommand(workspaceId, clientId, { brand: "" }),
-				repository: deviceDrizzleRepository(tx),
-			});
+			const result = await registerDevice(
+				tx,
+				validCommand(workspaceId, userId, clientId, { brand: "" }),
+			);
 
 			expect(result.isFailure).toBe(true);
 			expect(result.error.code).toBe(DEVICE_ERROR_CODES.BRAND_REQUIRED);
 
 			const rows = await tx.select().from(devices);
 			expect(rows.length).toBe(0);
+
+			const activities = await getWorkspaceActivities(tx, workspaceId);
+			expect(activities.length).toBe(0);
 		});
 	});
 
 	test("Should return DEVICE_COMPONENT_NAME_REQUIRED when component name is empty", async () => {
 		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
-			const result = await registerDeviceHandler({
-				command: validCommand(workspaceId, clientId, {
+			const result = await registerDevice(
+				tx,
+				validCommand(workspaceId, userId, clientId, {
 					components: [
 						{
 							name: "",
@@ -131,8 +193,7 @@ describe("Register-Device Integration Tests", () => {
 						},
 					],
 				}),
-				repository: deviceDrizzleRepository(tx),
-			});
+			);
 
 			expect(result.isFailure).toBe(true);
 			expect(result.error.code).toBe(
@@ -141,19 +202,42 @@ describe("Register-Device Integration Tests", () => {
 
 			const rows = await tx.select().from(devices);
 			expect(rows.length).toBe(0);
+
+			const activities = await getWorkspaceActivities(tx, workspaceId);
+			expect(activities.length).toBe(0);
 		});
 	});
 
-	test("Should register a device without components", async () => {
+	test("Should return USER_NOT_FOUND and not persist anything when the user does not exist", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
-			const command = validCommand(workspaceId, clientId, { components: [] });
-			const result = await registerDeviceHandler({
-				command,
-				repository: deviceDrizzleRepository(tx),
+			const result = await registerDevice(
+				tx,
+				validCommand(workspaceId, ulid(), clientId),
+			);
+
+			expect(result.isFailure).toBe(true);
+
+			const rows = await tx.select().from(devices);
+			expect(rows.length).toBe(0);
+
+			const activities = await getWorkspaceActivities(tx, workspaceId);
+			expect(activities.length).toBe(0);
+		});
+	});
+
+	test("Should register a device without components and only record DEVICE_REGISTERED", async () => {
+		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+			const workspaceId = await seedWorkspace(tx);
+			const clientId = (await seedClient(tx, { workspaceId })).id;
+
+			const command = validCommand(workspaceId, userId, clientId, {
+				components: [],
 			});
+			const result = await registerDevice(tx, command);
 
 			expect(result.isSuccess).toBe(true);
 
@@ -170,15 +254,20 @@ describe("Register-Device Integration Tests", () => {
 				.from(deviceComponents)
 				.where(eq(deviceComponents.deviceId, device?.id as string));
 			expect(components.length).toBe(0);
+
+			const activities = await getWorkspaceActivities(tx, workspaceId);
+			expect(activities.length).toBe(1);
+			expect(activities[0]?.type).toBe("DEVICE_REGISTERED");
 		});
 	});
 
 	test("Should register a device with multiple components of different types", async () => {
 		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
 			const workspaceId = await seedWorkspace(tx);
 			const clientId = (await seedClient(tx, { workspaceId })).id;
 
-			const command = validCommand(workspaceId, clientId, {
+			const command = validCommand(workspaceId, userId, clientId, {
 				components: [
 					{
 						name: "Batería",
@@ -197,10 +286,7 @@ describe("Register-Device Integration Tests", () => {
 					},
 				],
 			});
-			const result = await registerDeviceHandler({
-				command,
-				repository: deviceDrizzleRepository(tx),
-			});
+			const result = await registerDevice(tx, command);
 
 			expect(result.isSuccess).toBe(true);
 
@@ -217,11 +303,19 @@ describe("Register-Device Integration Tests", () => {
 			expect(components.length).toBe(3);
 			const types = components.map((c) => c.type).sort();
 			expect(types).toEqual(["other", "replacement_part", "supply"]);
+
+			const activities = await getWorkspaceActivities(tx, workspaceId);
+			const consumablesActivity = activities.find(
+				(activity) => activity.type === "CONSUMABLE_REGISTERED",
+			);
+			expect(consumablesActivity?.metadata).toEqual({ count: 1 });
 		});
 	});
 
 	test("Should allow the same serial number in a different workspace", async () => {
 		await runTestInTransaction(async (tx) => {
+			const userId = await seedUser(tx);
+
 			const workspaceId1 = await seedWorkspace(tx, { name: "TEST1" });
 			const clientId1 = (await seedClient(tx, { workspaceId: workspaceId1 }))
 				.id;
@@ -232,20 +326,20 @@ describe("Register-Device Integration Tests", () => {
 
 			const serial = `SN-SHARED`;
 
-			const first = await registerDeviceHandler({
-				command: validCommand(workspaceId1, clientId1, {
+			const first = await registerDevice(
+				tx,
+				validCommand(workspaceId1, userId, clientId1, {
 					serialNumber: serial,
 				}),
-				repository: deviceDrizzleRepository(tx),
-			});
+			);
 			expect(first.isSuccess).toBe(true);
 
-			const second = await registerDeviceHandler({
-				command: validCommand(workspaceId2, clientId2, {
+			const second = await registerDevice(
+				tx,
+				validCommand(workspaceId2, userId, clientId2, {
 					serialNumber: serial,
 				}),
-				repository: deviceDrizzleRepository(tx),
-			});
+			);
 			expect(second.isSuccess).toBe(true);
 
 			const rows = await tx
@@ -256,6 +350,23 @@ describe("Register-Device Integration Tests", () => {
 
 			const inWorkspace2 = rows.filter((r) => r.workspaceId === workspaceId2);
 			expect(inWorkspace2.length).toBe(1);
+
+			const activitiesWorkspace1 = await getWorkspaceActivities(
+				tx,
+				workspaceId1,
+			);
+			const activitiesWorkspace2 = await getWorkspaceActivities(
+				tx,
+				workspaceId2,
+			);
+
+			expect(activitiesWorkspace1.length).toBe(2);
+			expect(activitiesWorkspace2.length).toBe(2);
+			expect(
+				activitiesWorkspace2.filter(
+					(activity) => activity.type === "DEVICE_REGISTERED",
+				).length,
+			).toBe(1);
 		});
 	});
 });

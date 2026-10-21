@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	ACTIVITY_ERROR_CODES,
 	CLIENT_ERROR_CODES,
 	DEVICE_ERROR_CODES,
 	ORDER_ERROR_CODES,
@@ -18,9 +19,7 @@ function assertUniqueValues(codes: Record<string, string>, moduleName: string) {
 
 describe("WORKSPACE_ERROR_CODES", () => {
 	test("preserves existing workspace codes", () => {
-		expect(WORKSPACE_ERROR_CODES.NAME_REQUIRED).toBe(
-			"WORKSPACE_NAME_REQUIRED",
-		);
+		expect(WORKSPACE_ERROR_CODES.NAME_REQUIRED).toBe("WORKSPACE_NAME_REQUIRED");
 		expect(WORKSPACE_ERROR_CODES.PREFIX_INVALID_FORMAT).toBe(
 			"WORKSPACE_PREFIX_INVALID_FORMAT",
 		);
@@ -34,9 +33,7 @@ describe("WORKSPACE_ERROR_CODES", () => {
 			"MEMBER_INVALID_ROLE",
 		);
 		expect(WORKSPACE_ERROR_CODES.NOT_A_MEMBER).toBe("NOT_A_MEMBER");
-		expect(WORKSPACE_ERROR_CODES.INVITATION_EXPIRED).toBe(
-			"INVITATION_EXPIRED",
-		);
+		expect(WORKSPACE_ERROR_CODES.INVITATION_EXPIRED).toBe("INVITATION_EXPIRED");
 		expect(WORKSPACE_ERROR_CODES.INSUFFICIENT_PERMISSIONS).toBe(
 			"INSUFFICIENT_PERMISSIONS",
 		);
@@ -97,5 +94,21 @@ describe("USER_ERROR_CODES", () => {
 
 	test("has unique values", () => {
 		assertUniqueValues(USER_ERROR_CODES, "user");
+	});
+});
+
+describe("ACTIVITY_ERROR_CODES", () => {
+	test("preserves existing activity codes", () => {
+		expect(ACTIVITY_ERROR_CODES.WORKSPACE_ID_REQUIRED).toBe(
+			"ACTIVITY_WORKSPACE_ID_REQUIRED",
+		);
+		expect(ACTIVITY_ERROR_CODES.TYPE_INVALID).toBe("ACTIVITY_TYPE_INVALID");
+		expect(ACTIVITY_ERROR_CODES.LIMIT_OUT_OF_RANGE).toBe(
+			"ACTIVITY_LIMIT_OUT_OF_RANGE",
+		);
+	});
+
+	test("has unique values", () => {
+		assertUniqueValues(ACTIVITY_ERROR_CODES, "activity");
 	});
 });

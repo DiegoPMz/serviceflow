@@ -6,39 +6,47 @@ import {
 	workspaceIdSchema,
 } from "@serviceflow/schemas";
 import Elysia, { t } from "elysia";
+import type { UserRepository } from "../user/common/user-repository";
 import type { WorkspaceAuthorization } from "../workspace/common/workspace-authorization";
 import {
 	WORKSPACE_ROLES,
 	WORKSPACE_ROLES_ARRAY,
 } from "../workspace/common/workspace-member.model";
 import type { ClientRepository } from "./common/client-repository";
+import type { ClientsUnitOfWork } from "./common/clients.unit-of-work";
 import { paginatedClientHandler } from "./paginated-clients";
 import { registerClientHandler } from "./register-client";
 
 export interface ClientDependencies {
 	clientRepository: ClientRepository;
+	userRepository: UserRepository;
+	unitOfWork: ClientsUnitOfWork;
 	workspaceAuthorization: WorkspaceAuthorization;
 }
 
 export const clientRoutes = (auth: AuthPlugin, deps: ClientDependencies) =>
 	new Elysia({ prefix: "/v1/workspaces" })
 		.use(workspaceAuthPlugin(auth, deps.workspaceAuthorization))
+		.guard({ auth: true })
 
 		// ---------------------------------------------------------------------
 		// 1. POST /v1/workspaces/:workspaceId/clients - Registrar un Cliente
 		// ---------------------------------------------------------------------
 		.post(
 			"/:workspaceId/clients",
-			async ({ params, body, status }) => {
+			async ({ params, body, auth, status }) => {
 				const result = await registerClientHandler({
 					command: {
 						workspaceId: params.workspaceId,
+						userId: auth.userId,
 						name: body.name,
 						email: body.email,
 						phoneNumber: body.phoneNumber,
 						location: body.location,
 					},
 					repository: deps.clientRepository,
+					userRepository: deps.userRepository,
+					unitOfWork: deps.unitOfWork,
 				});
 
 				if (result.isFailure) {
