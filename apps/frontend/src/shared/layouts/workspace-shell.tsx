@@ -37,16 +37,16 @@ export function WorkspaceShell({ children }: PropsWithChildren) {
 	const { data: workspace } = useGetWorkspaceSummary(eden, { workspaceId });
 
 	return (
-		<div className="relative h-screen overflow-hidden bg-background font-body text-foreground antialiased">
+		<div className="relative h-screen overflow-hidden bg-background  text-foreground antialiased">
 			{/* Ambient background */}
 			<div
-				className="pointer-events-none absolute -left-28 -top-28 size-110 rounded-full bg-primary/15 blur-3xl"
+				className="pointer-events-none absolute -left-28 -top-28 size-110 rounded-full bg-primary/10 blur-3xl"
 				style={{
 					animation: "drift 18s cubic-bezier(0.32,0.72,0,1) infinite",
 				}}
 			/>
 			<div
-				className="pointer-events-none absolute right-0 top-1/3 size-90 rounded-full bg-success/10 blur-3xl"
+				className="pointer-events-none absolute right-0 top-1/3 size-90 rounded-full bg-success/5 blur-3xl"
 				style={{
 					animation: "drift 18s cubic-bezier(0.32,0.72,0,1) infinite",
 					animationDelay: "-7s",
@@ -63,13 +63,11 @@ export function WorkspaceShell({ children }: PropsWithChildren) {
 						aria-label="ServiceFlow - Inicio"
 					>
 						<div className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-foreground text-background shadow-sm">
-							<span className="font-display text-sm font-bold tracking-tight">
-								SF
-							</span>
+							<span className="text-sm font-bold tracking-tight">SF</span>
 						</div>
 
 						<div className="min-w-0">
-							<p className="truncate font-display text-base font-semibold leading-none tracking-tight">
+							<p className="truncate text-base font-semibold leading-none tracking-tight">
 								ServiceFlow
 							</p>
 
@@ -238,7 +236,7 @@ export function WorkspaceShell({ children }: PropsWithChildren) {
 				</aside>
 
 				{/* Main content */}
-				<div className="relative min-w-0 flex-1 overflow-y-auto">
+				<div className="relative min-w-0 flex-1 overflow-y-auto mb-18.25 lg:mb-0 ">
 					{/* Header */}
 					<header className="sticky top-0 z-20 flex h-14 items-center border-b border-border bg-background/80 px-4 backdrop-blur-xl lg:px-8">
 						{/* Mobile / tablet */}
@@ -279,7 +277,6 @@ export function WorkspaceShell({ children }: PropsWithChildren) {
 			</div>
 
 			{/* Mobile bottom navigation */}
-
 			<nav
 				aria-label="Navegación móvil"
 				className={cn(

@@ -169,6 +169,8 @@
   border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
   box-shadow: 0 24px 48px -24px
     color-mix(in oklab, var(--foreground) 25%, transparent);
+
+  overflow: hidden;
 }
 
 .dark .glass-panel {
