@@ -21,6 +21,14 @@ export const orderObservationsSchema = Type.String({
 	maxLength: 1000,
 });
 
+export const orderServiceTypeSchema = Type.Union([
+	Type.Literal("preventive_maintenance"),
+	Type.Literal("corrective_maintenance"),
+	Type.Literal("diagnostics"),
+	Type.Literal("installation"),
+	Type.Literal("other"),
+]);
+
 export const orderQuantitySchema = Type.Integer({ minimum: 1 });
 
 export const orderStatusSchema = Type.Union([

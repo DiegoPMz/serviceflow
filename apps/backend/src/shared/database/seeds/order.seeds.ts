@@ -19,20 +19,16 @@ export const seedOrder = async (
 			deviceId: overrides?.deviceId ?? "",
 			userId: overrides?.userId ?? "",
 			clientNameSnapshot: overrides?.clientNameSnapshot ?? "Test Client",
-			clientEmailSnapshot:
-				overrides?.clientEmailSnapshot ?? "client@test.com",
-			clientPhoneSnapshot:
-				overrides?.clientPhoneSnapshot ?? "+5215500000000",
-			clientLocationSnapshot:
-				overrides?.clientLocationSnapshot ?? "CDMX",
-			deviceBrandSnapshot:
-				overrides?.deviceBrandSnapshot ?? "Samsung",
-			deviceModelSnapshot:
-				overrides?.deviceModelSnapshot ?? "Galaxy S21",
+			clientEmailSnapshot: overrides?.clientEmailSnapshot ?? "client@test.com",
+			clientPhoneSnapshot: overrides?.clientPhoneSnapshot ?? "+5215500000000",
+			clientLocationSnapshot: overrides?.clientLocationSnapshot ?? "CDMX",
+			deviceBrandSnapshot: overrides?.deviceBrandSnapshot ?? "Samsung",
+			deviceModelSnapshot: overrides?.deviceModelSnapshot ?? "Galaxy S21",
 			deviceSerialNumberSnapshot:
 				overrides?.deviceSerialNumberSnapshot ?? "SN-1234",
 			userNameSnapshot: overrides?.userNameSnapshot ?? "Test User",
 			observations: overrides?.observations ?? "Test observations",
+			serviceType: overrides?.serviceType ?? "preventive_maintenance",
 			documentKey: overrides?.documentKey ?? null,
 			createdAt: now,
 			updatedAt: now,

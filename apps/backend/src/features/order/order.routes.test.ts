@@ -36,6 +36,7 @@ const validCreateBody = {
 	clientId: "01H8X5Y9Z0123456789ABCDEF3",
 	deviceId: "01H8X5Y9Z0123456789ABCDEF4",
 	observations: "Pantalla rota",
+	serviceType: "preventive_maintenance",
 	components: [{ id: "01H8X5Y9Z0123456789ABCDEF5", quantity: 1 }],
 };
 
@@ -54,6 +55,7 @@ const buildOrder = (
 		userId: mockUserId,
 		workspaceId: validWorkspaceId,
 		observations: "Pantalla rota",
+		serviceType: "preventive_maintenance",
 		folio: "TEST1",
 		clientNameSnapshot: "Juan Pérez",
 		clientEmailSnapshot: "juan@example.com",
@@ -163,6 +165,46 @@ describe("Order HTTP Routes - Unit Tests", () => {
 						body: JSON.stringify({
 							...validCreateBody,
 							observations: "",
+						}),
+					},
+				),
+			);
+
+			expect(response.status).toBe(422);
+		});
+
+		test("should return 422 when the serviceType is missing", async () => {
+			const app = createTestApp();
+
+			const { serviceType: _serviceType, ...bodyWithoutServiceType } =
+				validCreateBody;
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/orders`,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(bodyWithoutServiceType),
+					},
+				),
+			);
+
+			expect(response.status).toBe(422);
+		});
+
+		test("should return 422 when the serviceType is not an allowed value", async () => {
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/orders`,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							...validCreateBody,
+							serviceType: "repair",
 						}),
 					},
 				),

@@ -81,6 +81,7 @@ const validCommand = (
 	deviceId,
 	components: componentIds.map((id) => ({ id, quantity: 1 })),
 	observations: "Pantalla rota",
+	serviceType: "preventive_maintenance",
 	...overrides,
 });
 

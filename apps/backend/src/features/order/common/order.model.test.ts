@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ORDER_ERROR_CODES } from "@serviceflow/error-codes";
-import { Folio, Order } from "./order.model";
+import { Folio, ORDER_SERVICE_TYPES_ARRAY, Order } from "./order.model";
 
 const ULID_REGEX = /^[0-9A-Z]{26}$/;
 
@@ -10,23 +10,25 @@ const validFolio = () =>
 		workspacePrefix: "TEST",
 	}).value;
 
-const validOrderData = (overrides: Record<string, unknown> = {}) => ({
-	clientId: "client-1",
-	deviceId: "device-1",
-	userId: "user-1",
-	workspaceId: "ws-1",
-	observations: "Pantalla rota",
-	folio: validFolio(),
-	clientNameSnapshot: "Client Name",
-	clientEmailSnapshot: "client@example.com",
-	clientPhoneSnapshot: "+5215551234567",
-	clientLocationSnapshot: "CDMX",
-	deviceBrandSnapshot: "Samsung",
-	deviceModelSnapshot: "Galaxy S21",
-	deviceSerialNumberSnapshot: "SN-1",
-	userNameSnapshot: "David",
-	...overrides,
-});
+const validOrderData = (overrides: Record<string, unknown> = {}) =>
+	({
+		clientId: "client-1",
+		deviceId: "device-1",
+		userId: "user-1",
+		workspaceId: "ws-1",
+		observations: "Pantalla rota",
+		serviceType: "preventive_maintenance",
+		folio: validFolio(),
+		clientNameSnapshot: "Client Name",
+		clientEmailSnapshot: "client@example.com",
+		clientPhoneSnapshot: "+5215551234567",
+		clientLocationSnapshot: "CDMX",
+		deviceBrandSnapshot: "Samsung",
+		deviceModelSnapshot: "Galaxy S21",
+		deviceSerialNumberSnapshot: "SN-1",
+		userNameSnapshot: "David",
+		...overrides,
+	}) as Parameters<typeof Order.create>[0];
 
 describe("Folio.create", () => {
 	test("Should build value as prefix + (orderCount + 1) when count is 0", () => {
@@ -53,7 +55,9 @@ describe("Folio.create", () => {
 			workspacePrefix: "TEST",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NAN);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NAN,
+		);
 	});
 
 	test("Should return FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE when count is negative", () => {
@@ -62,7 +66,9 @@ describe("Folio.create", () => {
 			workspacePrefix: "TEST",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.FOLIO_WORKSPACE_ORDER_COUNT_NEGATIVE,
+		);
 	});
 
 	test("Should return FOLIO_WORKSPACE_PREFIX_REQUIRED when prefix is empty", () => {
@@ -71,7 +77,9 @@ describe("Folio.create", () => {
 			workspacePrefix: "",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.FOLIO_WORKSPACE_PREFIX_REQUIRED);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.FOLIO_WORKSPACE_PREFIX_REQUIRED,
+		);
 	});
 });
 
@@ -89,6 +97,7 @@ describe("Order.create", () => {
 		expect(order.userId).toBe("user-1");
 		expect(order.workspaceId).toBe("ws-1");
 		expect(order.observations).toBe("Pantalla rota");
+		expect(order.serviceType).toBe("preventive_maintenance");
 		expect(order.clientNameSnapshot).toBe("Client Name");
 		expect(order.clientEmailSnapshot).toBe("client@example.com");
 		expect(order.clientPhoneSnapshot).toBe("+5215551234567");
@@ -117,7 +126,9 @@ describe("Order.create", () => {
 	test("Should return ORDER_ISSUE_OBSERVATION_REQUIRED for empty observations", () => {
 		const result = Order.create(validOrderData({ observations: "" }));
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.ISSUE_OBSERVATION_REQUIRED);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.ISSUE_OBSERVATION_REQUIRED,
+		);
 	});
 
 	test("Should return ORDER_ISSUE_OBSERVATION_TOO_LONG when observations exceed 1000 chars", () => {
@@ -125,7 +136,9 @@ describe("Order.create", () => {
 			validOrderData({ observations: "x".repeat(1001) }),
 		);
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.ISSUE_OBSERVATION_TOO_LONG);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.ISSUE_OBSERVATION_TOO_LONG,
+		);
 	});
 
 	test("Should succeed when observations are exactly 1000 chars", () => {
@@ -133,6 +146,20 @@ describe("Order.create", () => {
 			validOrderData({ observations: "x".repeat(1000) }),
 		);
 		expect(result.isSuccess).toBe(true);
+	});
+
+	test("Should return ORDER_SERVICE_TYPE_REQUIRED for an unknown serviceType", () => {
+		const result = Order.create(validOrderData({ serviceType: "unknown" }));
+		expect(result.isFailure).toBe(true);
+		expect(result.error.code).toBe(ORDER_ERROR_CODES.SERVICE_TYPE_REQUIRED);
+	});
+
+	test("Should create an order for every allowed serviceType", () => {
+		for (const serviceType of ORDER_SERVICE_TYPES_ARRAY) {
+			const result = Order.create(validOrderData({ serviceType }));
+			expect(result.isSuccess).toBe(true);
+			expect(result.value.serviceType).toBe(serviceType);
+		}
 	});
 
 	test("Should return ORDER_WORKSPACE_ID_REQUIRED for empty workspaceId", () => {
@@ -242,7 +269,9 @@ describe("Order.addComponent", () => {
 			type: "supply",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID,
+		);
 	});
 
 	test("Should return ORDER_COMPONENT_QUANTITY_INVALID for negative quantity", () => {
@@ -254,7 +283,9 @@ describe("Order.addComponent", () => {
 			type: "supply",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID,
+		);
 	});
 
 	test("Should return ORDER_COMPONENT_QUANTITY_INVALID for non-integer quantity", () => {
@@ -266,7 +297,9 @@ describe("Order.addComponent", () => {
 			type: "supply",
 		});
 		expect(result.isFailure).toBe(true);
-		expect(result.error.code).toBe(ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID);
+		expect(result.error.code).toBe(
+			ORDER_ERROR_CODES.COMPONENT_QUANTITY_INVALID,
+		);
 	});
 
 	test("Should return a cloned array from orderComponents that does not leak mutations", () => {

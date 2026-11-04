@@ -1,9 +1,11 @@
 import { Result } from "@serviceflow/backend/shared/result";
+import { PHONE_REGEX } from "@serviceflow/schemas";
 import { ulid } from "ulidx";
 import { ClientErrors } from "./client.errors";
 
+export { PHONE_REGEX };
+
 export const EMAIL_REGEX: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const PHONE_REGEX: RegExp = /^\+[1-9]\d{1,14}$/;
 
 type CreateClient = Omit<Client, "id" | "createdAt" | "updatedAt">;
 

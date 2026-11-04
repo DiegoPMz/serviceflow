@@ -70,6 +70,7 @@ export const createR2PrivateDocumentStorage = (
 			Bucket: config.bucketName,
 			Key: values.key,
 			ResponseContentDisposition: `attachment; filename="${values.fileName}"`,
+			ResponseContentType: "application/pdf",
 		});
 
 		return getSignedUrl(s3, command, { expiresIn: values.expiresIn ?? 300 });

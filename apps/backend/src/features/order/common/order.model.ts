@@ -11,6 +11,16 @@ export const ORDER_STATUSES_ARRAY = [
 
 export type OrderStatus = (typeof ORDER_STATUSES_ARRAY)[number];
 
+export const ORDER_SERVICE_TYPES_ARRAY = [
+	"preventive_maintenance",
+	"corrective_maintenance",
+	"diagnostics",
+	"installation",
+	"other",
+] as const;
+
+export type OrderServiceType = (typeof ORDER_SERVICE_TYPES_ARRAY)[number];
+
 type CreateOrderData = Omit<
 	Order,
 	| "id"
@@ -45,6 +55,7 @@ export class Order {
 		public readonly workspaceId: string,
 
 		public readonly observations: string,
+		public readonly serviceType: OrderServiceType,
 		public readonly folio: string,
 
 		public readonly clientNameSnapshot: string,
@@ -136,6 +147,10 @@ export class Order {
 			return Result.failure(OrderErrors.ORDER_ISSUE_OBSERVATION_TOO_LONG);
 		}
 
+		if (!ORDER_SERVICE_TYPES_ARRAY.includes(data.serviceType)) {
+			return Result.failure(OrderErrors.ORDER_SERVICE_TYPE_REQUIRED);
+		}
+
 		if (!data.workspaceId || data.workspaceId.trim().length < 1) {
 			return Result.failure(OrderErrors.ORDER_WORKSPACE_ID_REQUIRED);
 		}
@@ -161,6 +176,7 @@ export class Order {
 				data.userId,
 				data.workspaceId,
 				data.observations,
+				data.serviceType,
 				data.folio.value,
 				data.clientNameSnapshot,
 				data.clientEmailSnapshot,
@@ -187,6 +203,7 @@ export class Order {
 			entity.userId,
 			entity.workspaceId,
 			entity.observations,
+			entity.serviceType,
 			entity.folio,
 			entity.clientNameSnapshot,
 			entity.clientEmailSnapshot,
@@ -212,6 +229,7 @@ interface OrderReconstitute {
 	userId: string;
 	workspaceId: string;
 	observations: string;
+	serviceType: OrderServiceType;
 	folio: string;
 	clientNameSnapshot: string;
 	clientEmailSnapshot: string;

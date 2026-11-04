@@ -186,6 +186,26 @@ describe("Client HTTP Routes - Unit Tests", () => {
 			const body = await response.json();
 			expect(body).toHaveProperty("clientId");
 		});
+
+		test("should accept a 10-digit phone number without +", async () => {
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/clients`,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							...validBody,
+							phoneNumber: "5512345678",
+						}),
+					},
+				),
+			);
+
+			expect(response.status).toBe(201);
+		});
 	});
 
 	// =========================================================================

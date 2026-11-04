@@ -176,10 +176,10 @@ describe("User.create", () => {
 		expect(result.error.code).toBe(UserErrors.USER_PHONE_TOO_LONG.code);
 	});
 
-	test("Should fail when phone is not E.164", () => {
+	test("Should fail when phone has an invalid format", () => {
 		const result = User.create({
 			...validUserData(),
-			phone: "5551234567",
+			phone: "555123456",
 		});
 		expect(result.isFailure).toBe(true);
 		expect(result.error.code).toBe(UserErrors.USER_PHONE_INVALID.code);
@@ -188,8 +188,17 @@ describe("User.create", () => {
 	test("Should validate phone with PHONE_REGEX", () => {
 		expect(PHONE_REGEX.test("+5215551234567")).toBe(true);
 		expect(PHONE_REGEX.test("+1234567890")).toBe(true);
-		expect(PHONE_REGEX.test("5551234567")).toBe(false);
+		expect(PHONE_REGEX.test("5551234567")).toBe(true);
+		expect(PHONE_REGEX.test("555123456")).toBe(false);
 		expect(PHONE_REGEX.test("+1234567890123456")).toBe(false);
+	});
+
+	test("Should succeed with a 10-digit phone without +", () => {
+		const result = User.create({
+			...validUserData(),
+			phone: "5551234567",
+		});
+		expect(result.isSuccess).toBe(true);
 	});
 
 	test("Should succeed with a valid 15-digit E.164 phone", () => {

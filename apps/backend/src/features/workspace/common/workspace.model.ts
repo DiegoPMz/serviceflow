@@ -1,6 +1,9 @@
 import { Result, Updated } from "@serviceflow/backend/shared/result";
+import { PHONE_REGEX } from "@serviceflow/schemas";
 import { ulid } from "ulidx";
 import { workspaceErrors } from "./workspace.errors";
+
+export { PHONE_REGEX };
 
 export interface CreateWorkspaceData {
 	name: string;
@@ -8,7 +11,6 @@ export interface CreateWorkspaceData {
 	workspaceCompany: WorkspaceCompany;
 }
 
-export const PHONE_REGEX: RegExp = /^[1-9]\d{9}$/;
 export const PREFIX_REGEX: RegExp = /^[A-Z]{4}$/;
 export const EMAIL_REGEX: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

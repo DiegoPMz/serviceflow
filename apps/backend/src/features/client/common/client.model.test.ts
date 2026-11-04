@@ -120,18 +120,28 @@ describe("Client.create", () => {
 		expect(result.error.code).toBe(ClientErrors.CLIENT_PHONE_REQUIRED.code);
 	});
 
-	test("Should fail when phoneNumber is not E.164", () => {
+	test("Should accept a 10-digit phoneNumber without +", () => {
 		const result = Client.create({
 			...validClientData(),
-			phoneNumber: "5551234567",
+			phoneNumber: "5512345678",
+		});
+		expect(result.isSuccess).toBe(true);
+		expect(result.value.phoneNumber).toBe("5512345678");
+	});
+
+	test("Should fail when phoneNumber has an invalid format", () => {
+		const result = Client.create({
+			...validClientData(),
+			phoneNumber: "551234567",
 		});
 		expect(result.isFailure).toBe(true);
 		expect(result.error.code).toBe(ClientErrors.CLIENT_PHONE_INVALID.code);
 	});
 
 	test("Should validate phoneNumber with PHONE_REGEX", () => {
+		expect(PHONE_REGEX.test("5512345678")).toBe(true);
 		expect(PHONE_REGEX.test("+5215551234567")).toBe(true);
-		expect(PHONE_REGEX.test("5551234567")).toBe(false);
+		expect(PHONE_REGEX.test("55123456789")).toBe(false);
 		expect(PHONE_REGEX.test("+1234567890123456")).toBe(false);
 	});
 

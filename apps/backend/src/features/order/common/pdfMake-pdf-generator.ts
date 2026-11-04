@@ -1,8 +1,20 @@
 import pdfmake from "pdfmake";
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import type { WorkspaceCompany } from "../../workspace/common/workspace.model";
-import type { Order, OrderComponentType } from "./order.model";
+import type {
+	Order,
+	OrderComponentType,
+	OrderServiceType,
+} from "./order.model";
 import type { PdfGenerator, PdfGeneratorImages } from "./pdf-generator";
+
+const ORDER_SERVICE_TYPE_LABELS: Record<OrderServiceType, string> = {
+	preventive_maintenance: "Mantenimiento preventivo",
+	corrective_maintenance: "Reparación",
+	diagnostics: "Diagnóstico",
+	installation: "Instalación y configuración",
+	other: "Otro",
+};
 
 const fonts = {
 	Helvetica: {
@@ -352,6 +364,16 @@ export const PdfMakeOrderPdfGenerator: PdfGenerator = {
 						],
 					},
 					margin: [100, 0, 100, 0], // Centramos la caja de la imagen
+				},
+
+				// ------------------------------------------
+				// TIPO DE SERVICIO
+				// ------------------------------------------
+				{ text: "Tipo de servicio:", bold: true, margin: [0, 12, 0, 4] },
+				{
+					text: ORDER_SERVICE_TYPE_LABELS[order.serviceType],
+					fontSize: 8.5,
+					margin: [4, 0, 4, 0],
 				},
 
 				// ------------------------------------------

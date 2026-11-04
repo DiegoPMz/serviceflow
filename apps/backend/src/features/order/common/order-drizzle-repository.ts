@@ -7,7 +7,7 @@ import {
 } from "@serviceflow/backend/shared/database";
 import { and, asc, desc, eq, like, or } from "drizzle-orm";
 import type { ComponentType } from "../../device/common/device.model";
-import { Order, type OrderStatus } from "./order.model";
+import { Order, type OrderServiceType, type OrderStatus } from "./order.model";
 import type {
 	OffsetPagination,
 	OrderPaginationParams,
@@ -29,6 +29,7 @@ export const OrderDrizzleRepository = (
 
 			documentKey: null,
 			observations: model.observations,
+			serviceType: model.serviceType,
 			createdAt: model.createdAt,
 			updatedAt: model.updatedAt,
 
@@ -74,6 +75,7 @@ export const OrderDrizzleRepository = (
 			userId: entity.userId,
 			workspaceId: entity.workspaceId,
 			observations: entity.observations,
+			serviceType: entity.serviceType as OrderServiceType,
 			folio: entity.folio,
 
 			clientNameSnapshot: entity.clientNameSnapshot,

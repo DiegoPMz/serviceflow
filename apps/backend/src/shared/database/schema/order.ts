@@ -1,4 +1,7 @@
-import { ORDER_STATUSES_ARRAY } from "@serviceflow/backend/features/order/common/order.model";
+import {
+	ORDER_SERVICE_TYPES_ARRAY,
+	ORDER_STATUSES_ARRAY,
+} from "@serviceflow/backend/features/order/common/order.model";
 import { relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { sqliteNowEffort } from "../helpers";
@@ -55,6 +58,9 @@ export const orders = sqliteTable(
 			.default("pendiente")
 			.notNull(),
 		observations: text("observations").notNull(),
+		serviceType: text("service_type", {
+			enum: ORDER_SERVICE_TYPES_ARRAY,
+		}).notNull(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.default(sqliteNowEffort)

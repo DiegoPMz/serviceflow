@@ -15,6 +15,13 @@
       "when": 1792192734356,
       "tag": "0001_black_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793068061357,
+      "tag": "0002_calm_the_hunter",
+      "breakpoints": true
     }
   ]
 }

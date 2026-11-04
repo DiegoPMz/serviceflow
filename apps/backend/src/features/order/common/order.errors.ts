@@ -33,6 +33,11 @@ export const OrderErrors = {
 		"La observación del problema no puede exceder 1000 caracteres.",
 		400,
 	),
+	ORDER_SERVICE_TYPE_REQUIRED: new ErrorDetails(
+		ORDER_ERROR_CODES.SERVICE_TYPE_REQUIRED,
+		"El tipo de servicio es requerido y debe ser válido.",
+		400,
+	),
 	ORDER_WORKSPACE_ID_REQUIRED: new ErrorDetails(
 		ORDER_ERROR_CODES.WORKSPACE_ID_REQUIRED,
 		"El ID del workspace es requerido.",

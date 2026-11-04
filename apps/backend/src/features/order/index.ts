@@ -70,6 +70,7 @@ export const orderRoutes = (
 						deviceId: body.deviceId,
 						components: body.components,
 						observations: body.observations,
+						serviceType: body.serviceType,
 					},
 					clientRepository: deps.clientRepository,
 					deviceRepository: deps.deviceRepository,

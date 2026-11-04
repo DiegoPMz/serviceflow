@@ -9,7 +9,7 @@ import { UserErrors } from "../user/common/user.errors";
 import type { UserRepository } from "../user/common/user-repository";
 import { workspaceErrors } from "../workspace/common/workspace.errors";
 import type { WorkspaceRepository } from "../workspace/common/workspace-repository";
-import { Folio, Order } from "./common/order.model";
+import { Folio, Order, type OrderServiceType } from "./common/order.model";
 import type { OrdersUnitOfWork } from "./common/orders.unit-of-work";
 
 export interface CreateOrderCommand {
@@ -24,6 +24,7 @@ export interface CreateOrderCommand {
 	}[];
 
 	observations: string;
+	serviceType: OrderServiceType;
 }
 
 interface CreateOrderHandlerProps {
@@ -83,6 +84,7 @@ export const createOrderHandler = async ({
 		clientId: client.id,
 		deviceId: device.id,
 		observations: command.observations,
+		serviceType: command.serviceType,
 		folio: folio,
 
 		clientNameSnapshot: client.name,

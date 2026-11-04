@@ -1,4 +1,5 @@
 import { type Static, Type } from "@sinclair/typebox";
+import { phoneNumberSchema } from "../shared/phone";
 
 // IDs & Tokens
 export const workspaceIdSchema = Type.String({ minLength: 26, maxLength: 26 });
@@ -12,7 +13,7 @@ export const workspaceNameSchema = Type.String({
 
 // Company
 export const companyNameSchema = Type.String({ minLength: 1, maxLength: 150 });
-export const companyPhoneSchema = Type.String({ minLength: 10, maxLength: 16 });
+export const companyPhoneSchema = phoneNumberSchema;
 export const companyEmailSchema = Type.String({
 	format: "email",
 	maxLength: 150,
