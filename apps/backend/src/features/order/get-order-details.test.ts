@@ -95,6 +95,7 @@ describe("Get-Order-Details Integration Tests", () => {
 			expect(details.id).toBe(orderId);
 			expect(details.folio).toBe("TECFIX-001");
 			expect(details.status).toBe("pendiente");
+			expect(details.serviceType).toBe("preventive_maintenance");
 			expect(details.observations).toBe("Pantalla rota");
 			expect(details.createdAt).toEqual(expect.any(String));
 			expect(details.updatedAt).toEqual(expect.any(String));
@@ -121,6 +122,26 @@ describe("Get-Order-Details Integration Tests", () => {
 			});
 
 			expect(details.supplies).toEqual([]);
+			expect(details.hasDocument).toBe(false);
+		});
+	});
+
+	test("Should expose hasDocument when the order has a generated document", async () => {
+		await runTestInTransaction(async (tx) => {
+			const base = await seedBase(tx);
+			const orderId = await seedOrder(tx, {
+				...base,
+				documentKey: "orders/TECFIX-001.pdf",
+			});
+
+			const result = await getOrderDetailsHandler({
+				query: { workspaceId: base.workspaceId, orderId },
+				orderRepository: OrderDrizzleRepository(tx),
+				userRepository: userDrizzleRepository(tx),
+			});
+
+			expect(result.isSuccess).toBe(true);
+			expect(result.value.hasDocument).toBe(true);
 		});
 	});
 
@@ -248,12 +269,13 @@ describe("Get-Order-Details Integration Tests", () => {
 
 			expect(result.isSuccess).toBe(true);
 			expect(result.value.supplies).toHaveLength(1);
-			expect(result.value.supplies[0]).toEqual({
+			expect(result.value.supplies[0]).toMatchObject({
 				name: "Batería",
 				partNumber: "BAT-001",
 				quantity: 2,
 				type: "supply",
 			});
+			expect(result.value.supplies[0]?.id).toEqual(expect.any(String));
 		});
 	});
 
@@ -292,12 +314,13 @@ describe("Get-Order-Details Integration Tests", () => {
 			const battery = result.value.supplies.find(
 				(s) => s.partNumber === "BAT-001",
 			);
-			expect(battery).toEqual({
+			expect(battery).toMatchObject({
 				name: "Batería",
 				partNumber: "BAT-001",
 				quantity: 1,
 				type: "supply",
 			});
+			expect(battery?.id).toEqual(expect.any(String));
 
 			const screen = result.value.supplies.find(
 				(s) => s.partNumber === "SCR-001",

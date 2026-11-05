@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { CalendarDays, ChevronRight, Printer } from "lucide-react";
+import { ORDER_STATUS_PRESENTATION } from "@/features/order/common/order-status.presentation";
 import type { OrderSummary } from "@/features/order/paginated-orders";
 import {
 	Avatar,
@@ -10,7 +11,7 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 
 export function OrderCard({ order }: { order: OrderSummary }) {
-	const status = orderStatusPresentation[order.status];
+	const status = ORDER_STATUS_PRESENTATION[order.status];
 	const date = formatOrderDate(order.createdAt);
 
 	return (
@@ -32,15 +33,16 @@ export function OrderCard({ order }: { order: OrderSummary }) {
 			{/* Folio y estado */}
 			<div className="flex min-w-0 items-start justify-between gap-3">
 				<div className="flex min-w-0 flex-wrap items-center gap-2">
-					<span className="text-[13px] font-semibold tracking-wide text-card-foreground tabular-nums">
+					<span className="text-[13px] font-semibold tracking-wide tabular-nums">
 						{order.folio}
 					</span>
 
 					<Badge
 						variant="outline"
 						className={cn(
-							"text-[10px] border-2 font-semibold ",
+							"text-[10px] font-semibold",
 							status.badgeClassName,
+							"border-t-0 border-l-0 border-r-0",
 						)}
 					>
 						{status.label}
@@ -59,7 +61,7 @@ export function OrderCard({ order }: { order: OrderSummary }) {
 
 			{/* Información principal */}
 			<div className="min-w-0">
-				<p className="truncate text-sm font-semibold tracking-tight text-card-foreground">
+				<p className="truncate text-sm font-semibold tracking-tight">
 					{order.clientName}
 				</p>
 
@@ -101,27 +103,6 @@ export function OrderCard({ order }: { order: OrderSummary }) {
 		</Link>
 	);
 }
-
-const orderStatusPresentation = {
-	pendiente: {
-		label: "Pendiente",
-		badgeClassName: "border-orange-500 bg-transparent text-orange-500",
-	},
-	entregada: {
-		label: "Entregada",
-		badgeClassName: "border-success/80 bg-transparent text-success",
-	},
-	cancelada: {
-		label: "Cancelada",
-		badgeClassName: "border-slate-500 bg-transparent text-slate-500",
-	},
-} satisfies Record<
-	OrderSummary["status"],
-	{
-		label: string;
-		badgeClassName: string;
-	}
->;
 
 const orderDateFormatter = new Intl.DateTimeFormat("es-MX", {
 	day: "2-digit",

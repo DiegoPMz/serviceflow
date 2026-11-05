@@ -32,7 +32,7 @@ export const GetOrderDocumentHandler = async ({
 		await privateDocumentStorage.createSignedDownloadUrl({
 			key: order.documentKey,
 			expiresIn: 60 * 5,
-			fileName: order.folio,
+			fileName: `${order.folio}.pdf`,
 		});
 
 	return Result.success({ signedDownloadUrl });
