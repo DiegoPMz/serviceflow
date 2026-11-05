@@ -6,20 +6,23 @@ import "./main.css";
 import { ClerkProvider } from "@clerk/react";
 import { shadcn } from "@clerk/ui/themes";
 import { clerkConfig } from "./shared/config/env";
+import { ThemeProvider } from "./shared/theme";
 
 const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
 	const root = createRoot(rootElement);
 	root.render(
 		<StrictMode>
-			<ClerkProvider
-				appearance={{
-					theme: shadcn,
-				}}
-				publishableKey={clerkConfig.publishableKey}
-			>
-				<App />
-			</ClerkProvider>
+			<ThemeProvider>
+				<ClerkProvider
+					appearance={{
+						theme: shadcn,
+					}}
+					publishableKey={clerkConfig.publishableKey}
+				>
+					<App />
+				</ClerkProvider>
+			</ThemeProvider>
 		</StrictMode>,
 	);
 }

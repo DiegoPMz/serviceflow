@@ -60,6 +60,7 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(0.965 0.017 235);
   --foreground: oklch(0.215 0.056 246);
@@ -103,6 +104,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.105 0.006 265);
   --foreground: oklch(0.94 0.008 255);
   --card: oklch(0.145 0.009 265 / 88%);
@@ -151,6 +153,14 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-body);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    body {
+      transition:
+        background-color 200ms var(--ease-flow),
+        color 200ms var(--ease-flow);
+    }
   }
 
   button,

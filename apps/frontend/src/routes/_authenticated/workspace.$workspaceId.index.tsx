@@ -30,8 +30,8 @@ function HomePage() {
 
 	return (
 		<main className="px-4 py-6 sm:px-6 lg:px-8 relative flex flex-col">
-			<header className="mb-6 ">
-				<p className=" text-[11px] uppercase tracking-widest text-primary">
+			<header className="mb-6">
+				<p className="text-[11px] uppercase tracking-widest text-primary">
 					Inicio
 				</p>
 
