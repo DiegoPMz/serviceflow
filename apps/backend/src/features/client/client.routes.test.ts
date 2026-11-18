@@ -41,6 +41,8 @@ describe("Client HTTP Routes - Unit Tests", () => {
 			clientRepository: {
 				clientExists: mock(() => Promise.resolve(false)),
 				save: mock(() => Promise.resolve()),
+				getByIds: mock(() => Promise.resolve(null)),
+				getReadModelById: mock(() => Promise.resolve(null)),
 				getAllPaginated: mock(() =>
 					Promise.resolve({ items: [], cursor: null, hasNextPage: false }),
 				),
@@ -209,7 +211,83 @@ describe("Client HTTP Routes - Unit Tests", () => {
 	});
 
 	// =========================================================================
-	// 2. GET /v1/workspaces/:workspaceId/clients
+	// 2. GET /v1/workspaces/:workspaceId/clients/:clientId
+	// =========================================================================
+	describe("GET /v1/workspaces/:workspaceId/clients/:clientId", () => {
+		const validClientId = "01H8X5Y9Z0123456789ABCDEF3";
+
+		test("should return 422 when the clientId param is invalid", async () => {
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/clients/not-a-valid-id`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(response.status).toBe(422);
+		});
+
+		test("should return 404 when the client does not exist", async () => {
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/clients/${validClientId}`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(response.status).toBe(404);
+
+			const body = await response.json();
+			expect(body.code).toBe(ClientErrors.CLIENT_NOT_FOUND.code);
+		});
+
+		test("should return 200 with the client and its order aggregates when it exists", async () => {
+			mockDeps.clientRepository.getReadModelById = mock(() =>
+				Promise.resolve({
+					id: validClientId,
+					name: "Juan Pérez",
+					email: "juan@example.com",
+					phoneNumber: "+5215551234567",
+					location: "CDMX",
+					ordersCount: 3,
+					lastOrder: "2026-02-01T10:00:00.000Z",
+				}),
+			);
+
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/clients/${validClientId}`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(response.status).toBe(200);
+			expect(mockDeps.clientRepository.getReadModelById).toHaveBeenCalledWith(
+				validClientId,
+				validWorkspaceId,
+			);
+
+			const body = await response.json();
+			expect(body).toEqual({
+				id: validClientId,
+				name: "Juan Pérez",
+				email: "juan@example.com",
+				phoneNumber: "+5215551234567",
+				location: "CDMX",
+				ordersCount: 3,
+				lastOrder: "2026-02-01T10:00:00.000Z",
+			});
+		});
+	});
+
+	// =========================================================================
+	// 3. GET /v1/workspaces/:workspaceId/clients
 	// =========================================================================
 	describe("GET /v1/workspaces/:workspaceId/clients", () => {
 		test("should return 422 when query parameters are invalid (e.g., limit > 100)", async () => {

@@ -10,7 +10,7 @@ import type { PaginatedOrders } from "./paginated-orders.types";
 
 export function getPaginatedOrdersQueryOptions(
 	eden: Eden,
-	props: PaginationOrderRequest & { workspaceId: string },
+	props: PaginationOrderRequest & { workspaceId: string; enabled?: boolean },
 ) {
 	return queryOptions({
 		queryKey: [
@@ -20,6 +20,7 @@ export function getPaginatedOrdersQueryOptions(
 			props.pageSize,
 			props.search,
 			props.status,
+			props.deviceId,
 			props.direction,
 		],
 		queryFn: async (): Promise<PaginatedOrders> => {
@@ -32,6 +33,7 @@ export function getPaginatedOrdersQueryOptions(
 						direction: props.direction,
 						search: props.search,
 						status: props.status,
+						deviceId: props.deviceId,
 					},
 				});
 
@@ -39,6 +41,7 @@ export function getPaginatedOrdersQueryOptions(
 			return data;
 		},
 		placeholderData: keepPreviousData,
+		enabled: props.enabled ?? true,
 		staleTime: 20 * 60 * 1000,
 		gcTime: 30 * 60 * 1000,
 	});
@@ -46,7 +49,7 @@ export function getPaginatedOrdersQueryOptions(
 
 export function useGetPaginatedOrders(
 	eden: Eden,
-	props: PaginationOrderRequest & { workspaceId: string },
+	props: PaginationOrderRequest & { workspaceId: string; enabled?: boolean },
 ) {
 	return useQuery(getPaginatedOrdersQueryOptions(eden, props));
 }

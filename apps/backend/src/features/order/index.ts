@@ -124,6 +124,7 @@ export const orderRoutes = (
 							direction: query.direction ?? "asc",
 							status: query.status,
 							search: query.search,
+							deviceId: query.deviceId,
 						},
 					},
 					repository: deps.orderRepository,

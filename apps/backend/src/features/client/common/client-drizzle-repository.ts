@@ -2,13 +2,26 @@ import {
 	clients,
 	type DatabaseClient,
 	type DatabaseType,
+	orders,
 } from "@serviceflow/backend/shared/database";
 import {
 	Cursor,
 	type Pagination,
 	type SortDirection,
 } from "@serviceflow/backend/shared/pagination";
-import { and, asc, desc, eq, gt, like, lt, or, type SQL } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gt,
+	like,
+	lt,
+	max,
+	or,
+	type SQL,
+} from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { ClientCursor, ClientOrderBy } from "../paginated-clients";
 import type { Client } from "./client.model";
@@ -70,6 +83,42 @@ export const clientDrizzleRepository = (
 		};
 	},
 
+	getReadModelById: async (
+		clientId: string,
+		workspaceId: string,
+	): Promise<ClientReadModel | null> => {
+		const [row] = await db
+			.select({
+				id: clients.id,
+				name: clients.name,
+				email: clients.email,
+				phoneNumber: clients.phoneNumber,
+				location: clients.location,
+				ordersCount: count(orders.id),
+				lastOrder: max(orders.createdAt),
+			})
+			.from(clients)
+			.leftJoin(
+				orders,
+				and(
+					eq(orders.clientId, clients.id),
+					eq(orders.workspaceId, workspaceId),
+				),
+			)
+			.where(
+				and(eq(clients.id, clientId), eq(clients.workspaceId, workspaceId)),
+			)
+			.groupBy(clients.id)
+			.limit(1);
+
+		if (!row) return null;
+
+		return {
+			...row,
+			lastOrder: row.lastOrder?.toISOString() ?? null,
+		};
+	},
+
 	getAllPaginated: async (params: {
 		limit: number;
 		cursor?: ClientCursor;
@@ -116,8 +165,17 @@ export const clientDrizzleRepository = (
 				email: clients.email,
 				phoneNumber: clients.phoneNumber,
 				location: clients.location,
+				ordersCount: count(orders.id),
+				lastOrder: max(orders.createdAt),
 			})
 			.from(clients)
+			.leftJoin(
+				orders,
+				and(
+					eq(orders.clientId, clients.id),
+					eq(orders.workspaceId, workspaceId),
+				),
+			)
 			.where(
 				and(
 					eq(clients.workspaceId, workspaceId),
@@ -125,11 +183,15 @@ export const clientDrizzleRepository = (
 					sortCondition,
 				),
 			)
+			.groupBy(clients.id)
 			.orderBy(...buildOrderBy(dbField))
 			.limit(limit + 1);
 
 		const hasNextPage = clientsDb.length > limit;
-		const items = clientsDb.slice(0, limit);
+		const items = clientsDb.slice(0, limit).map((row) => ({
+			...row,
+			lastOrder: row.lastOrder?.toISOString() ?? null,
+		}));
 		const lastItem = items.at(-1);
 
 		let nextCursor: string | null = null;

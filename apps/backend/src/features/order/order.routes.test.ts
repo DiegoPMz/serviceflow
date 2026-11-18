@@ -786,6 +786,7 @@ describe("Order HTTP Routes - Unit Tests", () => {
 				search: undefined,
 				workspaceId: validWorkspaceId,
 				status: undefined,
+				deviceId: undefined,
 			});
 		});
 
@@ -819,7 +820,54 @@ describe("Order HTTP Routes - Unit Tests", () => {
 				search: "TECFIX",
 				workspaceId: validWorkspaceId,
 				status: "entregada",
+				deviceId: undefined,
 			});
+		});
+
+		test("should forward the deviceId filter", async () => {
+			mockDeps.orderRepository.offsetPagination = mock(() =>
+				Promise.resolve({
+					items: [],
+					page: 1,
+					pageSize: 5,
+					totalItems: 0,
+					totalPages: 0,
+				}),
+			);
+
+			const app = createTestApp();
+			const response = await app.handle(
+				new Request(
+					`${listUrl}?page=1&pageSize=5&deviceId=${validCreateBody.deviceId}`,
+					{
+						method: "GET",
+					},
+				),
+			);
+
+			expect(response.status).toBe(200);
+
+			expect(mockDeps.orderRepository.offsetPagination).toHaveBeenCalledWith({
+				page: 1,
+				pageSize: 5,
+				direction: "asc",
+				search: undefined,
+				workspaceId: validWorkspaceId,
+				status: undefined,
+				deviceId: validCreateBody.deviceId,
+			});
+		});
+
+		test("should return 422 when deviceId is invalid", async () => {
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(`${listUrl}?page=1&pageSize=5&deviceId=invalid`, {
+					method: "GET",
+				}),
+			);
+
+			expect(response.status).toBe(422);
 		});
 	});
 

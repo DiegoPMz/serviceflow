@@ -18,6 +18,8 @@ import { Route as AuthenticatedWorkspaceWorkspaceIdIndexRouteImport } from './ro
 import { Route as AuthenticatedWorkspaceWorkspaceIdClientesRouteImport } from './routes/_authenticated/workspace.$workspaceId.clientes'
 import { Route as AuthenticatedWorkspaceWorkspaceIdConfiguracionRouteImport } from './routes/_authenticated/workspace.$workspaceId.configuracion'
 import { Route as AuthenticatedWorkspaceWorkspaceIdEquipoRouteImport } from './routes/_authenticated/workspace.$workspaceId.equipo'
+import { Route as AuthenticatedWorkspaceWorkspaceIdClientesIndexRouteImport } from './routes/_authenticated/workspace.$workspaceId.clientes.index'
+import { Route as AuthenticatedWorkspaceWorkspaceIdClientesClientIdRouteImport } from './routes/_authenticated/workspace.$workspaceId.clientes.$clientId'
 import { Route as AuthenticatedWorkspaceWorkspaceIdOrdenOrderIdRouteImport } from './routes/_authenticated/workspace.$workspaceId.orden.$orderId'
 import { Route as AuthenticatedWorkspaceWorkspaceIdOrdenNuevaRouteImport } from './routes/_authenticated/workspace.$workspaceId.orden.nueva'
 
@@ -71,6 +73,18 @@ const AuthenticatedWorkspaceWorkspaceIdEquipoRoute =
     path: '/equipo',
     getParentRoute: () => AuthenticatedWorkspaceWorkspaceIdRoute,
   } as any)
+const AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute =
+  AuthenticatedWorkspaceWorkspaceIdClientesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedWorkspaceWorkspaceIdClientesRoute,
+  } as any)
+const AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute =
+  AuthenticatedWorkspaceWorkspaceIdClientesClientIdRouteImport.update({
+    id: '/$clientId',
+    path: '/$clientId',
+    getParentRoute: () => AuthenticatedWorkspaceWorkspaceIdClientesRoute,
+  } as any)
 const AuthenticatedWorkspaceWorkspaceIdOrdenOrderIdRoute =
   AuthenticatedWorkspaceWorkspaceIdOrdenOrderIdRouteImport.update({
     id: '/orden/$orderId',
@@ -89,23 +103,26 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/workspace/$workspaceId': typeof AuthenticatedWorkspaceWorkspaceIdRouteWithChildren
   '/workspace/crear': typeof AuthenticatedWorkspaceCrearRoute
-  '/workspace/$workspaceId/clientes': typeof AuthenticatedWorkspaceWorkspaceIdClientesRoute
+  '/workspace/$workspaceId/clientes': typeof AuthenticatedWorkspaceWorkspaceIdClientesRouteWithChildren
   '/workspace/$workspaceId/configuracion': typeof AuthenticatedWorkspaceWorkspaceIdConfiguracionRoute
   '/workspace/$workspaceId/equipo': typeof AuthenticatedWorkspaceWorkspaceIdEquipoRoute
   '/workspace/$workspaceId/': typeof AuthenticatedWorkspaceWorkspaceIdIndexRoute
+  '/workspace/$workspaceId/clientes/$clientId': typeof AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute
   '/workspace/$workspaceId/orden/$orderId': typeof AuthenticatedWorkspaceWorkspaceIdOrdenOrderIdRoute
   '/workspace/$workspaceId/orden/nueva': typeof AuthenticatedWorkspaceWorkspaceIdOrdenNuevaRoute
+  '/workspace/$workspaceId/clientes/': typeof AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthenticatedIndexRoute
   '/workspace/crear': typeof AuthenticatedWorkspaceCrearRoute
-  '/workspace/$workspaceId/clientes': typeof AuthenticatedWorkspaceWorkspaceIdClientesRoute
   '/workspace/$workspaceId/configuracion': typeof AuthenticatedWorkspaceWorkspaceIdConfiguracionRoute
   '/workspace/$workspaceId/equipo': typeof AuthenticatedWorkspaceWorkspaceIdEquipoRoute
   '/workspace/$workspaceId': typeof AuthenticatedWorkspaceWorkspaceIdIndexRoute
+  '/workspace/$workspaceId/clientes/$clientId': typeof AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute
   '/workspace/$workspaceId/orden/$orderId': typeof AuthenticatedWorkspaceWorkspaceIdOrdenOrderIdRoute
   '/workspace/$workspaceId/orden/nueva': typeof AuthenticatedWorkspaceWorkspaceIdOrdenNuevaRoute
+  '/workspace/$workspaceId/clientes': typeof AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -114,12 +131,14 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/workspace/$workspaceId': typeof AuthenticatedWorkspaceWorkspaceIdRouteWithChildren
   '/_authenticated/workspace/crear': typeof AuthenticatedWorkspaceCrearRoute
-  '/_authenticated/workspace/$workspaceId/clientes': typeof AuthenticatedWorkspaceWorkspaceIdClientesRoute
+  '/_authenticated/workspace/$workspaceId/clientes': typeof AuthenticatedWorkspaceWorkspaceIdClientesRouteWithChildren
   '/_authenticated/workspace/$workspaceId/configuracion': typeof AuthenticatedWorkspaceWorkspaceIdConfiguracionRoute
   '/_authenticated/workspace/$workspaceId/equipo': typeof AuthenticatedWorkspaceWorkspaceIdEquipoRoute
   '/_authenticated/workspace/$workspaceId/': typeof AuthenticatedWorkspaceWorkspaceIdIndexRoute
+  '/_authenticated/workspace/$workspaceId/clientes/$clientId': typeof AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute
   '/_authenticated/workspace/$workspaceId/orden/$orderId': typeof AuthenticatedWorkspaceWorkspaceIdOrdenOrderIdRoute
   '/_authenticated/workspace/$workspaceId/orden/nueva': typeof AuthenticatedWorkspaceWorkspaceIdOrdenNuevaRoute
+  '/_authenticated/workspace/$workspaceId/clientes/': typeof AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -132,19 +151,22 @@ export interface FileRouteTypes {
     | '/workspace/$workspaceId/configuracion'
     | '/workspace/$workspaceId/equipo'
     | '/workspace/$workspaceId/'
+    | '/workspace/$workspaceId/clientes/$clientId'
     | '/workspace/$workspaceId/orden/$orderId'
     | '/workspace/$workspaceId/orden/nueva'
+    | '/workspace/$workspaceId/clientes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/'
     | '/workspace/crear'
-    | '/workspace/$workspaceId/clientes'
     | '/workspace/$workspaceId/configuracion'
     | '/workspace/$workspaceId/equipo'
     | '/workspace/$workspaceId'
+    | '/workspace/$workspaceId/clientes/$clientId'
     | '/workspace/$workspaceId/orden/$orderId'
     | '/workspace/$workspaceId/orden/nueva'
+    | '/workspace/$workspaceId/clientes'
   id:
     | '__root__'
     | '/_authenticated'
@@ -156,8 +178,10 @@ export interface FileRouteTypes {
     | '/_authenticated/workspace/$workspaceId/configuracion'
     | '/_authenticated/workspace/$workspaceId/equipo'
     | '/_authenticated/workspace/$workspaceId/'
+    | '/_authenticated/workspace/$workspaceId/clientes/$clientId'
     | '/_authenticated/workspace/$workspaceId/orden/$orderId'
     | '/_authenticated/workspace/$workspaceId/orden/nueva'
+    | '/_authenticated/workspace/$workspaceId/clientes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -230,6 +254,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspaceWorkspaceIdEquipoRouteImport
       parentRoute: typeof AuthenticatedWorkspaceWorkspaceIdRoute
     }
+    '/_authenticated/workspace/$workspaceId/clientes/': {
+      id: '/_authenticated/workspace/$workspaceId/clientes/'
+      path: '/'
+      fullPath: '/workspace/$workspaceId/clientes/'
+      preLoaderRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesIndexRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesRoute
+    }
+    '/_authenticated/workspace/$workspaceId/clientes/$clientId': {
+      id: '/_authenticated/workspace/$workspaceId/clientes/$clientId'
+      path: '/$clientId'
+      fullPath: '/workspace/$workspaceId/clientes/$clientId'
+      preLoaderRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesClientIdRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesRoute
+    }
     '/_authenticated/workspace/$workspaceId/orden/$orderId': {
       id: '/_authenticated/workspace/$workspaceId/orden/$orderId'
       path: '/orden/$orderId'
@@ -247,8 +285,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedWorkspaceWorkspaceIdClientesRouteChildren {
+  AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute
+  AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute
+}
+
+const AuthenticatedWorkspaceWorkspaceIdClientesRouteChildren: AuthenticatedWorkspaceWorkspaceIdClientesRouteChildren =
+  {
+    AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute:
+      AuthenticatedWorkspaceWorkspaceIdClientesClientIdRoute,
+    AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute:
+      AuthenticatedWorkspaceWorkspaceIdClientesIndexRoute,
+  }
+
+const AuthenticatedWorkspaceWorkspaceIdClientesRouteWithChildren =
+  AuthenticatedWorkspaceWorkspaceIdClientesRoute._addFileChildren(
+    AuthenticatedWorkspaceWorkspaceIdClientesRouteChildren,
+  )
+
 interface AuthenticatedWorkspaceWorkspaceIdRouteChildren {
-  AuthenticatedWorkspaceWorkspaceIdClientesRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesRoute
+  AuthenticatedWorkspaceWorkspaceIdClientesRoute: typeof AuthenticatedWorkspaceWorkspaceIdClientesRouteWithChildren
   AuthenticatedWorkspaceWorkspaceIdConfiguracionRoute: typeof AuthenticatedWorkspaceWorkspaceIdConfiguracionRoute
   AuthenticatedWorkspaceWorkspaceIdEquipoRoute: typeof AuthenticatedWorkspaceWorkspaceIdEquipoRoute
   AuthenticatedWorkspaceWorkspaceIdIndexRoute: typeof AuthenticatedWorkspaceWorkspaceIdIndexRoute
@@ -259,7 +315,7 @@ interface AuthenticatedWorkspaceWorkspaceIdRouteChildren {
 const AuthenticatedWorkspaceWorkspaceIdRouteChildren: AuthenticatedWorkspaceWorkspaceIdRouteChildren =
   {
     AuthenticatedWorkspaceWorkspaceIdClientesRoute:
-      AuthenticatedWorkspaceWorkspaceIdClientesRoute,
+      AuthenticatedWorkspaceWorkspaceIdClientesRouteWithChildren,
     AuthenticatedWorkspaceWorkspaceIdConfiguracionRoute:
       AuthenticatedWorkspaceWorkspaceIdConfiguracionRoute,
     AuthenticatedWorkspaceWorkspaceIdEquipoRoute:

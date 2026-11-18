@@ -12,6 +12,10 @@ import {
 	seedWorkspace,
 } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { first, runTestInTransaction } from "@serviceflow/backend/shared/tests";
+import { workspaceAuthorization } from "../workspace/common/workspace-authorization";
+import { workspaceMemberDrizzleRepository } from "../workspace/common/workspace-drizzle-member-repository";
+import { workspaceMemberErrors } from "../workspace/common/workspace-member.errors";
+import { WORKSPACE_ROLES } from "../workspace/common/workspace-member.model";
 import { OrderDrizzleRepository } from "./common/order-drizzle-repository";
 import { paginatedOrderHandler } from "./paginated-orders";
 
@@ -603,6 +607,244 @@ describe("Paginated-Orders Integration Tests", () => {
 
 			expect(page3.value.totalItems).toBe(5);
 			expect(page3.value.totalPages).toBe(3);
+		});
+	});
+
+	// ── G. User visibility ──────────────────────────────────────────
+
+	describe("User visibility", () => {
+		const authorize = (
+			tx: DatabaseClient,
+			params: { workspaceId: string; userId: string },
+		) =>
+			workspaceAuthorization({
+				membersRepository: workspaceMemberDrizzleRepository(tx),
+			}).excecute({
+				...params,
+				requiredRoles: [WORKSPACE_ROLES.OWNER],
+			});
+
+		test("Should only return orders from a workspace the user belongs to", async () => {
+			await runTestInTransaction(async (tx) => {
+				const base = await seedBase(tx);
+				const otherBase = await seedBase(tx);
+
+				await seedOrderFor(tx, base, { folio: "MINE-1" });
+				await seedOrderFor(tx, base, { folio: "MINE-2" });
+				await seedOrderFor(tx, otherBase, { folio: "FOREIGN-1" });
+
+				const access = await authorize(tx, {
+					workspaceId: base.workspaceId,
+					userId: base.userId,
+				});
+
+				expect(access.isSuccess).toBe(true);
+
+				const result = await paginatedOrderHandler({
+					query: {
+						paginationRequest: { page: 1, pageSize: 10 },
+						workspaceId: base.workspaceId,
+					},
+					repository: OrderDrizzleRepository(tx),
+				});
+
+				expect(result.isSuccess).toBe(true);
+
+				const folios = result.value.items.map((order) => order.folio).sort();
+
+				expect(folios).toEqual(["MINE-1", "MINE-2"]);
+				expect(result.value.items).not.toContainEqual(
+					expect.objectContaining({ folio: "FOREIGN-1" }),
+				);
+				expect(result.value.totalItems).toBe(2);
+				expect(result.value.totalPages).toBe(1);
+			});
+		});
+
+		test("Should not mix orders when the user belongs to several workspaces", async () => {
+			await runTestInTransaction(async (tx) => {
+				const base = await seedBase(tx);
+				const otherWorkspaceId = await seedWorkspace(tx);
+
+				await addMember(tx, {
+					userId: base.userId,
+					workspaceId: otherWorkspaceId,
+					role: WORKSPACE_ROLES.OWNER,
+				});
+
+				const otherClientId = (
+					await seedClient(tx, {
+						workspaceId: otherWorkspaceId,
+					})
+				).id;
+				const otherDeviceId = (
+					await seedDevice(tx, {
+						workspaceId: otherWorkspaceId,
+						clientId: otherClientId,
+					})
+				).id;
+
+				await seedOrderFor(tx, base, { folio: "BASE-1" });
+				await seedOrder(tx, {
+					workspaceId: otherWorkspaceId,
+					clientId: otherClientId,
+					deviceId: otherDeviceId,
+					userId: base.userId,
+					folio: "OTHER-1",
+				});
+
+				const baseAccess = await authorize(tx, {
+					workspaceId: base.workspaceId,
+					userId: base.userId,
+				});
+				const otherAccess = await authorize(tx, {
+					workspaceId: otherWorkspaceId,
+					userId: base.userId,
+				});
+
+				expect(baseAccess.isSuccess).toBe(true);
+				expect(otherAccess.isSuccess).toBe(true);
+
+				const baseResult = await paginatedOrderHandler({
+					query: {
+						paginationRequest: { page: 1, pageSize: 10 },
+						workspaceId: base.workspaceId,
+					},
+					repository: OrderDrizzleRepository(tx),
+				});
+
+				const otherResult = await paginatedOrderHandler({
+					query: {
+						paginationRequest: { page: 1, pageSize: 10 },
+						workspaceId: otherWorkspaceId,
+					},
+					repository: OrderDrizzleRepository(tx),
+				});
+
+				expect(baseResult.isSuccess).toBe(true);
+				expect(otherResult.isSuccess).toBe(true);
+
+				expect(baseResult.value.items.map((order) => order.folio)).toEqual([
+					"BASE-1",
+				]);
+				expect(otherResult.value.items.map((order) => order.folio)).toEqual([
+					"OTHER-1",
+				]);
+			});
+		});
+
+		test("Should reject a user that is not a member of the workspace", async () => {
+			await runTestInTransaction(async (tx) => {
+				const base = await seedBase(tx);
+				const outsiderId = await seedUser(tx);
+
+				const access = await authorize(tx, {
+					workspaceId: base.workspaceId,
+					userId: outsiderId,
+				});
+
+				expect(access.isFailure).toBe(true);
+
+				if (access.isFailure) {
+					expect(access.error.code).toBe(
+						workspaceMemberErrors.NOT_A_MEMBER.code,
+					);
+				}
+			});
+		});
+
+		test("Should never return orders from a device of another workspace", async () => {
+			await runTestInTransaction(async (tx) => {
+				const base = await seedBase(tx);
+				const otherBase = await seedBase(tx);
+
+				await seedOrderFor(tx, base, { folio: "OWN-DEVICE" });
+				await seedOrderFor(tx, otherBase, { folio: "FOREIGN-DEVICE" });
+
+				const foreignDeviceResult = await paginatedOrderHandler({
+					query: {
+						paginationRequest: {
+							page: 1,
+							pageSize: 10,
+							deviceId: otherBase.deviceId,
+						},
+						workspaceId: base.workspaceId,
+					},
+					repository: OrderDrizzleRepository(tx),
+				});
+
+				const ownDeviceResult = await paginatedOrderHandler({
+					query: {
+						paginationRequest: {
+							page: 1,
+							pageSize: 10,
+							deviceId: base.deviceId,
+						},
+						workspaceId: base.workspaceId,
+					},
+					repository: OrderDrizzleRepository(tx),
+				});
+
+				expect(foreignDeviceResult.isSuccess).toBe(true);
+				expect(foreignDeviceResult.value.items).toHaveLength(0);
+				expect(foreignDeviceResult.value.totalItems).toBe(0);
+
+				expect(ownDeviceResult.isSuccess).toBe(true);
+				expect(ownDeviceResult.value.items.map((order) => order.folio)).toEqual(
+					["OWN-DEVICE"],
+				);
+			});
+		});
+
+		test("Should keep the workspace scope across every page", async () => {
+			await runTestInTransaction(async (tx) => {
+				const base = await seedBase(tx);
+				const otherBase = await seedBase(tx);
+
+				for (const [index, folio] of ["BASE-1", "BASE-2", "BASE-3"].entries()) {
+					await seedOrderFor(tx, base, {
+						folio,
+						updatedAt: new Date(`2024-0${index + 1}-01T00:00:00.000Z`),
+					});
+				}
+
+				for (const [index, folio] of ["FOREIGN-1", "FOREIGN-2"].entries()) {
+					await seedOrderFor(tx, otherBase, {
+						folio,
+						updatedAt: new Date(`2024-0${index + 1}-01T00:00:00.000Z`),
+					});
+				}
+
+				const repository = OrderDrizzleRepository(tx);
+				const firstPage = await paginatedOrderHandler({
+					query: {
+						paginationRequest: { page: 1, pageSize: 2 },
+						workspaceId: base.workspaceId,
+					},
+					repository,
+				});
+
+				expect(firstPage.isSuccess).toBe(true);
+
+				const folios = [...firstPage.value.items.map((order) => order.folio)];
+
+				for (let page = 2; page <= firstPage.value.totalPages; page += 1) {
+					const result = await paginatedOrderHandler({
+						query: {
+							paginationRequest: { page, pageSize: 2 },
+							workspaceId: base.workspaceId,
+						},
+						repository,
+					});
+
+					expect(result.isSuccess).toBe(true);
+					folios.push(...result.value.items.map((order) => order.folio));
+				}
+
+				expect(folios).toHaveLength(3);
+				expect(new Set(folios).size).toBe(3);
+				expect(folios.every((folio) => folio.startsWith("BASE-"))).toBe(true);
+			});
 		});
 	});
 });

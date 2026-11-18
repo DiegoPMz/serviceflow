@@ -4,4 +4,6 @@ export interface ClientReadModel {
 	email: string;
 	phoneNumber: string;
 	location: string;
+	ordersCount: number;
+	lastOrder: string | null;
 }

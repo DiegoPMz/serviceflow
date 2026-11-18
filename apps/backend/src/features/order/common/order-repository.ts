@@ -17,6 +17,7 @@ export interface OrderPaginationParams {
 	pageSize: number;
 	search?: string;
 	status?: OrderStatus;
+	deviceId?: string;
 	orderBy?: "status";
 	direction?: "asc" | "desc";
 	workspaceId: string;

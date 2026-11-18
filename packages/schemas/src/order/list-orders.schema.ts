@@ -1,4 +1,5 @@
 import { type Static, Type } from "@sinclair/typebox";
+import { deviceIdSchema } from "../device/device.primitives";
 import { orderStatusFilterSchema } from "./order.primitives";
 
 export const listOrdersQuerySchema = Type.Object({
@@ -6,6 +7,7 @@ export const listOrdersQuerySchema = Type.Object({
 	pageSize: Type.Number({ minimum: 1, maximum: 30 }),
 	search: Type.Optional(Type.String({ maxLength: 500 })),
 	status: Type.Optional(orderStatusFilterSchema),
+	deviceId: Type.Optional(deviceIdSchema),
 	direction: Type.Optional(
 		Type.Union([Type.Literal("asc"), Type.Literal("desc")]),
 	),

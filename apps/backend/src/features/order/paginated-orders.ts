@@ -11,6 +11,7 @@ export interface PaginationOrderRequest {
 	pageSize: number;
 	search?: string;
 	status?: OrderStatus;
+	deviceId?: string;
 	direction?: "asc" | "desc";
 }
 

@@ -28,7 +28,7 @@ import {
 	ClientNameSchema,
 } from "./register-client.schema";
 
-interface RegisterClientDialogProps {
+export interface RegisterClientDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	workspaceId: string;
@@ -61,6 +61,8 @@ export function RegisterClientDialog({
 				email: value.email.trim(),
 				phoneNumber: value.phoneNumber.trim(),
 				location: value.location.trim(),
+				ordersCount: 0,
+				lastOrder: null,
 			};
 
 			form.reset();

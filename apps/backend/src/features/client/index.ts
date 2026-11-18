@@ -1,6 +1,7 @@
 import type { AuthPlugin } from "@serviceflow/backend/shared/http/auth-plugin";
 import { workspaceAuthPlugin } from "@serviceflow/backend/shared/http/workspace-auth-plugin";
 import {
+	clientIdSchema,
 	listClientsQuerySchema,
 	registerClientBodySchema,
 	workspaceIdSchema,
@@ -14,6 +15,7 @@ import {
 } from "../workspace/common/workspace-member.model";
 import type { ClientRepository } from "./common/client-repository";
 import type { ClientsUnitOfWork } from "./common/clients.unit-of-work";
+import { getClientHandler } from "./get-client";
 import { paginatedClientHandler } from "./paginated-clients";
 import { registerClientHandler } from "./register-client";
 
@@ -71,7 +73,38 @@ export const clientRoutes = (auth: AuthPlugin, deps: ClientDependencies) =>
 		)
 
 		// ---------------------------------------------------------------------
-		// 2. GET /v1/workspaces/:workspaceId/clients - Listar Clientes Paginados
+		// 2. GET /v1/workspaces/:workspaceId/clients/:clientId - Obtener un Cliente
+		// ---------------------------------------------------------------------
+		.get(
+			"/:workspaceId/clients/:clientId",
+			async ({ params, status }) => {
+				const result = await getClientHandler({
+					query: {
+						workspaceId: params.workspaceId,
+						clientId: params.clientId,
+					},
+					repository: deps.clientRepository,
+				});
+
+				if (result.isFailure) {
+					return status(result.error.statusCode, { ...result.error });
+				}
+
+				return status("OK", result.value);
+			},
+			{
+				params: t.Object({
+					workspaceId: workspaceIdSchema,
+					clientId: clientIdSchema,
+				}),
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// 3. GET /v1/workspaces/:workspaceId/clients - Listar Clientes Paginados
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/clients",

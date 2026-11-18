@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { seedClient } from "@serviceflow/backend/shared/database/seeds/client.seeds";
+import { seedDevice } from "@serviceflow/backend/shared/database/seeds/device.seeds";
+import { seedOrder } from "@serviceflow/backend/shared/database/seeds/order.seeds";
+import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
 import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import { first, runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { clientDrizzleRepository } from "./common/client-drizzle-repository";
@@ -526,6 +529,122 @@ describe("Paginated-Clients Integration Tests", () => {
 			].sort();
 			const expectedIds = [c1.id, c2.id, c3.id].sort();
 			expect(allIds).toEqual(expectedIds);
+		});
+	});
+
+	// ── G. Order Aggregates ─────────────────────────────────────────
+
+	test("Should return ordersCount=0 and lastOrder=null when the client has no orders", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceId = await seedWorkspace(tx);
+			await seedClient(tx, { workspaceId, name: "No Orders" });
+
+			const result = await paginatedClientHandler({
+				query: {
+					workspaceId,
+					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
+				},
+				repository: clientDrizzleRepository(tx),
+			});
+
+			expect(result.isSuccess).toBe(true);
+			const item = first(result.value.items);
+			expect(item.ordersCount).toBe(0);
+			expect(item.lastOrder).toBeNull();
+		});
+	});
+
+	test("Should count every order and return the latest lastOrder as ISO", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceId = await seedWorkspace(tx);
+			const client = await seedClient(tx, { workspaceId, name: "With Orders" });
+			const device = await seedDevice(tx, {
+				workspaceId,
+				clientId: client.id,
+			});
+			const userId = await seedUser(tx);
+
+			const earlier = new Date("2026-01-01T10:00:00.000Z");
+			const latest = new Date("2026-02-15T18:30:00.000Z");
+
+			for (const createdAt of [earlier, latest]) {
+				await seedOrder(tx, {
+					workspaceId,
+					clientId: client.id,
+					deviceId: device.id,
+					userId,
+					createdAt,
+					updatedAt: createdAt,
+				});
+			}
+
+			const result = await paginatedClientHandler({
+				query: {
+					workspaceId,
+					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
+				},
+				repository: clientDrizzleRepository(tx),
+			});
+
+			expect(result.isSuccess).toBe(true);
+			const item = first(result.value.items);
+			expect(item.ordersCount).toBe(2);
+			expect(item.lastOrder).toBe(latest.toISOString());
+		});
+	});
+
+	test("Should not count orders that belong to another client", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceId = await seedWorkspace(tx);
+			const client = await seedClient(tx, { workspaceId, name: "Alpha" });
+			const otherClient = await seedClient(tx, {
+				workspaceId,
+				name: "Bravo",
+			});
+			const device = await seedDevice(tx, {
+				workspaceId,
+				clientId: otherClient.id,
+			});
+			const userId = await seedUser(tx);
+
+			const createdAt = new Date("2026-03-01T10:00:00.000Z");
+
+			await seedOrder(tx, {
+				workspaceId,
+				clientId: client.id,
+				deviceId: device.id,
+				userId,
+				createdAt,
+			});
+			await seedOrder(tx, {
+				workspaceId,
+				clientId: otherClient.id,
+				deviceId: device.id,
+				userId,
+				createdAt: new Date("2026-04-01T10:00:00.000Z"),
+			});
+
+			const result = await paginatedClientHandler({
+				query: {
+					workspaceId,
+					paginationRequest: { limit: 10, orderBy: "name", direction: "asc" },
+				},
+				repository: clientDrizzleRepository(tx),
+			});
+
+			expect(result.isSuccess).toBe(true);
+
+			const alpha = result.value.items.find((item) => item.id === client.id);
+			const bravo = result.value.items.find(
+				(item) => item.id === otherClient.id,
+			);
+
+			expect(alpha?.ordersCount).toBe(1);
+			expect(alpha?.lastOrder).toBe(createdAt.toISOString());
+			expect(bravo?.ordersCount).toBe(1);
+			expect(bravo?.lastOrder).toBe(
+				new Date("2026-04-01T10:00:00.000Z").toISOString(),
+			);
 		});
 	});
 });

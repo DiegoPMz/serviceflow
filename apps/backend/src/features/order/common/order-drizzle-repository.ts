@@ -143,10 +143,15 @@ export const OrderDrizzleRepository = (
 			? eq(orders.status, params.status)
 			: undefined;
 
+		const deviceCondition = params.deviceId
+			? eq(orders.deviceId, params.deviceId)
+			: undefined;
+
 		const baseConditions = and(
 			eq(orders.workspaceId, params.workspaceId),
 			searchCondition,
 			statusCondition,
+			deviceCondition,
 		);
 
 		const orderBy =
