@@ -20,7 +20,7 @@ export function OrdersSection() {
 		useGetPaginatedOrders(eden, {
 			pageSize: 5,
 			workspaceId,
-			direction: "asc",
+			direction: "desc",
 			page: orderPaginationInput.page ?? 1,
 			search: orderPaginationInput.search,
 			status: orderPaginationInput.status,

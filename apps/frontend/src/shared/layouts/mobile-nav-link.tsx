@@ -16,7 +16,7 @@ export function MobileNavLink({
 		<Link
 			from="/workspace/$workspaceId"
 			to={`/workspace/$workspaceId${suffix}`}
-			activeOptions={{ exact: true }}
+			activeOptions={{ exact: route === "inicio" }}
 			activeProps={{
 				className:
 					"bg-card text-card-foreground font-semibold shadow-sm shadow-card-foreground/5 ring-1 ring-sidebar-border",

@@ -9,14 +9,21 @@ export function SidebarLink({
 }: PropsWithChildren<{
 	route: "inicio" | "clientes" | "equipo" | "configuracion";
 }>) {
+	const suffix = route === "inicio" ? "" : `/${route}`;
+
 	return (
 		<Link
-			to={`/ws/$workspaceId/${route}`}
-			from="/ws/$workspaceId"
+			from="/workspace/$workspaceId"
+			to={`/workspace/$workspaceId${suffix}`}
+			activeOptions={{ exact: route === "inicio" }}
+			className={cn(
+				buttonVariants({ size: "lg", variant: "ghost" }),
+				"h-11 w-full justify-start gap-3 rounded-xl px-3 font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+			)}
 			activeProps={{
-				className: "bg-primary font-semibold text-primary-foreground",
+				className:
+					"bg-card text-card-foreground font-semibold shadow-sm shadow-card-foreground/5 ring-1 ring-sidebar-border hover:bg-card",
 			}}
-			className={cn(buttonVariants({ size: "lg", variant: "ghost" }))}
 		>
 			{children}
 		</Link>

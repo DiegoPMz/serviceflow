@@ -14,9 +14,12 @@ export function MinimalHeader() {
 				</Avatar>
 				<span className="font-display text-sm font-semibold">ServiceFlow</span>
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex items-center gap-3">
 				<ThemeToggle />
-				<AccountMenu />
+
+				<div className="grid place-content-center">
+					<AccountMenu />
+				</div>
 			</div>
 		</header>
 	);

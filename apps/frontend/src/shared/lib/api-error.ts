@@ -14,11 +14,16 @@ export class ApiError extends Error {
 }
 
 export function toApiError(error: ApiErrorDetails): ApiError {
+	const timestamp =
+		error.timestamp instanceof Date
+			? error.timestamp.toISOString()
+			: error.timestamp;
+
 	return new ApiError(
 		error.code,
 		error.message,
 		error.statusCode,
 		error.details,
-		error.timestamp,
+		timestamp,
 	);
 }
