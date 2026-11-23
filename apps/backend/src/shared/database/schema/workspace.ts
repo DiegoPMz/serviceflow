@@ -7,7 +7,7 @@ import {
 	text,
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { sqliteNowEffort } from "../helpers";
+import { sqliteNowSeconds } from "../helpers";
 import { users } from "./user";
 
 export const workspaces = sqliteTable(
@@ -25,10 +25,10 @@ export const workspaces = sqliteTable(
 		companyLogoKey: text("company_logo_key"),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.$onUpdateFn(() => new Date())
 			.notNull(),
 	},
@@ -53,16 +53,21 @@ export const workspaceMembers = sqliteTable(
 			.notNull(),
 
 		joinedAt: integer("joined_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.$onUpdateFn(() => new Date())
 			.notNull(),
 	},
 	(table) => [
 		primaryKey({ columns: [table.workspaceId, table.userId] }),
 		index("member_workspace_idx").on(table.workspaceId),
+		index("member_workspace_joined_idx").on(
+			table.workspaceId,
+			table.joinedAt,
+			table.userId,
+		),
 		index("member_user_idx").on(table.userId),
 	],
 );
@@ -93,7 +98,7 @@ export const workspaceInvitations = sqliteTable(
 		expirationDays: integer("expiration_days").default(7).notNull(),
 		expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 	},
 	(table) => [

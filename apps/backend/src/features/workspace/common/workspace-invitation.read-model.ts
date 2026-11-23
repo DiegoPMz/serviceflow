@@ -1,4 +1,7 @@
-import type { WorkspaceInvitationStatus } from "./workspace-invitation.model";
+import type {
+	InvitationRole,
+	WorkspaceInvitationStatus,
+} from "./workspace-invitation.model";
 
 export type WorkspaceInvitationReadModelStatus = Exclude<
 	WorkspaceInvitationStatus,
@@ -8,6 +11,7 @@ export type WorkspaceInvitationReadModelStatus = Exclude<
 export interface WorkspaceInvitationReadModel {
 	token: string;
 	email: string;
+	role: InvitationRole;
 	status: WorkspaceInvitationReadModelStatus;
 	issuedAt: string;
 }

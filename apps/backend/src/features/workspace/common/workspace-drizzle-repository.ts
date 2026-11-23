@@ -54,6 +54,8 @@ export const workspaceDrizzleRepository = (
 			userId: model.ownerId,
 			role: "owner",
 			workspaceId: model.id,
+			joinedAt: model.createdAt,
+			updatedAt: model.updatedAt,
 		});
 	},
 

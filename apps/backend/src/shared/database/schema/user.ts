@@ -5,7 +5,7 @@ import {
 	text,
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { sqliteNowEffort } from "../helpers";
+import { sqliteNowSeconds } from "../helpers";
 
 export const users = sqliteTable(
 	"users",
@@ -19,10 +19,10 @@ export const users = sqliteTable(
 		externalId: text("external_id").notNull().unique(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.$onUpdateFn(() => new Date())
 			.notNull(),
 	},

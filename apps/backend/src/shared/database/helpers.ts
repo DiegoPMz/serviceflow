@@ -1,12 +1,10 @@
 import { sql } from "drizzle-orm";
-import { timestamp } from "drizzle-orm/pg-core";
 
-export const timestamps = {
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at")
-		.defaultNow()
-		.$onUpdateFn(() => new Date())
-		.notNull(),
-};
-
-export const sqliteNowEffort = sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`;
+/**
+ * Marca de tiempo actual en segundos epoch.
+ *
+ * Debe coincidir con las columnas declaradas como `integer(..., { mode: "timestamp" })`:
+ * en ese modo Drizzle lee/escribe segundos. Usar milisegundos aquí desplaza la
+ * fecha ~1000 veces (año ~55840) y rompe cualquier orden o formato relativo.
+ */
+export const sqliteNowSeconds = sql`(unixepoch())`;

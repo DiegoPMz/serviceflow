@@ -1,7 +1,7 @@
 import type { ActivityMetadata } from "@serviceflow/backend/features/activity/common/activity.model";
 import { ACTIVITY_TYPES_ARRAY } from "@serviceflow/backend/features/activity/common/activity.model";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { sqliteNowEffort } from "../helpers";
+import { sqliteNowSeconds } from "../helpers";
 import { workspaces } from "./workspace";
 
 export const workspaceActivities = sqliteTable(
@@ -23,7 +23,7 @@ export const workspaceActivities = sqliteTable(
 		metadata: text("metadata", { mode: "json" }).$type<ActivityMetadata>(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 	},
 	(table) => [

@@ -7,8 +7,8 @@ import { workspaceInvitationErrors } from "./common/workspace-invitation.errors"
 import { WorkspaceInvitation } from "./common/workspace-invitation.model";
 import { workspaceMemberErrors } from "./common/workspace-member.errors";
 import {
-    WORKSPACE_ROLES,
-    WorkspaceMember,
+	WORKSPACE_ROLES,
+	WorkspaceMember,
 } from "./common/workspace-member.model";
 import { type WorkspaceDependencies, workspaceRoutes } from "./index";
 
@@ -293,6 +293,7 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 					{
 						token: "token-1",
 						email: "invitee@example.com",
+						role: "technician",
 						status: "pending",
 						issuedAt: "2024-01-01T00:00:00.000Z",
 					},
@@ -324,7 +325,167 @@ describe("Workspace HTTP Routes - Unit Tests", () => {
 	});
 
 	// =========================================================================
-	// 6. POST /v1/workspaces/invitations/:token/accept
+	// 7. GET /v1/workspaces/:workspaceId/members
+	// =========================================================================
+	describe("GET /v1/workspaces/:workspaceId/members", () => {
+		const validWorkspaceId = "01H8X5Y9Z0123456789ABCDEF2";
+
+		const paginatedResponse = {
+			items: [
+				{
+					userId: "01H8X5Y9Z0123456789ABCDEF3",
+					name: "Ana",
+					lastName: "López",
+					email: "ana@example.com",
+					pictureUrl: null,
+					role: "technician",
+					joinedAt: "2024-01-01T00:00:00.000Z",
+				},
+			],
+			cursor: null,
+			hasNextPage: false,
+		};
+
+		test("should return 422 when query parameters are invalid (e.g., limit > 100)", async () => {
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/members?limit=500`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(response.status).toBe(422);
+		});
+
+		test("should return 422 when orderBy is not supported", async () => {
+			const app = createTestApp();
+
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/members?orderBy=role`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(response.status).toBe(422);
+		});
+
+		test("should return 404 when the user is not a member of the workspace", async () => {
+			mockDeps.workspaceAuthorization.excecute = mock(() =>
+				Promise.resolve(
+					Result.failure<WorkspaceMember>(workspaceMemberErrors.NOT_A_MEMBER),
+				),
+			);
+
+			const app = createTestApp();
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/members`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(mockDeps.workspaceAuthorization.excecute).toHaveBeenCalledWith({
+				workspaceId: validWorkspaceId,
+				userId: mockUserId,
+				requiredRoles: [
+					WORKSPACE_ROLES.OWNER,
+					WORKSPACE_ROLES.ADMIN,
+					WORKSPACE_ROLES.TECHNICIAN,
+					WORKSPACE_ROLES.VIEWER,
+				],
+			});
+			expect(response.status).toBe(
+				workspaceMemberErrors.NOT_A_MEMBER.statusCode,
+			);
+		});
+
+		test("should return 200 with role and joinedAt for any workspace role", async () => {
+			mockDeps.memberRepository = {
+				getAllPaginated: mock(() => Promise.resolve(paginatedResponse)),
+			} as any;
+
+			const app = createTestApp();
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/members`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(response.status).toBe(200);
+
+			const body = await response.json();
+			expect(body).toEqual(paginatedResponse);
+			expect(body.items[0].role).toBe("technician");
+			expect(body.items[0].joinedAt).toBeDefined();
+			expect(mockDeps.memberRepository.getAllPaginated).toHaveBeenCalledWith({
+				workspaceId: validWorkspaceId,
+				limit: 20,
+				orderBy: "joinedAt",
+				direction: "desc",
+				search: undefined,
+				cursor: undefined,
+			});
+		});
+
+		test("should propagate search and sorting query params", async () => {
+			mockDeps.memberRepository = {
+				getAllPaginated: mock(() => Promise.resolve(paginatedResponse)),
+			} as any;
+
+			const app = createTestApp();
+			await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/members?limit=5&orderBy=name&direction=asc&search=ana`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(mockDeps.memberRepository.getAllPaginated).toHaveBeenCalledWith({
+				workspaceId: validWorkspaceId,
+				limit: 5,
+				orderBy: "name",
+				direction: "asc",
+				search: "ana",
+				cursor: undefined,
+			});
+		});
+
+		test("should return 400 when the cursor belongs to another workspace", async () => {
+			mockDeps.memberRepository = {
+				getAllPaginated: mock(() => Promise.resolve(paginatedResponse)),
+			} as any;
+
+			const cursor = Buffer.from(
+				JSON.stringify({
+					workspaceId: "01H8X5Y9Z0123456789ABCDEF9",
+					orderBy: "joinedAt",
+					direction: "desc",
+					value: Date.now(),
+					id: "01H8X5Y9Z0123456789ABCDEF3",
+				}),
+			).toString("base64");
+
+			const app = createTestApp();
+			const response = await app.handle(
+				new Request(
+					`http://localhost/v1/workspaces/${validWorkspaceId}/members?cursor=${encodeURIComponent(cursor)}`,
+					{ method: "GET" },
+				),
+			);
+
+			expect(response.status).toBe(400);
+			const body = await response.json();
+			expect(body.code).toBe("PAGINATION_CURSOR_INVALID");
+			expect(mockDeps.memberRepository.getAllPaginated).not.toHaveBeenCalled();
+		});
+	});
+
+	// =========================================================================
+	// 8. POST /v1/workspaces/invitations/:token/accept
 	// =========================================================================
 	describe("POST /v1/workspaces/invitations/:token/accept", () => {
 		test("should return 404 for missing or malformed invitation tokens in the URL", async () => {

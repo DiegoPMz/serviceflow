@@ -4,10 +4,9 @@ import {
 } from "@serviceflow/backend/features/order/common/order.model";
 import { relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { sqliteNowEffort } from "../helpers";
+import { sqliteNowSeconds } from "../helpers";
 import { clients } from "./client";
 import { deviceComponents, devices } from "./device";
-import { users } from "./user";
 import { workspaces } from "./workspace";
 
 export const orders = sqliteTable(
@@ -63,10 +62,10 @@ export const orders = sqliteTable(
 		}).notNull(),
 
 		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.$onUpdateFn(() => new Date())
 			.notNull(),
 	},
@@ -100,7 +99,7 @@ export const orderComponents = sqliteTable("order_components", {
 	}).notNull(),
 
 	createdAt: integer("created_at", { mode: "timestamp" })
-		.default(sqliteNowEffort)
+		.default(sqliteNowSeconds)
 		.notNull(),
 });
 

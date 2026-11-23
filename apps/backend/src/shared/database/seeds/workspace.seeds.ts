@@ -41,12 +41,14 @@ export const addMember = async (
 		userId: string;
 		workspaceId: string;
 		role?: WorkspaceRole;
+		joinedAt?: Date;
 	},
 ) => {
 	await db.insert(workspaceMembers).values({
 		userId: opts.userId,
 		workspaceId: opts.workspaceId,
 		role: opts.role ?? "owner",
+		...(opts.joinedAt ? { joinedAt: opts.joinedAt } : {}),
 	});
 };
 

@@ -138,6 +138,7 @@ export const workspaceInvitationDrizzleRepository = (
 			.select({
 				token: workspaceInvitations.token,
 				email: workspaceInvitations.email,
+				role: workspaceInvitations.role,
 				status: workspaceInvitations.status,
 				createdAt: workspaceInvitations.createdAt,
 			})
@@ -154,6 +155,7 @@ export const workspaceInvitationDrizzleRepository = (
 
 		if (hasNextPage && lastItem) {
 			nextCursor = Cursor.encode<WorkspaceInvitationCursor>({
+				workspaceId,
 				id: lastItem.token,
 				orderBy,
 				direction,
@@ -165,6 +167,7 @@ export const workspaceInvitationDrizzleRepository = (
 			items: items.map((entity) => ({
 				token: entity.token,
 				email: entity.email,
+				role: entity.role as InvitationRole,
 				status: entity.status as WorkspaceInvitationReadModel["status"],
 				issuedAt: entity.createdAt.toISOString(),
 			})),

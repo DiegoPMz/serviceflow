@@ -11,6 +11,7 @@ import {
 	invitationTokenSchema,
 	inviteUserToWorkspaceBodySchema,
 	listWorkspaceInvitationsQuerySchema,
+	listWorkspaceMembersQuerySchema,
 	listWorkspacesQuerySchema,
 	logoUploadUrlBodySchema,
 	updateWorkspaceMemberRoleBodySchema,
@@ -39,6 +40,10 @@ import {
 	getPaginatedWorkspaceInvitations,
 	type WorkspaceInvitationOrderBy,
 } from "./paginated-workspace-invitations";
+import {
+	getPaginatedWorkspaceMembers,
+	type WorkspaceMemberOrderBy,
+} from "./paginated-workspace-members";
 import { getPaginatedWorkspaces } from "./paginated-workspaces";
 import { rejectWorkspaceInvitationHandler } from "./reject-workspace-invitation";
 import { removeWorkspaceMemberHandler } from "./remove-workspace-member";
@@ -335,10 +340,11 @@ export const workspaceRoutes = (
 		// ---------------------------------------------------------------------
 		.get(
 			"/:workspaceId/invitations",
-			async ({ params, query, status }) => {
+			async ({ params, query, auth, status }) => {
 				const result = await getPaginatedWorkspaceInvitations({
 					query: {
 						workspaceId: params.workspaceId,
+						requesterUserId: auth.userId,
 						paginationRequest: {
 							limit: query.limit ?? 20,
 							cursor: query.cursor,
@@ -348,6 +354,7 @@ export const workspaceRoutes = (
 						},
 					},
 					repository: deps.workspaceInvitationRepository,
+					authorization: deps.workspaceAuthorization,
 				});
 
 				if (result.isFailure) {
@@ -368,7 +375,46 @@ export const workspaceRoutes = (
 		)
 
 		// ---------------------------------------------------------------------
-		// 10. PATCH /v1/workspaces/:workspaceId/invitations/:token - Cancelar invitación
+		// 10. GET /v1/workspaces/:workspaceId/members - Listar miembros
+		// ---------------------------------------------------------------------
+		.get(
+			"/:workspaceId/members",
+			async ({ params, query, auth, status }) => {
+				const result = await getPaginatedWorkspaceMembers({
+					query: {
+						workspaceId: params.workspaceId,
+						requesterUserId: auth.userId,
+						paginationRequest: {
+							limit: query.limit ?? 20,
+							cursor: query.cursor,
+							orderBy: (query.orderBy ?? "joinedAt") as WorkspaceMemberOrderBy,
+							direction: query.direction ?? "desc",
+							search: query.search,
+						},
+					},
+					repository: deps.memberRepository,
+					authorization: deps.workspaceAuthorization,
+				});
+
+				if (result.isFailure) {
+					return status(result.error.statusCode, { ...result.error });
+				}
+
+				return status("OK", result.value);
+			},
+			{
+				params: t.Object({
+					workspaceId: workspaceIdSchema,
+				}),
+				query: listWorkspaceMembersQuerySchema,
+				workspaceAuth: {
+					requiredRoles: [...WORKSPACE_ROLES_ARRAY],
+				},
+			},
+		)
+
+		// ---------------------------------------------------------------------
+		// 11. PATCH /v1/workspaces/:workspaceId/invitations/:token - Cancelar invitación
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/invitations/:token",
@@ -400,7 +446,7 @@ export const workspaceRoutes = (
 		)
 
 		// ---------------------------------------------------------------------
-		// 11. PATCH /v1/workspaces/:workspaceId/members/:memberId - Cambiar rol
+		// 12. PATCH /v1/workspaces/:workspaceId/members/:memberId - Cambiar rol
 		// ---------------------------------------------------------------------
 		.patch(
 			"/:workspaceId/members/:memberId",
@@ -433,7 +479,7 @@ export const workspaceRoutes = (
 		)
 
 		// ---------------------------------------------------------------------
-		// 12. DELETE /v1/workspaces/:workspaceId/members/:memberId - Eliminar miembro
+		// 13. DELETE /v1/workspaces/:workspaceId/members/:memberId - Eliminar miembro
 		// ---------------------------------------------------------------------
 		.delete(
 			"/:workspaceId/members/:memberId",

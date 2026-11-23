@@ -1,9 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import type { DatabaseClient } from "@serviceflow/backend/shared/database";
-import { seedWorkspace } from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
+import { seedUser } from "@serviceflow/backend/shared/database/seeds/user.seeds";
+import {
+	addMember,
+	seedWorkspace,
+} from "@serviceflow/backend/shared/database/seeds/workspace.seeds";
 import type { SortDirection } from "@serviceflow/backend/shared/pagination";
 import { runTestInTransaction } from "@serviceflow/backend/shared/tests";
 import { nanoid } from "nanoid";
+import { workspaceAuthorization } from "./common/workspace-authorization";
+import { workspaceMemberDrizzleRepository } from "./common/workspace-drizzle-member-repository";
 import type {
 	InvitationRole,
 	WorkspaceInvitationStatus,
@@ -16,11 +22,49 @@ import {
 } from "./paginated-workspace-invitations";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const REQUESTER_ID = "01H8X5Y9Z0123456789ABCDEF9";
 
 function first<T>(arr: T[]): T {
 	expect(arr.length).toBeGreaterThan(0);
 	return arr[0] as T;
 }
+
+/**
+ * Garantiza que exista un owner en el workspace para poder listar invitaciones.
+ * Los tests de autorización pueden pasar un requester explícito distinto.
+ */
+const ensureRequester = async (
+	tx: DatabaseClient,
+	workspaceId: string,
+): Promise<string> => {
+	const existingUser = await tx.query.users.findFirst({
+		where: (users, { eq }) => eq(users.id, REQUESTER_ID),
+	});
+
+	if (!existingUser) {
+		await seedUser(tx, {
+			id: REQUESTER_ID,
+			name: "Requester",
+			email: "requester@test.com",
+		});
+	}
+
+	const membersRepository = workspaceMemberDrizzleRepository(tx);
+	const membership = await membersRepository.findMembership({
+		userId: REQUESTER_ID,
+		workspaceId,
+	});
+
+	if (!membership) {
+		await addMember(tx, {
+			workspaceId,
+			userId: REQUESTER_ID,
+			role: "owner",
+		});
+	}
+
+	return REQUESTER_ID;
+};
 
 interface SeedInvitationOptions {
 	email: string;
@@ -62,10 +106,15 @@ const runQuery = async (
 		orderBy?: WorkspaceInvitationOrderBy;
 		direction?: SortDirection;
 	},
-) =>
-	getPaginatedWorkspaceInvitations({
+	requesterUserId?: string,
+) => {
+	const repository = workspaceInvitationDrizzleRepository(tx);
+	const requester = requesterUserId ?? (await ensureRequester(tx, workspaceId));
+
+	return getPaginatedWorkspaceInvitations({
 		query: {
 			workspaceId,
+			requesterUserId: requester,
 			paginationRequest: {
 				limit: paginationRequest.limit,
 				cursor: paginationRequest.cursor,
@@ -73,11 +122,155 @@ const runQuery = async (
 				direction: paginationRequest.direction ?? "desc",
 			},
 		},
-		repository: workspaceInvitationDrizzleRepository(tx),
+		repository,
+		authorization: workspaceAuthorization({
+			membersRepository: workspaceMemberDrizzleRepository(tx),
+		}),
 	});
+};
 
 describe("Paginated-Workspace-Invitations Integration Tests", () => {
-	// ── A. Cursor Validation ─────────────────────────────────────────
+	// ── A. Authorization ────────────────────────────────────────────
+
+	test("Should reject a user that does not belong to the workspace", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceId = await seedWorkspace(tx, { name: "Taller" });
+			const outsiderId = await seedUser(tx, { email: "outsider@test.com" });
+
+			const result = await runQuery(tx, workspaceId, { limit: 10 }, outsiderId);
+
+			expect(result.isFailure).toBe(true);
+			expect(result.error.code).toBe("NOT_A_MEMBER");
+		});
+	});
+
+	test("Should reject an admin of another workspace listing this workspace invitations", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceA = await seedWorkspace(tx, { name: "Workspace A" });
+			const workspaceB = await seedWorkspace(tx, { name: "Workspace B" });
+			const adminOfB = await seedUser(tx, { email: "admin-b@test.com" });
+			await addMember(tx, {
+				workspaceId: workspaceB,
+				userId: adminOfB,
+				role: "admin",
+			});
+
+			await seedInvitationAt(tx, workspaceA, {
+				email: "invitado-a@test.com",
+				createdAt: new Date(),
+				status: "pending",
+			});
+
+			const result = await runQuery(tx, workspaceA, { limit: 10 }, adminOfB);
+
+			expect(result.isFailure).toBe(true);
+			expect(result.error.code).toBe("NOT_A_MEMBER");
+		});
+	});
+
+	test("Should reject a viewer trying to list invitations", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceId = await seedWorkspace(tx, { name: "Taller" });
+			const viewerId = await seedUser(tx, { email: "viewer@test.com" });
+			await addMember(tx, { workspaceId, userId: viewerId, role: "viewer" });
+
+			const result = await runQuery(tx, workspaceId, { limit: 10 }, viewerId);
+
+			expect(result.isFailure).toBe(true);
+			expect(result.error.code).toBe("INSUFFICIENT_PERMISSIONS");
+		});
+	});
+
+	test("Should reject a technician trying to list invitations", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceId = await seedWorkspace(tx, { name: "Taller" });
+			const technicianId = await seedUser(tx, { email: "tech@test.com" });
+			await addMember(tx, {
+				workspaceId,
+				userId: technicianId,
+				role: "technician",
+			});
+
+			const result = await runQuery(
+				tx,
+				workspaceId,
+				{ limit: 10 },
+				technicianId,
+			);
+
+			expect(result.isFailure).toBe(true);
+			expect(result.error.code).toBe("INSUFFICIENT_PERMISSIONS");
+		});
+	});
+
+	test("Should allow owner and admin to list invitations", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceId = await seedWorkspace(tx, { name: "Taller" });
+			const adminId = await seedUser(tx, { email: "admin@test.com" });
+			await addMember(tx, { workspaceId, userId: adminId, role: "admin" });
+
+			await seedInvitationAt(tx, workspaceId, {
+				email: "invitado@test.com",
+				createdAt: new Date(),
+				status: "pending",
+			});
+
+			const asAdmin = await runQuery(tx, workspaceId, { limit: 10 }, adminId);
+			expect(asAdmin.isSuccess).toBe(true);
+			expect(asAdmin.value.items).toHaveLength(1);
+
+			const asOwner = await runQuery(tx, workspaceId, { limit: 10 });
+			expect(asOwner.isSuccess).toBe(true);
+			expect(asOwner.value.items).toHaveLength(1);
+		});
+	});
+
+	test("Should reject a cursor created for another workspace", async () => {
+		await runTestInTransaction(async (tx) => {
+			const workspaceA = await seedWorkspace(tx, { name: "Workspace A" });
+			const workspaceB = await seedWorkspace(tx, { name: "Workspace B" });
+			const now = Date.now();
+
+			for (const [index, email] of [
+				"a-uno@test.com",
+				"a-dos@test.com",
+			].entries()) {
+				await seedInvitationAt(tx, workspaceA, {
+					email,
+					createdAt: new Date(now - (index + 1) * 60 * 60 * 1000),
+					status: "pending",
+				});
+			}
+			await seedInvitationAt(tx, workspaceB, {
+				email: "b-uno@test.com",
+				createdAt: new Date(now - 60 * 60 * 1000),
+				status: "pending",
+			});
+
+			const pageFromA = await runQuery(tx, workspaceA, { limit: 1 });
+			expect(pageFromA.isSuccess).toBe(true);
+			expect(pageFromA.value.cursor).not.toBeNull();
+
+			const ownerB = await seedUser(tx, { email: "owner-b@test.com" });
+			await addMember(tx, {
+				workspaceId: workspaceB,
+				userId: ownerB,
+				role: "owner",
+			});
+
+			const result = await runQuery(
+				tx,
+				workspaceB,
+				{ limit: 1, cursor: pageFromA.value.cursor ?? undefined },
+				ownerB,
+			);
+
+			expect(result.isFailure).toBe(true);
+			expect(result.error.code).toBe("PAGINATION_CURSOR_INVALID");
+		});
+	});
+
+	// ── B. Cursor Validation ─────────────────────────────────────────
 
 	test("Should return PAGINATION_CURSOR_INVALID when cursor is corrupted", async () => {
 		await runTestInTransaction(async (tx) => {
@@ -293,7 +486,7 @@ describe("Paginated-Workspace-Invitations Integration Tests", () => {
 
 	// ── F. Read-model shape ─────────────────────────────────────────
 
-	test("Should return read-model with token, email, status and ISO issuedAt", async () => {
+	test("Should return read-model with token, email, role, status and ISO issuedAt", async () => {
 		await runTestInTransaction(async (tx) => {
 			const workspaceId = await seedWorkspace(tx, { name: "Taller" });
 			const createdAt = new Date(Date.now() - 60 * 60 * 1000);
@@ -301,6 +494,7 @@ describe("Paginated-Workspace-Invitations Integration Tests", () => {
 				email: "invitado@example.com",
 				createdAt,
 				status: "pending",
+				role: "technician",
 			});
 
 			const result = await runQuery(tx, workspaceId, { limit: 10 });
@@ -309,6 +503,7 @@ describe("Paginated-Workspace-Invitations Integration Tests", () => {
 			const item = first(result.value.items);
 			expect(item.token).toBe(invitation.token);
 			expect(item.email).toBe(invitation.email);
+			expect(item.role).toBe("technician");
 			expect(item.status).toBe("pending");
 			expect(item.issuedAt).toBe(
 				new Date(Math.floor(createdAt.getTime() / 1000) * 1000).toISOString(),

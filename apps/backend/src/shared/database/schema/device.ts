@@ -5,7 +5,7 @@ import {
 	text,
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { sqliteNowEffort } from "../helpers";
+import { sqliteNowSeconds } from "../helpers";
 import { clients } from "./client";
 import { workspaces } from "./workspace";
 
@@ -23,10 +23,10 @@ export const devices = sqliteTable(
 		brand: text("brand", { length: 50 }).notNull(),
 		model: text("model", { length: 100 }).notNull(),
 		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.$onUpdateFn(() => new Date())
 			.notNull(),
 	},
@@ -53,10 +53,10 @@ export const deviceComponents = sqliteTable(
 			enum: ["supply", "replacement_part", "other"],
 		}).notNull(),
 		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.notNull(),
 		updatedAt: integer("updated_at", { mode: "timestamp" })
-			.default(sqliteNowEffort)
+			.default(sqliteNowSeconds)
 			.$onUpdateFn(() => new Date())
 			.notNull(),
 	},
