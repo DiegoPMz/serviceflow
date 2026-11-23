@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 import { buttonVariants } from "@/shared/components/ui/button";
 import { formatRelativeTime } from "@/shared/lib/format-relative-time";
-import { getInitials } from "../../order-detail/order-detail.presentation";
+import { getInitials } from "@/shared/lib/get-initials";
 import { ClientDetailEmptyState } from "../client-detail-empty-state";
 import {
 	LoadMoreButton,

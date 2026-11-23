@@ -7,8 +7,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/shared/components/ui/card";
+import { getInitials } from "@/shared/lib/get-initials";
 import { CopyButton } from "../../order-detail/copy-button";
-import { getInitials } from "../../order-detail/order-detail.presentation";
 import { ClientDetailField } from "./client-detail-field";
 
 export function ClientDetailsCard({ client }: { client: ClientDetails }) {

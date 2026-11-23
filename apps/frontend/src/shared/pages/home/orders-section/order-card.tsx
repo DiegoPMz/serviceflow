@@ -9,6 +9,7 @@ import {
 	AvatarImage,
 } from "@/shared/components/ui/avatar";
 import { Badge } from "@/shared/components/ui/badge";
+import { getInitials } from "@/shared/lib/get-initials";
 
 export function OrderCard({ order }: { order: OrderSummary }) {
 	const status = ORDER_STATUS_PRESENTATION[order.status];
@@ -130,16 +131,4 @@ function formatOrderDate(value: string) {
 		dateTime: value,
 		title: orderDateTitleFormatter.format(date),
 	};
-}
-
-function getInitials(name: string) {
-	const words = name.trim().split(/\s+/).filter(Boolean);
-
-	return (
-		words
-			.slice(0, 2)
-			.map((word) => word[0])
-			.join("")
-			.toUpperCase() || "U"
-	);
 }

@@ -3,7 +3,7 @@ import type {
 	OrderSupply,
 } from "@/features/order/order-details";
 
-const SERVICE_TYPE_LABELS: Record<OrderServiceType, string> = {
+export const SERVICE_TYPE_LABELS: Record<OrderServiceType, string> = {
 	preventive_maintenance: "Mantenimiento preventivo",
 	corrective_maintenance: "Reparación",
 	diagnostics: "Diagnóstico",
@@ -23,16 +23,4 @@ export function getServiceTypeLabel(value: OrderServiceType): string {
 
 export function getSupplyTypeLabel(type: OrderSupply["type"]): string {
 	return SUPPLY_TYPE_LABELS[type] ?? "Otro";
-}
-
-export function getInitials(name: string): string {
-	const words = name.trim().split(/\s+/).filter(Boolean);
-
-	return (
-		words
-			.slice(0, 2)
-			.map((word) => word[0])
-			.join("")
-			.toUpperCase() || "U"
-	);
 }
