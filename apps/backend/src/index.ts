@@ -108,8 +108,6 @@ export const app = new Elysia()
 	.use(
 		userRoutes(auth, {
 			userRepository,
-			memberRepository,
-			workspaceAuthorization,
 		}),
 	)
 	.use(
