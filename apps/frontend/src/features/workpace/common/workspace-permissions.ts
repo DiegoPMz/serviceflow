@@ -1,10 +1,11 @@
-type WorkspaceRole = "owner" | "admin" | "technician" | "viewer";
+import type { WorkspaceRole } from "./workspace-role";
 
 export type WorkspacePermissions = {
 	canCreateOrders: boolean;
 	canCreateClients: boolean;
 	canChangeOrderStatus: boolean;
 	canInviteMembers: boolean;
+	canManageTeam: boolean;
 };
 
 export function getWorkspacePermissions(
@@ -18,6 +19,7 @@ export function getWorkspacePermissions(
 				canCreateClients: true,
 				canChangeOrderStatus: true,
 				canInviteMembers: true,
+				canManageTeam: true,
 			};
 
 		case "technician":
@@ -26,6 +28,7 @@ export function getWorkspacePermissions(
 				canCreateClients: true,
 				canChangeOrderStatus: true,
 				canInviteMembers: false,
+				canManageTeam: false,
 			};
 
 		case "viewer":
@@ -34,6 +37,7 @@ export function getWorkspacePermissions(
 				canCreateClients: false,
 				canChangeOrderStatus: false,
 				canInviteMembers: false,
+				canManageTeam: false,
 			};
 	}
 }
